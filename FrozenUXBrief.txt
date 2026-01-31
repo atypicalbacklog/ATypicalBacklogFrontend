@@ -1,0 +1,210 @@
+# FRONTEND LAYOUT & NAVIGATION SUMMARY (FROZEN)
+
+## 1. Guiding Principles
+
+The frontend UI is a **thin, task-oriented client** over a frozen backend domain model .
+
+It must:
+
+* Reflect backend state explicitly
+* Avoid inferred or derived domain logic
+* Separate concerns along clear domain boundaries
+* Favor clarity, stability, and long-term maintainability over flexibility
+
+The frontend:
+
+* Consumes DTOs, never domain entities
+* Does not encode lifecycle rules, temporal logic, or completion inference
+* Does not mutate historical data implicitly
+* Does not merge editorial concerns with operational flows
+
+---
+
+## 2. Global Layout Structure
+
+**Application Shell**
+
+* Top App Bar
+
+  * App title
+  * Global context actions only
+* Persistent Left Navigation (primary sections)
+* Main Content Area
+
+  * Route-driven
+  * One primary intent per screen
+
+No hidden modes, no mega-menus, no nested global navigation.
+
+---
+
+## 3. Primary Navigation (Left Menu)
+
+### 3.1 Dashboard
+
+**Purpose:** “Where am I right now?”
+
+Displays:
+
+* Active playthroughs
+* Recently played games
+* Backend-provided summaries
+
+Notes:
+
+* No inferred statistics
+* No derived lifecycle or completion state
+
+---
+
+### 3.2 Games
+
+**Purpose:** “What do I own?”
+
+Subsections:
+
+* Game Catalog
+* Game Instances
+
+Key distinctions:
+
+* `Game` is canonical and ownership-independent
+* `GameInstance` represents ownership on a platform/variant
+
+Used as the primary entry point for:
+
+* Viewing ownership
+* Starting new Playthroughs
+
+---
+
+### 3.3 Play Activity
+
+**Purpose:** “What am I playing or have played?”
+
+Subsections:
+
+* Active Playthroughs
+* All Playthroughs
+* Time Bookings
+
+Principles:
+
+* Playthroughs are lifecycle processes, not outcomes
+* Time logging is append-only and explicit
+* Corrections are deliberate actions, never implicit edits
+
+---
+
+### 3.4 Completion
+
+**Purpose:** “What was the outcome?”
+
+Subsections:
+
+* Completions
+* DLC Completion
+
+Rules:
+
+* CompletionState is outcome-oriented
+* Completion is independent of Playthrough lifecycle
+* Not every Playthrough results in a completion
+
+This section is strictly separated from Play Activity.
+
+---
+
+### 3.5 Backlog
+
+**Purpose:** “What do I intend to play?”
+
+Subsections:
+
+* Active Backlog
+* Backlog History
+
+Rules:
+
+* Backlog entries are temporal records
+* Add/remove dates are first-class data
+* A backlog is not a static list
+
+---
+
+### 3.6 Reviews
+
+**Purpose:** “What do I think about it?”
+
+Subsections:
+
+* Reviews by Playthrough
+* Tiers
+
+Rules:
+
+* Reviews always belong to a Playthrough
+* Reviews are reflective, not operational
+* No reviews exist independently of play activity
+
+---
+
+### 3.7 Yearly Reviews
+
+**Purpose:** “How did this year look?”
+
+Subsections:
+
+* Year Overview
+* Categories
+* Editorial Entries
+
+Rules:
+
+* Read-heavy, editorial UI
+* No mutation of core activity data
+* Yearly reviews are narrative snapshots only
+
+---
+
+## 4. Secondary / Contextual Navigation
+
+Used **within pages**, never in global navigation.
+
+Examples:
+
+* Game Instance detail tabs:
+
+  * Overview
+  * Playthroughs
+  * Completions
+  * Backlog History
+* Playthrough detail tabs:
+
+  * Details
+  * Time Bookings
+  * Reviews
+
+Purpose:
+
+* Keep global navigation flat
+* Keep context-specific actions local and explicit
+
+---
+
+## 5. Non-Goals (Frontend)
+
+The frontend must NOT:
+
+* Encode domain invariants or state transitions
+* Infer completion or lifecycle state
+* Auto-calculate playtime or outcomes
+* Collapse distinct domain concepts for UI convenience
+* Introduce hidden coupling between sections
+
+---
+
+**This layout and navigation structure is FROZEN.**
+Changes require an explicit, deliberate design decision — not incremental UI refactoring.
+
+---
