@@ -25,7 +25,8 @@ export default function GameDetailPage() {
   };
 
   if (loading) return <CircularProgress />;
-  if (error || !game) return <Typography color="error">{error ?? 'Game not found'}</Typography>;
+  if (error || !game)
+    return <Typography color="error">{error ?? 'Game not found'}</Typography>;
 
   return (
     <Box>

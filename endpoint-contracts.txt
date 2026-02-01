@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 5
+Version: 6
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -113,7 +113,7 @@ Response: 200 OK
 }
 
 --------------------------------------------------------------------------------
-2.2 Get Game Instance by UID
+2.2 Get Game Instance Detail (by UID)
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/game-instances/{uid}
@@ -121,7 +121,7 @@ Path: /api/game-instances/{uid}
 Path Parameters:
 - uid (string): Unique identifier of the game instance
 
-Response: 200 OK
+Response: 200 OK  (GameInstanceDetailResponse)
 {
   "uid": "string",
   "gameUid": "string",
@@ -134,7 +134,12 @@ Response: 200 OK
   "receivedDate": "YYYY-MM-DD" | null,
 
   "forFree": true | false,
-  "inPossession": true | false
+  "inPossession": true | false,
+
+  "backlog": { "uid": "string", "addedDate": "YYYY-MM-DD", "removedDate": "YYYY-MM-DD" | null, "reason": "string" } | null,
+  "completions": [
+    { "uid": "string", "gameInstanceUid": "string", "dlcUid": "string" | null, "completionStateUid": "string", "info": "string" | null }
+  ]
 }
 
 --------------------------------------------------------------------------------
@@ -401,9 +406,89 @@ Array of ActivePlaythroughOverviewRow:
 ]
 
 ================================================================================
+8. GAME COMPLETION ENDPOINTS
+================================================================================
+Base Path: /api/game-completions
+
+--------------------------------------------------------------------------------
+8.1 Update Game Completion
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/game-completions
+Content-Type: application/json
+
+Request Body:
+{
+  "gameInstanceUid": "string",
+  "completionStateUid": "string",
+  "info": "string"
+}
+
+Response: 200 OK
+(no body)
+
+================================================================================
+9. BACKLOG ENDPOINTS
+================================================================================
+Base Path: /api/backlog
+
+--------------------------------------------------------------------------------
+9.1 Add Game to Backlog
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/backlog
+Content-Type: application/json
+
+Request Body:
+{
+  "gameUid": "string",
+  "addedDate": "YYYY-MM-DD",   // LocalDate
+  "reason": "string"
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+9.2 Remove Game from Backlog
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/backlog/{gameUid}/remove
+Content-Type: application/json
+
+Path Parameters:
+- gameUid (string): Unique identifier of the game
+
+Request Body:
+{
+  "removedDate": "YYYY-MM-DD"   // LocalDate
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+9.3 Update Backlog Entry Reason
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/backlog/{uid}/reason
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the backlog entry
+
+Request Body:
+{
+  "reason": "string"
+}
+
+Response: 200 OK
+(no body)
+
+================================================================================
 NOTES
 ================================================================================
-- All endpoints return JSON responses
+- All endpoints return JSON responses (or no body where noted)
 - Date formats:
   * LocalDate: YYYY-MM-DD (e.g., "2024-01-15")
   * Instant: ISO-8601 format with timezone (e.g., "2024-01-15T12:00:00Z")
@@ -412,5 +497,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-01-31  |  Document version: 5
+Generated: 2026-02-01  |  Document version: 6
 ================================================================================

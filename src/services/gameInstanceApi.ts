@@ -3,6 +3,7 @@ import {
   CreateGameInstanceRequest,
   UpdateGameInstanceRequest,
   GameInstanceDTO,
+  GameInstanceDetailDTO,
 } from '../types/dto';
 
 const BASE = '/api/game-instances';
@@ -21,5 +22,5 @@ export const GameInstanceApi = {
     }),
 
   get: (uid: string) =>
-    http<GameInstanceDTO>(`${BASE}/${uid}`),
+    http<GameInstanceDetailDTO>(`${BASE}/${uid}`),
 };

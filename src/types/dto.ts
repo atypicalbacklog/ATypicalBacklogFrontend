@@ -19,6 +19,27 @@ export interface GameInstanceDTO {
   inPossession: boolean;
 }
 
+export interface BacklogEntryDTO {
+  uid: string;
+  addedDate: string; // YYYY-MM-DD
+  removedDate: string | null; // YYYY-MM-DD
+  reason: string;
+}
+
+export interface GameCompletionDTO {
+  uid: string;
+  gameInstanceUid: string;
+  dlcUid: string | null;
+  completionStateUid: string;
+  info: string | null;
+}
+
+/** Game instance detail response (includes backlog + completions). */
+export interface GameInstanceDetailDTO extends GameInstanceDTO {
+  backlog: BacklogEntryDTO | null;
+  completions: GameCompletionDTO[];
+}
+
 export interface CreateGameInstanceRequest {
   gameUid: string;
   platformUid: string;
