@@ -51,7 +51,11 @@ export default function LibraryListItem({ item }: Props) {
           <Typography variant="subtitle1" component="span">
             <Link
               component={RouterLink}
-              to={`/games/${item.gameUid}`}
+              to={
+                item.gameInstanceUid
+                  ? `/game-instances/${item.gameInstanceUid}`
+                  : `/games/${item.gameUid}`
+              }
               color="primary"
               underline="hover"
             >
@@ -59,21 +63,11 @@ export default function LibraryListItem({ item }: Props) {
             </Link>
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {item.platformName} · {item.variantName}
-            {item.releaseYear != null && ` · ${item.releaseYear}`}
+            {[item.platformName, item.variantName].filter(Boolean).join(' · ') ||
+              '—'}
+            {(item.instanceReleaseDate ?? item.gameReleaseDate) &&
+              ` · ${item.instanceReleaseDate ?? item.gameReleaseDate}`}
           </Typography>
-          {item.gameInstanceUid && (
-            <Typography variant="body2">
-              <Link
-                component={RouterLink}
-                to={`/game-instances/${item.gameInstanceUid}`}
-                color="primary"
-                underline="hover"
-              >
-                View instance
-              </Link>
-            </Typography>
-          )}
         </Box>
 
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">

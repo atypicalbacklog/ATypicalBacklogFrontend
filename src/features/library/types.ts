@@ -19,15 +19,23 @@ export interface GameOverviewRowDto {
   gameUid: string;
   gameInstanceUid: string | null;
   hasInstance: boolean;
+
   gameName: string;
-  releaseYear: number | null;
-  platformUid: string;
-  platformName: string;
-  variantUid: string;
-  variantName: string;
+  gameReleaseDate: string | null;
+
+  instanceName: string | null;
+  instanceReleaseDate: string | null;
+  inPossession: boolean;
+
+  platformUid: string | null;
+  platformName: string | null;
+  variantUid: string | null;
+  variantName: string | null;
+
   inBacklog: boolean;
   hasActivePlaythrough: boolean;
   completionStateUid: string | null;
+
   totalPlaytimeSeconds: number;
   thumbnailImageUid: string | null;
 }

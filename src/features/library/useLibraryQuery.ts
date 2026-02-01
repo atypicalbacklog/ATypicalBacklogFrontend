@@ -2,6 +2,21 @@ import { useEffect, useRef, useState } from 'react';
 import { http } from '../../services/httpClient';
 import { GameOverviewRowDto, LibraryFilterState } from './types';
 
+/** Map UI filter state to API request body (empty arrays → null for "no filter"). */
+function toQueryRequestBody(f: LibraryFilterState) {
+  return {
+    searchText: f.searchText || null,
+    platformUids: f.platformUids.length ? f.platformUids : null,
+    consoleUids: f.consoleUids.length ? f.consoleUids : null,
+    inBacklog: f.inBacklog,
+    hasActivePlaythrough: f.hasActivePlaythrough,
+    completionStateUids: f.completionStateUids.length
+      ? f.completionStateUids
+      : null,
+    sortMode: f.sortMode,
+  };
+}
+
 export function useLibraryQuery(filters: LibraryFilterState) {
   const [data, setData] = useState<GameOverviewRowDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +43,7 @@ export function useLibraryQuery(filters: LibraryFilterState) {
           '/api/query/game-overview',
           {
             method: 'POST',
-            body: JSON.stringify(filters),
+            body: JSON.stringify(toQueryRequestBody(filters)),
             signal: controller.signal,
           }
         );

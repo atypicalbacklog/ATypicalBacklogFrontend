@@ -14,6 +14,12 @@ export default function Navigation() {
         <ListItemButton component={Link} to="/library">
           <ListItemText primary="Library" />
         </ListItemButton>
+        <ListItemButton component={Link} to="/play-activity/active">
+          <ListItemText primary="Active Playthroughs" />
+        </ListItemButton>
+        <ListItemButton component={Link} to="/playthroughs/new">
+          <ListItemText primary="Add Playthrough" />
+        </ListItemButton>
       </List>
     </nav>
   );

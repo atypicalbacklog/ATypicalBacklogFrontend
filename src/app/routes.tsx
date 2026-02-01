@@ -3,6 +3,9 @@ import GamesPage from '../features/games/GamesPage';
 import GameDetailPage from '../features/games/GameDetailPage';
 import GameInstanceDetailPage from '../features/gameInstances/GameInstanceDetailPage';
 import LibraryPage from '../features/library/LibraryPage';
+import ActivePlaythroughsPage from '../features/playthroughs/ActivePlaythroughsPage';
+import AddPlaythroughPage from '../features/playthroughs/AddPlaythroughPage';
+import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPage';
 
 export const appRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -10,4 +13,7 @@ export const appRoutes = [
   { path: '/games/:uid', element: <GameDetailPage /> },
   { path: '/game-instances/:uid', element: <GameInstanceDetailPage /> },
   { path: '/library', element: <LibraryPage /> },
+  { path: '/play-activity/active', element: <ActivePlaythroughsPage /> },
+  { path: '/playthroughs/new', element: <AddPlaythroughPage /> },
+  { path: '/playthroughs/:uid', element: <PlaythroughDetailPage /> },
 ];
