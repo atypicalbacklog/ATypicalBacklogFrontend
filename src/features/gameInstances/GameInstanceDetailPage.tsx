@@ -63,7 +63,9 @@ export default function GameInstanceDetailPage() {
 
   const handleUpdate = (data: UpdateGameInstanceRequest) => {
     if (!uid) return;
-    return GameInstanceApi.update(uid, data).then(setInstance);
+    return GameInstanceApi.update(uid, data).then(() =>
+      GameInstanceApi.get(uid).then(setInstance)
+    );
   };
 
   const refetchInstance = () => {

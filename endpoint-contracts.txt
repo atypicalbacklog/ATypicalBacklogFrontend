@@ -486,6 +486,60 @@ Response: 200 OK
 (no body)
 
 ================================================================================
+10. QUERY ENDPOINTS – BACKLOG OVERVIEW
+================================================================================
+Base Path: /api/query/backlog-overview
+
+--------------------------------------------------------------------------------
+10.1 Backlog Overview Query
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/query/backlog-overview
+Content-Type: application/json
+
+Request Body:
+{
+  "searchText": "string" | null,           // optional; LIKE %text% on game name
+  "consoleUids": [ "string" ] | null,      // optional; filter by console UIDs
+  "platformUids": [ "string" ] | null,     // optional; filter by platform UIDs
+  "hasActivePlaythrough": true | false | null,   // optional
+  "completionStateUids": [ "string" ] | null     // optional; filter by completion state
+}
+
+Response: 200 OK
+Array of BacklogOverviewGameDto:
+[
+  {
+    "gameUid": "string",
+    "gameName": "string",
+    "gameReleaseDate": "YYYY-MM-DD" | null,
+    "backlogUid": "string",
+    "backlogAddedDate": "YYYY-MM-DD",
+    "backlogReason": "string" | null,
+    "backlogScore": 0,
+    "hasAnyPlaythrough": true | false,
+    "hasActivePlaythrough": true | false,
+    "thumbnailImageUid": "string" | null,
+    "instances": [
+      {
+        "gameInstanceUid": "string",
+        "platformUid": "string",
+        "platformName": "string",
+        "originalConsoleUid": "string" | null,
+        "variantUid": "string",
+        "instanceName": "string" | null,
+        "releaseDate": "YYYY-MM-DD" | null,
+        "receivedDate": "YYYY-MM-DD" | null,
+        "inPossession": true | false,
+        "completionStateUid": "string" | null,
+        "activePlaythroughUid": "string" | null,
+        "totalPlaytimeSeconds": 0
+      }
+    ]
+  }
+]
+
+================================================================================
 NOTES
 ================================================================================
 - All endpoints return JSON responses (or no body where noted)
