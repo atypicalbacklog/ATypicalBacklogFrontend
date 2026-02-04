@@ -12,7 +12,6 @@ import {
   Typography,
 } from '@mui/material';
 import { PlaythroughApi } from '../../services/playthroughApi';
-import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { PlaythroughDTO, UpdatePlaythroughRequest } from '../../types/dto';
 
@@ -20,7 +19,6 @@ export default function PlaythroughDetailPage() {
   const { uid } = useParams<{ uid: string }>();
   const { referenceData, isLoaded } = useReferenceData();
   const [playthrough, setPlaythrough] = useState<PlaythroughDTO | null>(null);
-  const [platformUid, setPlatformUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -39,9 +37,7 @@ export default function PlaythroughDetailPage() {
         setInputUid(p.inputUid);
         setStartedAt(p.startedAt);
         setPlaythroughStateUid(p.playthroughStateUid);
-        return GameInstanceApi.get(p.gameInstanceUid);
       })
-      .then((inst) => setPlatformUid(inst.platformUid))
       .catch(() => setError('Failed to load playthrough.'))
       .finally(() => setLoading(false));
   }, [uid]);
@@ -69,9 +65,7 @@ export default function PlaythroughDetailPage() {
 
   const playthroughTypes = referenceData?.data.playthroughTypes ?? [];
   const playthroughStates = referenceData?.data.playthroughStates ?? [];
-  const inputs = referenceData?.data.inputs.filter(
-    (i) => !platformUid || i.platformUid === platformUid
-  ) ?? [];
+  const inputs = referenceData?.data.inputs ?? [];
 
   return (
     <Box>

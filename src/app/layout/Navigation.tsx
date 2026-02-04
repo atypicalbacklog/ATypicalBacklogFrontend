@@ -9,7 +9,7 @@ export default function Navigation() {
           <ListItemText primary="Dashboard" />
         </ListItemButton>
         <ListItemButton component={Link} to="/games">
-          <ListItemText primary="Games" />
+          <ListItemText primary="Add to Catalog" />
         </ListItemButton>
         <ListItemButton component={Link} to="/library">
           <ListItemText primary="Library" />

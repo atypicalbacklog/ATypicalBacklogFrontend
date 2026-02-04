@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
+  Alert,
   Box,
-  Button,
   CircularProgress,
+  Grid,
   Stack,
   Typography,
 } from '@mui/material';
 import { fetchActivePlaythroughs } from '../../services/activePlaythroughsApi';
 import { PlaySessionApi } from '../../services/playSessionApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import { formatPlaytime } from '../library/formatPlaytime';
-import { formatTimestamp } from './formatTimestamp';
+import PlaythroughCard from './PlaythroughCard';
 import type { ActivePlaythroughOverviewRow } from '../../types/dto';
-
-const THUMBNAIL_BASE = '/api/thumbnails';
 
 export default function ActivePlaythroughsPage() {
   const { referenceData, isLoaded } = useReferenceData();
@@ -32,6 +29,7 @@ export default function ActivePlaythroughsPage() {
 
   const handleStart = async (playthroughUid: string) => {
     setActionUid(playthroughUid);
+    setError(null);
     try {
       await PlaySessionApi.start(playthroughUid);
       const next = await fetchActivePlaythroughs();
@@ -45,6 +43,7 @@ export default function ActivePlaythroughsPage() {
 
   const handleStop = async (playthroughUid: string) => {
     setActionUid(playthroughUid);
+    setError(null);
     try {
       await PlaySessionApi.stop(playthroughUid);
       const next = await fetchActivePlaythroughs();
@@ -57,17 +56,24 @@ export default function ActivePlaythroughsPage() {
   };
 
   if (!isLoaded) return null;
-  if (loading) return <CircularProgress />;
-  if (error)
-    return <Typography color="error">{error}</Typography>;
+  if (loading) {
+    return (
+      <Stack alignItems="center" sx={{ py: 4 }}>
+        <CircularProgress />
+      </Stack>
+    );
+  }
+  if (error) {
+    return (
+      <Alert severity="error" onClose={() => setError(null)}>
+        {error}
+      </Alert>
+    );
+  }
 
   const playthroughTypes = referenceData?.data.playthroughTypes ?? [];
-  const playthroughStates = referenceData?.data.playthroughStates ?? [];
-
   const typeName = (uid: string) =>
     playthroughTypes.find((t) => t.uid === uid)?.name ?? uid;
-  const stateName = (uid: string) =>
-    playthroughStates.find((s) => s.uid === uid)?.name ?? uid;
 
   return (
     <Box>
@@ -83,104 +89,19 @@ export default function ActivePlaythroughsPage() {
           No active playthroughs.
         </Typography>
       ) : (
-        <Stack spacing={2} sx={{ mt: 2 }}>
+        <Grid container spacing={2} sx={{ mt: 2 }}>
           {rows.map((row) => (
-            <Box
-              key={row.playthroughUid}
-              border={1}
-              borderRadius={2}
-              p={2}
-              sx={{ borderColor: 'divider' }}
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="center"
-                flexWrap="wrap"
-              >
-                {row.thumbnailImageUid ? (
-                  <Box
-                    component="img"
-                    src={`${THUMBNAIL_BASE}/${row.thumbnailImageUid}`}
-                    alt=""
-                    width={64}
-                    height={64}
-                    sx={{
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      bgcolor: 'grey.300',
-                    }}
-                  />
-                ) : (
-                  <Box
-                    width={64}
-                    height={64}
-                    bgcolor="grey.300"
-                    sx={{ borderRadius: 1 }}
-                  />
-                )}
-                <Box flexGrow={1} minWidth={0}>
-                  <Typography variant="subtitle1" component="span">
-                    <Button
-                      component={Link}
-                      to={`/playthroughs/${row.playthroughUid}`}
-                      color="primary"
-                      sx={{ p: 0, textTransform: 'none', fontSize: 'inherit' }}
-                    >
-                      {row.displayName}
-                    </Button>
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {typeName(row.playthroughTypeUid)} ·{' '}
-                    {stateName(row.playthroughStateUid)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatPlaytime(row.totalPlaytimeSeconds)}
-                    {row.isTimeTrackingActive && ' · Tracking'}
-                  </Typography>
-                  {(row.currentSessionStartedAt ?? row.lastStoppedAt) && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      {row.isTimeTrackingActive && row.currentSessionStartedAt
-                        ? `Started: ${formatTimestamp(row.currentSessionStartedAt)}`
-                        : row.lastStoppedAt
-                          ? `Last stopped: ${formatTimestamp(row.lastStoppedAt)}`
-                          : null}
-                    </Typography>
-                  )}
-                </Box>
-                <Stack direction="row" spacing={1}>
-                  {row.isTimeTrackingActive ? (
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleStop(row.playthroughUid)}
-                      disabled={actionUid === row.playthroughUid}
-                    >
-                      Stop
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={() => handleStart(row.playthroughUid)}
-                      disabled={actionUid === row.playthroughUid}
-                    >
-                      Start
-                    </Button>
-                  )}
-                  <Button
-                    component={Link}
-                    to={`/playthroughs/${row.playthroughUid}`}
-                    variant="outlined"
-                    size="small"
-                  >
-                    Details
-                  </Button>
-                </Stack>
-              </Stack>
-            </Box>
+            <Grid item key={row.playthroughUid} xs={12} sm={6} md={4} lg={3}>
+              <PlaythroughCard
+                row={row}
+                playthroughTypeName={typeName(row.playthroughTypeUid)}
+                onStart={handleStart}
+                onStop={handleStop}
+                isActionDisabled={actionUid === row.playthroughUid}
+              />
+            </Grid>
           ))}
-        </Stack>
+        </Grid>
       )}
     </Box>
   );

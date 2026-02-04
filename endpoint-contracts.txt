@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 6
+Version: 9
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -421,6 +421,7 @@ Request Body:
 {
   "gameInstanceUid": "string",
   "completionStateUid": "string",
+  "dlcUid": "string",
   "info": "string"
 }
 
@@ -540,6 +541,131 @@ Array of BacklogOverviewGameDto:
 ]
 
 ================================================================================
+11. QUERY ENDPOINTS – GAME SEARCH
+================================================================================
+Base Path: /api/query/games
+
+--------------------------------------------------------------------------------
+11.1 Search Games (Text Query)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/query/games?q={query}
+
+Query Parameters:
+- q (string, required): Search text for game name (LIKE %text%)
+
+Response: 200 OK
+Array of GameQueryResultDto (max 20 results):
+[
+  {
+    "gameUid": "string",
+    "name": "string",
+    "releaseDate": "YYYY-MM-DD" | null,
+    "thumbnailImageUid": "string"
+  }
+]
+
+================================================================================
+12. QUERY ENDPOINTS – GAME INSTANCE SEARCH
+================================================================================
+Base Path: /api/query/game-instances
+
+--------------------------------------------------------------------------------
+12.1 Search Game Instances (Text Query)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/query/game-instances?q={query}
+
+Query Parameters:
+- q (string, required): Search text for game instance name (LIKE %text%)
+
+Response: 200 OK
+Array of GameInstanceQueryResultDto (max 20 results):
+[
+  {
+    "gameInstanceUid": "string",
+    "name": "string",
+    "platformUid": "string",
+    "thumbnailImageUid": "string"
+  }
+]
+
+================================================================================
+13. QUERY ENDPOINTS – PLAYTHROUGH QUERY
+================================================================================
+Base Path: /api/query/playthroughs
+
+--------------------------------------------------------------------------------
+13.1 Find Playthroughs by Game Instance
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/query/playthroughs?gameInstanceUid={uid}
+
+Query Parameters:
+- gameInstanceUid (string, required): Unique identifier of the game instance
+
+Response: 200 OK
+Array of PlaythroughQueryResultDto:
+[
+  {
+    "playthroughUid": "string",
+    "playthroughStateUid": "string",
+    "playthroughTypeUid": "string",
+    "startedAt": "YYYY-MM-DD"
+  }
+]
+
+================================================================================
+14. DLC ENDPOINTS
+================================================================================
+Base Path: /api/dlcs
+
+--------------------------------------------------------------------------------
+14.1 Create DLC
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/dlcs
+Content-Type: application/json
+
+Request Body:
+{
+  "gameInstanceUid": "string",
+  "name": "string",
+  "receivedDate": "YYYY-MM-DD" | null,   // LocalDate
+  "playthroughUid": "string" | null
+}
+
+Response: 200 OK
+{
+  "uid": "string",
+  "gameInstanceUid": "string",
+  "name": "string",
+  "receivedDate": "YYYY-MM-DD" | null,   // LocalDate
+  "playthroughUid": "string" | null
+}
+
+--------------------------------------------------------------------------------
+14.2 Get DLCs by Game Instance
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/dlcs/by-game-instance/{gameInstanceUid}
+
+Path Parameters:
+- gameInstanceUid (string): Unique identifier of the game instance
+
+Response: 200 OK
+Array of DlcResponse:
+[
+  {
+    "uid": "string",
+    "gameInstanceUid": "string",
+    "name": "string",
+    "receivedDate": "YYYY-MM-DD" | null,
+    "playthroughUid": "string" | null
+  }
+]
+
+================================================================================
 NOTES
 ================================================================================
 - All endpoints return JSON responses (or no body where noted)
@@ -551,5 +677,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-01  |  Document version: 6
+Generated: 2026-02-04  |  Document version: 9
 ================================================================================

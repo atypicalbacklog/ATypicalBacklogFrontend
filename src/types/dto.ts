@@ -119,3 +119,28 @@ export interface UpdatePlaythroughRequest {
   startedAt: string; // YYYY-MM-DD
   playthroughStateUid: string;
 }
+
+// ---------------------------------------------------------------------------
+// Query results (search / list)
+// ---------------------------------------------------------------------------
+
+export interface GameQueryResultDto {
+  gameUid: string;
+  name: string;
+  releaseDate: string | null;
+  thumbnailImageUid: string | null;
+}
+
+export interface GameInstanceQueryResultDto {
+  gameInstanceUid: string;
+  name: string;
+  platformUid: string;
+  thumbnailImageUid: string | null;
+}
+
+export interface PlaythroughQueryResultDto {
+  playthroughUid: string;
+  playthroughStateUid: string;
+  playthroughTypeUid: string;
+  startedAt: string; // YYYY-MM-DD
+}

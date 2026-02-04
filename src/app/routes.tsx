@@ -1,5 +1,5 @@
 import DashboardPage from '../features/dashboard/DashboardPage';
-import GamesPage from '../features/games/GamesPage';
+import AddCatalogPage from '../features/catalog/AddCatalogPage';
 import GameDetailPage from '../features/games/GameDetailPage';
 import GameInstanceDetailPage from '../features/gameInstances/GameInstanceDetailPage';
 import LibraryPage from '../features/library/LibraryPage';
@@ -10,7 +10,7 @@ import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPag
 
 export const appRoutes = [
   { path: '/', element: <DashboardPage /> },
-  { path: '/games', element: <GamesPage /> },
+  { path: '/games', element: <AddCatalogPage /> },
   { path: '/games/:uid', element: <GameDetailPage /> },
   { path: '/game-instances/:uid', element: <GameInstanceDetailPage /> },
   { path: '/library', element: <LibraryPage /> },
