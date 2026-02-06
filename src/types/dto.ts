@@ -2,6 +2,7 @@ export interface GameDTO {
   uid: string;
   name: string;
   firstReleaseDate: string; // ISO date (YYYY-MM-DD)
+  coverImageUid: string | null;
 }
 
 export interface GameInstanceDTO {
@@ -34,9 +35,18 @@ export interface GameCompletionDTO {
   info: string | null;
 }
 
-/** Game instance detail response (includes backlog + completions). */
+/** Summary of a game instance (e.g. for instance switcher by game). */
+export interface GameInstanceSummaryDto {
+  uid: string;
+  name: string | null;
+  coverImageUid: string | null;
+}
+
+/** Game instance detail response (includes cover, backlog entries + completions). */
 export interface GameInstanceDetailDTO extends GameInstanceDTO {
-  backlog: BacklogEntryDTO | null;
+  coverImageUid: string | null;
+  /** All backlog entries for this game (current + history), newest first. */
+  backlogEntries: BacklogEntryDTO[];
   completions: GameCompletionDTO[];
 }
 
@@ -55,6 +65,8 @@ export interface CreateGameInstanceRequest {
 }
 
 export interface UpdateGameInstanceRequest {
+  /** When set, relinks this instance to another game. */
+  gameUid?: string | null;
   platformUid?: string | null;
   variantUid?: string | null;
 
@@ -79,6 +91,13 @@ export interface TimeBookingStopDTO {
   durationSeconds: number;
 }
 
+export interface TimeBookingRetroactiveDTO {
+  timeBookingUid: string;
+  startedAt: string; // ISO instant
+  stoppedAt: string; // ISO instant
+  durationSeconds: number;
+}
+
 // ---------------------------------------------------------------------------
 // Playthrough
 // ---------------------------------------------------------------------------
@@ -87,21 +106,20 @@ export interface ActivePlaythroughOverviewRow {
   playthroughUid: string;
   gameInstanceUid: string;
   displayName: string;
-  thumbnailImageUid: string | null;
+  coverImageUid: string | null;
   playthroughTypeUid: string;
   inputUid: string;
   playthroughStateUid: string;
   isTimeTrackingActive: boolean;
+  /** Start of current (open) time booking when isTimeTrackingActive (ISO instant). */
+  activeSessionStartedAt?: string | null;
   totalPlaytimeSeconds: number;
-  /** When current session started (ISO instant); present when isTimeTrackingActive. */
-  currentSessionStartedAt?: string | null;
-  /** When last session stopped (ISO instant); for quick access when not tracking. */
-  lastStoppedAt?: string | null;
 }
 
 export interface CreatePlaythroughRequest {
   gameInstanceUid: string;
   startedAt: string; // YYYY-MM-DD
+  playthroughTypeUid?: string; // optional
 }
 
 export interface PlaythroughDTO {
@@ -128,19 +146,29 @@ export interface GameQueryResultDto {
   gameUid: string;
   name: string;
   releaseDate: string | null;
-  thumbnailImageUid: string | null;
+  coverImageUid: string | null;
 }
 
 export interface GameInstanceQueryResultDto {
   gameInstanceUid: string;
   name: string;
   platformUid: string;
-  thumbnailImageUid: string | null;
+  coverImageUid: string | null;
 }
 
 export interface PlaythroughQueryResultDto {
   playthroughUid: string;
   playthroughStateUid: string;
   playthroughTypeUid: string;
+  inputUid: string | null;
   startedAt: string; // YYYY-MM-DD
+}
+
+/** Time booking from query; duration computed in frontend from startTime/endTime. */
+export interface TimeBookingQueryDto {
+  uid: string;
+  creationDate: string; // ISO instant
+  playthroughUid: string;
+  startTime: string | null; // ISO instant
+  endTime: string | null; // ISO instant; null if still open
 }

@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 9
+Version: 12
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -27,7 +27,8 @@ Response: 200 OK
 {
   "uid": "string",
   "name": "string",
-  "firstReleaseDate": "YYYY-MM-DD"
+  "firstReleaseDate": "YYYY-MM-DD",
+  "coverImageUid": "string" | null
 }
 
 --------------------------------------------------------------------------------
@@ -43,11 +44,31 @@ Response: 200 OK
 {
   "uid": "string",
   "name": "string",
-  "firstReleaseDate": "YYYY-MM-DD"
+  "firstReleaseDate": "YYYY-MM-DD",
+  "coverImageUid": "string" | null
 }
 
 --------------------------------------------------------------------------------
-1.3 Update Game
+1.3 Get All Instances for Game (UIDs, Names, Cover Images)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/games/{uid}/instances
+
+Path Parameters:
+- uid (string): Unique identifier of the game
+
+Response: 200 OK
+Array of GameInstanceSummaryDto:
+[
+  {
+    "uid": "string",
+    "name": "string" | null,
+    "coverImageUid": "string" | null
+  }
+]
+
+--------------------------------------------------------------------------------
+1.4 Update Game
 --------------------------------------------------------------------------------
 Method: PUT
 Path: /api/games/{uid}
@@ -66,7 +87,8 @@ Response: 200 OK
 {
   "uid": "string",
   "name": "string",
-  "firstReleaseDate": "YYYY-MM-DD"
+  "firstReleaseDate": "YYYY-MM-DD",
+  "coverImageUid": "string" | null
 }
 
 ================================================================================
@@ -136,7 +158,11 @@ Response: 200 OK  (GameInstanceDetailResponse)
   "forFree": true | false,
   "inPossession": true | false,
 
-  "backlog": { "uid": "string", "addedDate": "YYYY-MM-DD", "removedDate": "YYYY-MM-DD" | null, "reason": "string" } | null,
+  "coverImageUid": "string" | null,
+
+  "backlogEntries": [
+    { "uid": "string", "addedDate": "YYYY-MM-DD", "removedDate": "YYYY-MM-DD" | null, "reason": "string" }
+  ],
   "completions": [
     { "uid": "string", "gameInstanceUid": "string", "dlcUid": "string" | null, "completionStateUid": "string", "info": "string" | null }
   ]
@@ -217,6 +243,35 @@ Response: 200 OK
   "startedAt": "2024-01-01T12:00:00Z" | null,  // ISO-8601 Instant format
   "stoppedAt": "2024-01-01T13:00:00Z" | null,  // ISO-8601 Instant format
   "durationSeconds": 3600  // long integer
+}
+
+--------------------------------------------------------------------------------
+3.3 Create Retroactive Session (Time Booking After the Fact)
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/playthroughs/{playthroughUid}/sessions/retroactive
+Content-Type: application/json
+
+Path Parameters:
+- playthroughUid (string): Unique identifier of the playthrough
+
+Request Body:
+{
+  "date": "YYYY-MM-DD",   // LocalDate – day for the booking (start at noon)
+  "minuteCount": 120      // int, 1-600 (max 10 hours); rejected if > 600
+}
+
+Behaviour:
+- Time booking is created with startTime = date at 12:00 (noon), endTime = startTime + minuteCount.
+- If endTime would fall on the next calendar day, startTime is shifted earlier so both start and end are on the same day (end = end of that day).
+- minuteCount > 600 returns 400 Bad Request.
+
+Response: 200 OK
+{
+  "timeBookingUid": "string",
+  "startedAt": "2024-01-01T12:00:00Z",   // ISO-8601 Instant
+  "stoppedAt": "2024-01-01T14:00:00Z",   // ISO-8601 Instant
+  "durationSeconds": 7200
 }
 
 ================================================================================
@@ -318,7 +373,7 @@ Array of GameOverviewRowDto:
     "completionStateUid": "string" | null,
 
     "totalPlaytimeSeconds": 0,
-    "thumbnailImageUid": "string" | null
+    "coverImageUid": "string" | null
   }
 ]
 
@@ -337,7 +392,8 @@ Content-Type: application/json
 Request Body:
 {
   "gameInstanceUid": "string",
-  "startedAt": "YYYY-MM-DD"              // LocalDate
+  "startedAt": "YYYY-MM-DD",             // LocalDate
+  "playthroughTypeUid": "string"         // optional
 }
 
 Response: 200 OK
@@ -396,11 +452,12 @@ Array of ActivePlaythroughOverviewRow:
     "playthroughUid": "string",
     "gameInstanceUid": "string",
     "displayName": "string",
-    "thumbnailImageUid": "string",
+    "coverImageUid": "string",
     "playthroughTypeUid": "string",
     "inputUid": "string",
     "playthroughStateUid": "string",
     "isTimeTrackingActive": true | false,
+    "activeSessionStartedAt": "2024-01-01T12:00:00Z" | null,   // ISO-8601 Instant; start of current (open) time booking when isTimeTrackingActive is true
     "totalPlaytimeSeconds": 0
   }
 ]
@@ -520,7 +577,7 @@ Array of BacklogOverviewGameDto:
     "backlogScore": 0,
     "hasAnyPlaythrough": true | false,
     "hasActivePlaythrough": true | false,
-    "thumbnailImageUid": "string" | null,
+    "coverImageUid": "string" | null,
     "instances": [
       {
         "gameInstanceUid": "string",
@@ -534,7 +591,16 @@ Array of BacklogOverviewGameDto:
         "inPossession": true | false,
         "completionStateUid": "string" | null,
         "activePlaythroughUid": "string" | null,
-        "totalPlaytimeSeconds": 0
+        "totalPlaytimeSeconds": 0,
+        "coverImageUid": "string" | null,
+        "playthroughs": [
+          {
+            "playthroughTypeUid": "string" | null,
+            "playthroughStateUid": "string" | null,
+            "startedAt": "YYYY-MM-DD" | null
+          }
+        ],
+        "dlcNames": ["string"]
       }
     ]
   }
@@ -561,7 +627,7 @@ Array of GameQueryResultDto (max 20 results):
     "gameUid": "string",
     "name": "string",
     "releaseDate": "YYYY-MM-DD" | null,
-    "thumbnailImageUid": "string"
+    "coverImageUid": "string"
   }
 ]
 
@@ -586,7 +652,7 @@ Array of GameInstanceQueryResultDto (max 20 results):
     "gameInstanceUid": "string",
     "name": "string",
     "platformUid": "string",
-    "thumbnailImageUid": "string"
+    "coverImageUid": "string"
   }
 ]
 
@@ -611,17 +677,44 @@ Array of PlaythroughQueryResultDto:
     "playthroughUid": "string",
     "playthroughStateUid": "string",
     "playthroughTypeUid": "string",
+    "inputUid": "string" | null,
     "startedAt": "YYYY-MM-DD"
   }
 ]
 
 ================================================================================
-14. DLC ENDPOINTS
+14. QUERY ENDPOINTS – TIME BOOKINGS
+================================================================================
+Base Path: /api/query/time-bookings
+
+--------------------------------------------------------------------------------
+14.1 Get Time Bookings by Playthrough
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/query/time-bookings?playthroughUid={uid}
+
+Query Parameters:
+- playthroughUid (string, required): Unique identifier of the playthrough
+
+Response: 200 OK
+Array of TimeBookingResponse:
+[
+  {
+    "uid": "string",
+    "creationDate": "2024-01-01T12:00:00Z",   // ISO-8601 Instant
+    "playthroughUid": "string",
+    "startTime": "2024-01-01T12:00:00Z" | null,   // ISO-8601 Instant
+    "endTime": "2024-01-01T13:00:00Z" | null      // ISO-8601 Instant; null if booking is still open
+  }
+]
+
+================================================================================
+15. DLC ENDPOINTS
 ================================================================================
 Base Path: /api/dlcs
 
 --------------------------------------------------------------------------------
-14.1 Create DLC
+15.1 Create DLC
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/dlcs
@@ -645,7 +738,7 @@ Response: 200 OK
 }
 
 --------------------------------------------------------------------------------
-14.2 Get DLCs by Game Instance
+15.2 Get DLCs by Game Instance
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/dlcs/by-game-instance/{gameInstanceUid}
@@ -666,9 +759,83 @@ Array of DlcResponse:
 ]
 
 ================================================================================
+16. EXTERNAL ENDPOINTS – IGDB INTEGRATION
+================================================================================
+Base Path: /api/external/igdb
+
+--------------------------------------------------------------------------------
+16.1 Search IGDB Games
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/external/igdb/search?name={name}
+
+Query Parameters:
+- name (string, required): Search text for game name in IGDB
+
+Response: 200 OK
+Array of IgdbGameSearchResultDto (sorted by name asc, category asc):
+[
+  {
+    "externalId": 0,                    // long integer (IGDB game ID)
+    "name": "string",
+    "releaseDate": "YYYY-MM-DD" | null,  // LocalDate
+    "coverImageUrl": "string" | null,    // URL to cover image
+    "category": "string" | null,         // from game_type.type (e.g. main_game, expansion)
+    "releasedPlatforms": ["string"]      // platform abbreviations (e.g. PC, PS5)
+  }
+]
+
+--------------------------------------------------------------------------------
+16.2 Import IGDB Cover Image
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/external/igdb/import-cover
+Content-Type: application/json
+
+Request Body:
+{
+  "externalId": 0,                      // long integer (IGDB game ID)
+  "ownerType": "GAME" | "GAME_INSTANCE", // ImageOwnerType enum
+  "gameUid": "string",                   // required if ownerType is GAME
+  "gameInstanceUid": "string" | null    // required if ownerType is GAME_INSTANCE
+}
+
+Response: 200 OK
+(no body)
+
+================================================================================
+17. IMAGE DELIVERY ENDPOINTS
+================================================================================
+Base Path: /api/images
+
+--------------------------------------------------------------------------------
+17.1 Get Image by UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/images/{imageUid}
+
+Path Parameters:
+- imageUid (string): Unique identifier of the image
+
+Query Parameters:
+- thumbnail (boolean, optional): Request thumbnail vs original
+- aspect (string, optional): VERTICAL | HORIZONTAL | SQUARE | FREE – used when returning placeholder
+
+Behaviour:
+- thumbnail absent → placeholder image
+- thumbnail=false and image exists → original image
+- thumbnail=true and thumbnail exists → thumbnail
+- thumbnail=true and thumbnail absent but original exists → original (fallback)
+- otherwise → placeholder
+
+Response: 200 OK
+Content-Type: image/jpeg
+Body: Binary image data
+
+================================================================================
 NOTES
 ================================================================================
-- All endpoints return JSON responses (or no body where noted)
+- Most endpoints return JSON; image delivery returns binary image/jpeg
 - Date formats:
   * LocalDate: YYYY-MM-DD (e.g., "2024-01-15")
   * Instant: ISO-8601 format with timezone (e.g., "2024-01-15T12:00:00Z")
@@ -677,5 +844,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-04  |  Document version: 9
+Generated: 2026-02-06  |  Document version: 12
 ================================================================================

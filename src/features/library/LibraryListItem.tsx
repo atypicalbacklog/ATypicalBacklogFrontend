@@ -7,11 +7,9 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import { getImageUrl } from '../../services/imageApi';
 import { GameOverviewRowDto } from './types';
 import { formatPlaytime } from './formatPlaytime';
-
-/** Base URL for thumbnail images; align with backend asset endpoint when available. */
-const THUMBNAIL_BASE = '/api/thumbnails';
 
 type Props = { item: GameOverviewRowDto };
 
@@ -22,9 +20,7 @@ export default function LibraryListItem({ item }: Props) {
       (c) => c.uid === item.completionStateUid
     )?.name ?? null;
 
-  const thumbnailUrl = item.thumbnailImageUid
-    ? `${THUMBNAIL_BASE}/${item.thumbnailImageUid}`
-    : null;
+  const thumbnailUrl = getImageUrl(item.coverImageUid, true);
 
   return (
     <Box border={1} borderRadius={2} p={2}>

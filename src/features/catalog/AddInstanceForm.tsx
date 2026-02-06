@@ -14,6 +14,7 @@ import { GameApi } from '../../services/gameApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { BacklogApi } from '../../services/backlogApi';
 import { GameCompletionApi } from '../../services/gameCompletionApi';
+import { IgdbApi } from '../../services/igdbApi';
 import { searchGames } from '../../services/gameSearchApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import StepSection from './components/StepSection';
@@ -21,6 +22,8 @@ import DateField from './components/DateField';
 import BacklogBlock from './components/BacklogBlock';
 import SearchSuggestions from './components/SearchSuggestions';
 import SelectedItemChip from './components/SelectedItemChip';
+import PlatformSelect from '../shared/PlatformSelect';
+import ExternalGameSearch from '../shared/ExternalGameSearch';
 import type { GameQueryResultDto } from '../../types/dto';
 import type { SearchResultItem } from './components/SearchSuggestions';
 
@@ -50,8 +53,9 @@ export default function AddInstanceForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingCoverImport, setPendingCoverImport] = useState<number | null>(null);
+  const [createdGameUid, setCreatedGameUid] = useState<string | null>(null);
 
-  const platforms = referenceData?.data.platforms.filter((p) => !p.hideInChoices) ?? [];
   const consoles = referenceData?.data.consoles ?? [];
   const variants = [...(referenceData?.data.variants ?? [])].sort(
     (a, b) => (a.order ?? 999) - (b.order ?? 999)
@@ -74,7 +78,7 @@ export default function AddInstanceForm() {
             rows.map((r) => ({
               id: r.gameUid,
               name: r.name,
-              thumbnailImageUid: r.thumbnailImageUid,
+              coverImageUid: r.coverImageUid,
               subtitle: r.releaseDate ?? undefined,
             }))
           )
@@ -89,7 +93,7 @@ export default function AddInstanceForm() {
       gameUid: item.id,
       name: item.name,
       releaseDate: item.subtitle ?? null,
-      thumbnailImageUid: item.thumbnailImageUid,
+      coverImageUid: item.coverImageUid,
     });
     setGameSearchQuery('');
     setGameSearchResults([]);
@@ -105,8 +109,23 @@ export default function AddInstanceForm() {
         const game = await GameApi.create({
           name: newGameName.trim(),
           firstReleaseDate: newGameReleaseDate,
+          coverImageUid: null,
         });
         gameUid = game.uid;
+        setCreatedGameUid(game.uid);
+        
+        // Import cover if marked
+        if (pendingCoverImport) {
+          try {
+            await IgdbApi.importCover({
+              externalId: pendingCoverImport,
+              ownerType: 'GAME',
+              gameUid: game.uid,
+            });
+          } catch {
+            // Error handling can be added
+          }
+        }
         if (newGameAddToBacklog) {
           await BacklogApi.add(game.uid, newGameBacklogAddedDate, newGameBacklogReason || '');
         }
@@ -124,6 +143,20 @@ export default function AddInstanceForm() {
         forFree,
         inPossession,
       });
+      
+      // Import cover if marked (for instance)
+      if (pendingCoverImport) {
+        try {
+          await IgdbApi.importCover({
+            externalId: pendingCoverImport,
+            ownerType: 'GAME_INSTANCE',
+            gameInstanceUid: instance.uid,
+          });
+        } catch {
+          // Error handling can be added
+        }
+      }
+      
       if (completionStateUid) {
         await GameCompletionApi.update(
           instance.uid,
@@ -147,6 +180,8 @@ export default function AddInstanceForm() {
       setInPossession(true);
       setCompletionStateUid('');
       setCompletionInfo('');
+      setPendingCoverImport(null);
+      setCreatedGameUid(null);
     } catch {
       setError('Failed to save. Please try again.');
     } finally {
@@ -170,7 +205,9 @@ export default function AddInstanceForm() {
     inPossession,
     completionStateUid,
     completionInfo,
+    pendingCoverImport,
   ]);
+
 
   return (
     <Box sx={{ maxWidth: 480 }}>
@@ -190,7 +227,7 @@ export default function AddInstanceForm() {
           {selectedGame ? (
             <SelectedItemChip
               label={selectedGame.name}
-              thumbnailImageUid={selectedGame.thumbnailImageUid}
+              coverImageUid={selectedGame.coverImageUid}
               onClear={() => setSelectedGame(null)}
             />
           ) : (
@@ -221,14 +258,31 @@ export default function AddInstanceForm() {
           />
           {addNewGame && (
             <Stack spacing={2} sx={{ pl: 2, borderLeft: 2, borderColor: 'divider' }}>
-              <TextField
-                label="Name"
-                value={newGameName}
-                onChange={(e) => setNewGameName(e.target.value)}
-                required
-                fullWidth
-                size="small"
-              />
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: '1 1 auto', minWidth: 200, order: 1 }}>
+                  <TextField
+                    label="Name"
+                    value={newGameName}
+                    onChange={(e) => setNewGameName(e.target.value)}
+                    required
+                    fullWidth
+                    size="small"
+                  />
+                  <Box sx={{ flexShrink: 0 }}>
+                    <ExternalGameSearch
+                      gameName={newGameName}
+                      releaseDate={newGameReleaseDate}
+                      onOverwriteName={(newName) => setNewGameName(newName)}
+                      onOverwriteDate={(newDate) => setNewGameReleaseDate(newDate)}
+                      onMarkCoverImport={(externalId) => {
+                        setPendingCoverImport(externalId);
+                      }}
+                      ownerType="GAME"
+                      ownerUid={createdGameUid}
+                    />
+                  </Box>
+                </Box>
+              </Box>
               <DateField
                 label="Release date"
                 value={newGameReleaseDate}
@@ -250,14 +304,33 @@ export default function AddInstanceForm() {
 
       <StepSection title="Step 2" locked={!gameResolved}>
         <Stack spacing={2}>
-          <TextField
-            label="Instance name"
-            value={instanceName}
-            onChange={(e) => setInstanceName(e.target.value)}
-            fullWidth
-            size="small"
-            placeholder={selectedGame?.name ?? 'Game name'}
-          />
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: '1 1 auto', minWidth: 200, order: 1 }}>
+              <TextField
+                label="Instance name"
+                value={instanceName}
+                onChange={(e) => setInstanceName(e.target.value)}
+                fullWidth
+                size="small"
+                placeholder={selectedGame?.name ?? 'Game name'}
+              />
+              <Box sx={{ flexShrink: 0 }}>
+                <ExternalGameSearch
+                  gameName={instanceName || ''}
+                  releaseDate={releaseDate || ''}
+                  onOverwriteName={(newName) => setInstanceName(newName)}
+                  onOverwriteDate={(newDate) => setReleaseDate(newDate)}
+                  onMarkCoverImport={(externalId) => {
+                    // For instance creation, we'll need to import after instance is created
+                    // Store it for later import
+                    setPendingCoverImport(externalId);
+                  }}
+                  ownerType="GAME_INSTANCE"
+                  ownerUid={null}
+                />
+              </Box>
+            </Box>
+          </Box>
           <DateField
             label="Release date"
             value={releaseDate}
@@ -278,21 +351,12 @@ export default function AddInstanceForm() {
               </MenuItem>
             ))}
           </TextField>
-          <TextField
-            select
-            label="Platform"
+          <PlatformSelect
             value={platformUid}
-            onChange={(e) => setPlatformUid(e.target.value)}
+            onChange={(v) => setPlatformUid(typeof v === 'string' ? v : v[0] || '')}
             required
-            fullWidth
             size="small"
-          >
-            {platforms.map((p) => (
-              <MenuItem key={p.uid} value={p.uid}>
-                {p.name}
-              </MenuItem>
-            ))}
-          </TextField>
+          />
           <TextField
             select
             label="Original console"

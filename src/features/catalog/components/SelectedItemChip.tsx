@@ -1,24 +1,24 @@
 import { Box, IconButton, Stack, Typography } from '@mui/material';
-
-const THUMBNAIL_BASE = '/api/thumbnails';
+import { getImageUrl } from '../../../services/imageApi';
 
 interface Props {
   label: string;
-  thumbnailImageUid: string | null;
+  coverImageUid: string | null;
   onClear: () => void;
 }
 
 export default function SelectedItemChip({
   label,
-  thumbnailImageUid,
+  coverImageUid,
   onClear,
 }: Props) {
+  const imageUrl = getImageUrl(coverImageUid, true);
   return (
     <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
-      {thumbnailImageUid ? (
+      {imageUrl ? (
         <Box
           component="img"
-          src={`${THUMBNAIL_BASE}/${thumbnailImageUid}`}
+          src={imageUrl}
           alt=""
           sx={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 0.5 }}
         />

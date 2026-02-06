@@ -38,11 +38,12 @@ export default function BacklogList({
   }
 
   return (
-    <Stack spacing={1}>
-      {items.map((item) => (
+    <Stack spacing={1} sx={{ maxWidth: 1080 }}>
+      {items.map((item, index) => (
         <BacklogListItem
           key={item.backlogUid}
           item={item}
+          backlogCount={index + 1}
           expanded={expandedKey === item.gameUid}
           onToggleExpand={() => toggleExpand(item.gameUid)}
         />

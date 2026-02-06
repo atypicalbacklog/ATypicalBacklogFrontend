@@ -37,5 +37,5 @@ export interface GameOverviewRowDto {
   completionStateUid: string | null;
 
   totalPlaytimeSeconds: number;
-  thumbnailImageUid: string | null;
+  coverImageUid: string | null;
 }

@@ -6,6 +6,7 @@ import {
   } from '@mui/material';
   import { LibraryFilterState } from './types';
   import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+  import PlatformSelect from '../shared/PlatformSelect';
   
   interface Props {
     value: LibraryFilterState;
@@ -28,20 +29,18 @@ import {
           }
         />
   
-        <TextField
-          select
-          label="Platform"
+        <PlatformSelect
           value={value.platformUids[0] ?? ''}
-          onChange={(e) =>
-            onChange({ ...value, platformUids: [e.target.value] })
+          onChange={(v) =>
+            onChange({
+              ...value,
+              platformUids: typeof v === 'string' ? (v ? [v] : []) : v,
+            })
           }
-        >
-          {platforms.map((p) => (
-            <MenuItem key={p.uid} value={p.uid}>
-              {p.name}
-            </MenuItem>
-          ))}
-        </TextField>
+          label="Platform"
+          allowEmpty
+          emptyLabel="All"
+        />
   
         <TextField
           select

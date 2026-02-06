@@ -1,25 +1,24 @@
 import type { BacklogOverviewInstanceDto } from './types';
 
 /**
- * Picks which instance to show as "default" from backend-provided list.
- * Rule: instance with playthrough or completion → else oldest in possession (by receivedDate) → else first.
+ * Picks which instance to show as the "selected" one (expanded by default).
+ * Order: (1) active playthrough, (2) past playthroughs/completion, (3) most recent addition (receivedDate desc).
  * Display-only; no domain state inferred.
  */
 export function pickDefaultInstance(
   instances: BacklogOverviewInstanceDto[]
 ): BacklogOverviewInstanceDto | null {
   if (!instances.length) return null;
-  const withActivity = instances.find(
-    (i) => i.activePlaythroughUid != null || i.completionStateUid != null
+  const withActive = instances.find((i) => i.activePlaythroughUid != null);
+  if (withActive) return withActive;
+  const withPastOrCompletion = instances.find(
+    (i) => i.completionStateUid != null || i.totalPlaytimeSeconds > 0
   );
-  if (withActivity) return withActivity;
-  const inPossession = instances.filter((i) => i.inPossession);
-  const byDate = (inPossession.length ? inPossession : instances)
-    .filter((i) => i.receivedDate != null)
-    .sort((a, b) =>
-      (a.receivedDate ?? '').localeCompare(b.receivedDate ?? '')
-    );
-  return byDate.length ? byDate[0] : instances[0];
+  if (withPastOrCompletion) return withPastOrCompletion;
+  const byRecent = [...instances].filter((i) => i.receivedDate != null).sort(
+    (a, b) => (b.receivedDate ?? '').localeCompare(a.receivedDate ?? '')
+  );
+  return byRecent.length ? byRecent[0] : instances[0];
 }
 
 /** All other instances (excluding the default) for "collapsed" section. */

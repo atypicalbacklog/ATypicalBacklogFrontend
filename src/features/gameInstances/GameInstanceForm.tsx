@@ -16,6 +16,8 @@ import {
   GameInstanceDTO,
 } from '../../types/dto';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import PlatformSelect from '../shared/PlatformSelect';
+import ExternalGameSearch from '../shared/ExternalGameSearch';
 
 type CreateProps = {
   mode: 'create';
@@ -44,6 +46,7 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
   const [variantUid, setVariantUid] = useState(initial.variantUid ?? '');
   const [name, setName] = useState(initial.name ?? '');
   const [releaseDate, setReleaseDate] = useState(initial.releaseDate ?? '');
+  const [pendingCoverImport, setPendingCoverImport] = useState<number | null>(null);
   const [originalConsoleUid, setOriginalConsoleUid] = useState(
     initial.originalConsoleUid ?? ''
   );
@@ -54,36 +57,48 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
   );
 
   const consoles = referenceData?.data.consoles ?? [];
-  const platforms = referenceData?.data.platforms.filter(
-    (p) => !p.hideInChoices
-  ) ?? [];
   const variants = referenceData?.data.variants ?? [];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === 'create') {
-      onSubmit({
-        gameUid,
-        platformUid,
-        variantUid: variantUid || '',
-        name: name || null,
-        releaseDate: releaseDate || null,
-        originalConsoleUid: originalConsoleUid || null,
-        receivedDate: receivedDate || null,
-        forFree,
-        inPossession,
-      });
-    } else {
-      onSubmit({
-        platformUid: platformUid || null,
-        variantUid: variantUid || null,
-        name: name || null,
-        releaseDate: releaseDate || null,
-        originalConsoleUid: originalConsoleUid || null,
-        receivedDate: receivedDate || null,
-        forFree,
-        inPossession,
-      });
+    await onSubmit(
+      mode === 'create'
+        ? {
+            gameUid,
+            platformUid,
+            variantUid: variantUid || '',
+            name: name || null,
+            releaseDate: releaseDate || null,
+            originalConsoleUid: originalConsoleUid || null,
+            receivedDate: receivedDate || null,
+            forFree,
+            inPossession,
+          }
+        : {
+            platformUid: platformUid || null,
+            variantUid: variantUid || null,
+            name: name || null,
+            releaseDate: releaseDate || null,
+            originalConsoleUid: originalConsoleUid || null,
+            receivedDate: receivedDate || null,
+            forFree,
+            inPossession,
+          }
+    );
+    // Import cover after save if marked (only in update mode where we have uid)
+    if (pendingCoverImport && mode === 'update') {
+      const instanceUid = (props.initial as GameInstanceDTO).uid;
+      try {
+        const { IgdbApi } = await import('../../services/igdbApi');
+        await IgdbApi.importCover({
+          externalId: pendingCoverImport,
+          ownerType: 'GAME_INSTANCE',
+          gameInstanceUid: instanceUid,
+        });
+        setPendingCoverImport(null);
+      } catch {
+        // Error handling can be added
+      }
     }
   };
 
@@ -113,25 +128,12 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
         />
       )}
 
-      <FormControl fullWidth required={mode === 'create'}>
-        <InputLabel>Platform</InputLabel>
-        <Select
-          label="Platform"
-          value={platformUid}
-          onChange={(e) => setPlatformUid(e.target.value)}
-        >
-          {mode === 'update' && (
-            <MenuItem value="">
-              <em>—</em>
-            </MenuItem>
-          )}
-          {platforms.map((p) => (
-            <MenuItem key={p.uid} value={p.uid}>
-              {p.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <PlatformSelect
+        value={platformUid}
+        onChange={(v) => setPlatformUid(typeof v === 'string' ? v : v[0] || '')}
+        required={mode === 'create'}
+        allowEmpty={mode === 'update'}
+      />
 
       <FormControl fullWidth required={mode === 'create'}>
         <InputLabel>Variant</InputLabel>
@@ -153,12 +155,29 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
         </Select>
       </FormControl>
 
-      <TextField
-        label="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        fullWidth
-      />
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: '1 1 auto', minWidth: 200, order: 1 }}>
+          <TextField
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            fullWidth
+          />
+          <Box sx={{ flexShrink: 0 }}>
+            <ExternalGameSearch
+              gameName={name || ''}
+              releaseDate={releaseDate || ''}
+              onOverwriteName={(newName) => setName(newName)}
+              onOverwriteDate={(newDate) => setReleaseDate(newDate)}
+              onMarkCoverImport={(externalId) => {
+                setPendingCoverImport(externalId);
+              }}
+              ownerType="GAME_INSTANCE"
+              ownerUid={mode === 'update' ? (props.initial as GameInstanceDTO).uid : null}
+            />
+          </Box>
+        </Box>
+      </Box>
 
       <TextField
         type="date"

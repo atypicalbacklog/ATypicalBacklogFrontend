@@ -19,9 +19,9 @@ export default function GameDetailPage() {
       .finally(() => setLoading(false));
   }, [uid]);
 
-  const handleUpdate = (data: Omit<GameDTO, 'uid'>) => {
+  const handleUpdate = async (data: Omit<GameDTO, 'uid'>) => {
     if (!uid) return;
-    return GameApi.update(uid, data).then(setGame);
+    await GameApi.update(uid, data).then(setGame);
   };
 
   if (loading) return <CircularProgress />;
@@ -39,7 +39,11 @@ export default function GameDetailPage() {
       <Typography color="text.secondary" gutterBottom>
         First release: {game.firstReleaseDate}
       </Typography>
-      <GameForm initial={game} onSubmit={handleUpdate} submitLabel="Update" />
+      <GameForm
+        initial={game}
+        onSubmit={handleUpdate}
+        submitLabel="Update"
+      />
     </Box>
   );
 }

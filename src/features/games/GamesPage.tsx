@@ -14,6 +14,7 @@ import {
 import { GameApi } from '../../services/gameApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import PlatformSelect from '../shared/PlatformSelect';
 
 /**
  * UI View Model
@@ -51,10 +52,9 @@ export default function GamesPage() {
     );
   }
 
-  const { platforms, variants } = referenceData.data;
+  const { variants } = referenceData.data;
 
-  // Filter and sort reference data
-  const visiblePlatforms = platforms.filter((p) => !p.hideInChoices);
+  // Sort reference data
   const sortedVariants = [...variants].sort(
     (a, b) => (a.order ?? 999) - (b.order ?? 999)
   );
@@ -68,6 +68,7 @@ export default function GamesPage() {
       const game = await GameApi.create({
         name: vm.gameName,
         firstReleaseDate: vm.firstReleaseDate,
+        coverImageUid: null,
       });
 
       if (vm.createInstance) {
@@ -172,22 +173,13 @@ export default function GamesPage() {
 
         {vm.createInstance && (
           <Stack spacing={2}>
-            <TextField
-              select
-              label="Platform"
+            <PlatformSelect
               value={vm.platformUid ?? ''}
-              onChange={(e) =>
-                setVm({ ...vm, platformUid: e.target.value })
+              onChange={(v) =>
+                setVm({ ...vm, platformUid: typeof v === 'string' ? v : v[0] || undefined })
               }
               required
-              fullWidth
-            >
-              {visiblePlatforms.map((p) => (
-                <MenuItem key={p.uid} value={p.uid}>
-                  {p.name}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
 
             <TextField
               select

@@ -1,259 +1,257 @@
-import { useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
+  List,
+  ListItemButton,
+  ListItemText,
+  MenuItem,
+  Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import { getImageUrl } from '../../services/imageApi';
 import { searchGameOverview } from '../../services/gameOverviewApi';
 import { PlaythroughApi } from '../../services/playthroughApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import StepSection from '../catalog/components/StepSection';
+import DateField from '../catalog/components/DateField';
+import SelectedItemChip from '../catalog/components/SelectedItemChip';
 import type { GameOverviewRowDto } from '../library/types';
 
-const THUMBNAIL_BASE = '/api/thumbnails';
-
-/** Unique games (by gameUid) with at least one instance */
-function uniqueGames(rows: GameOverviewRowDto[]) {
-  const seen = new Set<string>();
-  return rows.filter((r) => {
-    if (seen.has(r.gameUid)) return false;
-    seen.add(r.gameUid);
-    return r.hasInstance;
-  });
-}
-
-/** Instance rows for a given game */
-function instancesForGame(
-  rows: GameOverviewRowDto[],
-  gameUid: string
-): GameOverviewRowDto[] {
-  return rows.filter(
-    (r) => r.gameUid === gameUid && r.gameInstanceUid != null
-  );
+/** Rows that have an instance (one row per instance). */
+function instanceRows(rows: GameOverviewRowDto[]): GameOverviewRowDto[] {
+  return rows.filter((r) => r.gameInstanceUid != null);
 }
 
 export default function AddPlaythroughPage() {
-  const { isLoaded } = useReferenceData();
+  const { referenceData, isLoaded } = useReferenceData();
   const navigate = useNavigate();
 
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<GameOverviewRowDto[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selectedGameUid, setSelectedGameUid] = useState<string | null>(null);
-  const [selectedInstanceUid, setSelectedInstanceUid] = useState<string | null>(
-    null
-  );
-  const [startedAt, setStartedAt] = useState(
+  const [selectedInstanceUid, setSelectedInstanceUid] = useState<string | null>(null);
+  const [startedAt, setStartedAt] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
+  const [playthroughTypeUid, setPlaythroughTypeUid] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const doSearch = async () => {
-    setSearching(true);
-    setError(null);
-    setSelectedGameUid(null);
-    setSelectedInstanceUid(null);
-    try {
-      const rows = await searchGameOverview(searchText);
-      setSearchResults(rows);
-    } catch {
-      setError('Search failed.');
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const games = uniqueGames(searchResults);
-  const instances = selectedGameUid
-    ? instancesForGame(searchResults, selectedGameUid)
-    : [];
-
-  const selectedGame = games.find((g) => g.gameUid === selectedGameUid);
-  const selectedInstance = instances.find(
-    (i) => i.gameInstanceUid === selectedInstanceUid
+  const instanceList = instanceRows(searchResults);
+  const selectedInstance = instanceList.find(
+    (r) => r.gameInstanceUid === selectedInstanceUid
   );
 
-  const handleSelectGame = (gameUid: string) => {
-    setSelectedGameUid(gameUid);
-    setSelectedInstanceUid(null);
-  };
+  const step1Valid = selectedInstanceUid != null;
+  const step2Valid = step1Valid && startedAt && !!playthroughTypeUid;
+  const playthroughTypes = referenceData?.data.playthroughTypes ?? [];
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    if (!searchText.trim() || searchText.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    const t = setTimeout(() => {
+      searchGameOverview(searchText)
+        .then(setSearchResults)
+        .catch(() => setSearchResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchText]);
+
+  const handleSelectInstance = useCallback((gameInstanceUid: string) => {
+    setSelectedInstanceUid(gameInstanceUid);
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
     if (!selectedInstanceUid) return;
     setSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
     try {
       const playthrough = await PlaythroughApi.create({
         gameInstanceUid: selectedInstanceUid,
         startedAt,
+        playthroughTypeUid: playthroughTypeUid || undefined,
       });
-      navigate(`/playthroughs/${playthrough.uid}`);
+      setSuccessMessage('Playthrough created.');
+      setTimeout(() => navigate(`/playthroughs/${playthrough.uid}`), 1500);
     } catch {
       setError('Failed to create playthrough.');
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [selectedInstanceUid, startedAt, playthroughTypeUid, navigate]);
 
-  if (!isLoaded) return null;
+  if (!isLoaded || !referenceData) {
+    return (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  const instanceLabel = selectedInstance
+    ? [selectedInstance.gameName, selectedInstance.platformName, selectedInstance.variantName]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
 
   return (
-    <Box component="form" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+    <Box sx={{ maxWidth: 480 }}>
       <Typography variant="h4" gutterBottom>
         Add Playthrough
       </Typography>
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        Start a new playthrough for a game instance.
+      </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-
-      {/* Part 1: Search & game selection — always visible */}
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-        1. Search and select game
-      </Typography>
-      <Box display="flex" gap={2} alignItems="center" sx={{ mb: 1 }}>
-        <TextField
-          label="Search game"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), doSearch())}
-          size="small"
-          sx={{ minWidth: 200 }}
-        />
-        <Button type="button" variant="contained" onClick={doSearch} disabled={searching}>
-          Search
-        </Button>
-      </Box>
-      {searching && <CircularProgress size={24} sx={{ mb: 2 }} />}
-      {!searching && games.length > 0 && (
-        <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, mb: 3 }}>
-          {games.map((g) => (
-            <li key={g.gameUid}>
-              <Button
-                type="button"
-                variant={selectedGameUid === g.gameUid ? 'contained' : 'outlined'}
-                onClick={() => handleSelectGame(g.gameUid)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                  p: 1.5,
-                  mb: 1,
-                  justifyContent: 'flex-start',
-                  textTransform: 'none',
-                  width: '100%',
-                }}
-              >
-                {g.thumbnailImageUid ? (
-                  <Box
-                    component="img"
-                    src={`${THUMBNAIL_BASE}/${g.thumbnailImageUid}`}
-                    alt=""
-                    width={40}
-                    height={40}
-                    sx={{
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      bgcolor: 'grey.300',
-                    }}
-                  />
-                ) : (
-                  <Box
-                    width={40}
-                    height={40}
-                    bgcolor="grey.300"
-                    sx={{ borderRadius: 1 }}
-                  />
-                )}
-                <Typography>{g.gameName}</Typography>
-              </Button>
-            </li>
-          ))}
-        </Box>
-      )}
-      {!searching && searchResults.length > 0 && games.length === 0 && (
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          No games with instances found.
+      {successMessage && (
+        <Typography color="success.main" variant="body2" sx={{ mb: 2 }}>
+          {successMessage}
         </Typography>
       )}
 
-      {/* Part 2: Instance selection — unlocks when game selected */}
-      {selectedGameUid != null && (
-        <>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-            2. Select game instance
-          </Typography>
-          {selectedGame && (
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Game: {selectedGame.gameName}
-            </Typography>
-          )}
-          <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, mb: 3 }}>
-            {instances.map((r) => (
-              <li key={r.gameInstanceUid!}>
-                <Button
-                  type="button"
-                  variant={
-                    selectedInstanceUid === r.gameInstanceUid
-                      ? 'contained'
-                      : 'outlined'
-                  }
-                  onClick={() => setSelectedInstanceUid(r.gameInstanceUid!)}
+      <StepSection title="Step 1 — Search and select game instance">
+        <Stack spacing={2}>
+          <TextField
+            label="Search game"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="Type to search"
+          />
+          {selectedInstanceUid && selectedInstance ? (
+            <SelectedItemChip
+              label={instanceLabel}
+              coverImageUid={selectedInstance.coverImageUid}
+              onClear={() => setSelectedInstanceUid(null)}
+            />
+          ) : (
+            <>
+              {searching && (
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">
+                    Searching…
+                  </Typography>
+                </Stack>
+              )}
+              {!searching && instanceList.length > 0 && (
+                <Box
                   sx={{
-                    mb: 1,
-                    display: 'block',
-                    textAlign: 'left',
-                    textTransform: 'none',
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    maxHeight: 240,
+                    overflow: 'auto',
                   }}
                 >
-                  {r.platformName ?? r.platformUid} ·{' '}
-                  {r.variantName ?? r.variantUid}
-                </Button>
-              </li>
-            ))}
-          </Box>
-        </>
-      )}
-
-      {/* Part 3: Metadata — unlocks when instance selected */}
-      {selectedInstanceUid != null && (
-        <>
-          <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-            3. Start date
-          </Typography>
-          {selectedInstance && (
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Instance: {selectedInstance.gameName} · {selectedInstance.platformName} · {selectedInstance.variantName}
-            </Typography>
+                  <List dense disablePadding>
+                    {instanceList.map((r) => (
+                      <ListItemButton
+                        key={r.gameInstanceUid!}
+                        onClick={() => handleSelectInstance(r.gameInstanceUid!)}
+                        selected={selectedInstanceUid === r.gameInstanceUid}
+                      >
+                        {getImageUrl(r.coverImageUid, true) ? (
+                          <Box
+                            component="img"
+                            src={getImageUrl(r.coverImageUid, true)!}
+                            alt=""
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              objectFit: 'cover',
+                              borderRadius: 0.5,
+                              mr: 1.5,
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              bgcolor: 'grey.300',
+                              borderRadius: 0.5,
+                              mr: 1.5,
+                            }}
+                          />
+                        )}
+                        <ListItemText
+                          primary={r.gameName}
+                          secondary={
+                            [r.platformName ?? r.platformUid, r.variantName ?? r.variantUid]
+                              .filter(Boolean)
+                              .join(' · ') || undefined
+                          }
+                          primaryTypographyProps={{ noWrap: true }}
+                          secondaryTypographyProps={{ noWrap: true }}
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Box>
+              )}
+              {!searching && searchText.length >= 2 && instanceList.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No game instances found.
+                </Typography>
+              )}
+            </>
           )}
-          <TextField
-            type="date"
+        </Stack>
+      </StepSection>
+
+      <StepSection title="Step 2 — Start date and type" locked={!step1Valid}>
+        <Stack direction="row" spacing={2} alignItems="flex-start" flexWrap="wrap">
+          <DateField
             label="Started at"
             value={startedAt}
-            onChange={(e) => setStartedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            sx={{ maxWidth: 200, mb: 3 }}
+            onChange={setStartedAt}
+            required
           />
-        </>
-      )}
+          <TextField
+            select
+            label="Playthrough type"
+            value={playthroughTypeUid}
+            onChange={(e) => setPlaythroughTypeUid(e.target.value)}
+            required
+            size="small"
+            sx={{ minWidth: 160 }}
+          >
+            {playthroughTypes.map((t) => (
+              <MenuItem key={t.uid} value={t.uid}>
+                {t.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Stack>
+      </StepSection>
 
-      {/* Submit — enabled when instance + startedAt */}
-      {selectedInstanceUid != null && (
+      <StepSection title="Step 3 — Create" locked={!step2Valid}>
         <Button
-          type="submit"
           variant="contained"
-          disabled={submitting}
+          onClick={handleSubmit}
+          disabled={submitting || !step2Valid}
         >
           {submitting ? 'Creating…' : 'Create Playthrough'}
         </Button>
-      )}
+      </StepSection>
     </Box>
   );
 }

@@ -55,6 +55,23 @@ export default function ActivePlaythroughsPage() {
     }
   };
 
+  const handleAddRetroactive = async (
+    playthroughUid: string,
+    payload: { date: string; minuteCount: number }
+  ) => {
+    setActionUid(playthroughUid);
+    setError(null);
+    try {
+      await PlaySessionApi.retroactive(playthroughUid, payload);
+      const next = await fetchActivePlaythroughs();
+      setRows(next);
+    } catch {
+      setError('Failed to add overlooked booking.');
+    } finally {
+      setActionUid(null);
+    }
+  };
+
   if (!isLoaded) return null;
   if (loading) {
     return (
@@ -97,6 +114,7 @@ export default function ActivePlaythroughsPage() {
                 playthroughTypeName={typeName(row.playthroughTypeUid)}
                 onStart={handleStart}
                 onStop={handleStop}
+                onAddRetroactive={handleAddRetroactive}
                 isActionDisabled={actionUid === row.playthroughUid}
               />
             </Grid>

@@ -75,7 +75,7 @@ export default function AddDLCForm() {
             rows.map((r) => ({
               id: r.gameInstanceUid,
               name: r.name || r.gameInstanceUid,
-              thumbnailImageUid: r.thumbnailImageUid,
+              coverImageUid: r.coverImageUid,
               subtitle: r.platformUid,
             }))
           )
@@ -107,7 +107,7 @@ export default function AddDLCForm() {
       gameInstanceUid: item.id,
       name: item.name,
       platformUid: item.subtitle ?? '',
-      thumbnailImageUid: item.thumbnailImageUid,
+      coverImageUid: item.coverImageUid,
     });
     setInstanceSearchQuery('');
     setInstanceSearchResults([]);
@@ -119,7 +119,7 @@ export default function AddDLCForm() {
           (c) => c.uid === instanceDetail.completions[0]?.completionStateUid
         )?.name ?? instanceDetail.completions[0]?.completionStateUid
       : '—';
-  const backlog = instanceDetail?.backlog;
+  const backlog = instanceDetail?.backlogEntries?.find((e) => !e.removedDate) ?? null;
 
   const handleSubmit = useCallback(async () => {
     if (!selectedInstance?.gameInstanceUid) return;
@@ -193,7 +193,7 @@ export default function AddDLCForm() {
           {selectedInstance ? (
             <SelectedItemChip
               label={selectedInstance.name || selectedInstance.gameInstanceUid}
-              thumbnailImageUid={selectedInstance.thumbnailImageUid}
+              coverImageUid={selectedInstance.coverImageUid}
               onClear={() => setSelectedInstance(null)}
             />
           ) : (
@@ -258,7 +258,7 @@ export default function AddDLCForm() {
                       return p ? playthroughLabel(p) : selectedPlaythroughUid;
                     })()
                   }
-                  thumbnailImageUid={null}
+                  coverImageUid={null}
                   onClear={() => setSelectedPlaythroughUid(null)}
                 />
               ) : (

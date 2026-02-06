@@ -1,44 +1,76 @@
 import { useEffect, useState } from 'react';
-import { Typography } from '@mui/material';
-import { formatSecondsAsHhMmSs } from './formatSecondsAsHhMmSs';
+import { Stack, Typography } from '@mui/material';
+import { formatSecondsAsHhMm, formatSecondsAsHhMmSs } from './formatSecondsAsHhMmSs';
 
-/** Backend total; when active and session start known, add elapsed for live tick only. Resets on refetch. */
+/**
+ * Parse ISO instant to UTC milliseconds. Uses Date.UTC() for Z-suffix so the value
+ * is interpreted as UTC; for other offsets uses new Date(s).getTime().
+ * Handles fractional seconds (keeps first 3 digits as milliseconds).
+ */
+function parseIsoToUtcMs(isoInstant: string): number {
+  const s = isoInstant.trim();
+  if (!s.endsWith('Z')) return new Date(s).getTime();
+  const m = s.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3})\d*)?Z$/
+  );
+  if (!m) return new Date(s).getTime();
+  const [, y, mo, d, h, min, sec, frac] = m;
+  const ms = frac ? Number(frac.padEnd(3, '0').slice(0, 3)) : 0;
+  return Date.UTC(
+    Number(y),
+    Number(mo) - 1,
+    Number(d),
+    Number(h),
+    Number(min),
+    Number(sec),
+    ms
+  );
+}
+
+/** When not running: total as hours+minutes. When running: left = total (no current session), right = elapsed since activeSessionStartedAt. */
 interface Props {
   totalPlaytimeSeconds: number;
   isTimeTrackingActive: boolean;
-  currentSessionStartedAt?: string | null;
+  activeSessionStartedAt?: string | null;
 }
 
 export default function PlaythroughTimeDisplay({
   totalPlaytimeSeconds,
   isTimeTrackingActive,
-  currentSessionStartedAt,
+  activeSessionStartedAt,
 }: Props) {
-  const [displaySeconds, setDisplaySeconds] = useState(totalPlaytimeSeconds);
+  const [currentSessionSeconds, setCurrentSessionSeconds] = useState(0);
 
   useEffect(() => {
-    setDisplaySeconds(totalPlaytimeSeconds);
-  }, [totalPlaytimeSeconds]);
-
-  useEffect(() => {
-    if (!isTimeTrackingActive || !currentSessionStartedAt) return;
-    const startMs = new Date(currentSessionStartedAt).getTime();
+    if (!isTimeTrackingActive || !activeSessionStartedAt) {
+      setCurrentSessionSeconds(0);
+      return;
+    }
+    const startMs = parseIsoToUtcMs(activeSessionStartedAt);
     const tick = () => {
-      const elapsed = Math.floor((Date.now() - startMs) / 1000);
-      setDisplaySeconds(totalPlaytimeSeconds + elapsed);
+      setCurrentSessionSeconds(Math.floor((Date.now() - startMs) / 1000));
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [
-    isTimeTrackingActive,
-    currentSessionStartedAt,
-    totalPlaytimeSeconds,
-  ]);
+  }, [isTimeTrackingActive, activeSessionStartedAt]);
+
+  if (!isTimeTrackingActive) {
+    return (
+      <Typography variant="body2" component="span" fontFamily="monospace">
+        {formatSecondsAsHhMm(totalPlaytimeSeconds)}
+      </Typography>
+    );
+  }
 
   return (
-    <Typography variant="body2" component="span" fontFamily="monospace">
-      {formatSecondsAsHhMmSs(displaySeconds)}
-    </Typography>
+    <Stack direction="row" spacing={1} alignItems="baseline">
+      <Typography variant="body2" component="span" fontFamily="monospace">
+        {formatSecondsAsHhMm(totalPlaytimeSeconds)}
+      </Typography>
+      <Typography variant="body2" component="span" color="primary.main" fontFamily="monospace">
+        +{formatSecondsAsHhMmSs(currentSessionSeconds)}
+      </Typography>
+    </Stack>
   );
 }

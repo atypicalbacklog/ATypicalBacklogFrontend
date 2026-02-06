@@ -1,11 +1,10 @@
 import { Box, List, ListItemButton, ListItemText, Typography } from '@mui/material';
-
-const THUMBNAIL_BASE = '/api/thumbnails';
+import { getImageUrl } from '../../../services/imageApi';
 
 export interface SearchResultItem {
   id: string;
   name: string;
-  thumbnailImageUid: string | null;
+  coverImageUid: string | null;
   subtitle?: string;
 }
 
@@ -25,25 +24,28 @@ export default function SearchSuggestions({
   return (
     <Box sx={{ mt: 1, border: 1, borderColor: 'divider', borderRadius: 1, maxHeight: 240, overflow: 'auto' }}>
       <List dense disablePadding>
-        {results.map((item) => (
-          <ListItemButton key={item.id} onClick={() => onSelect(item)}>
-            {item.thumbnailImageUid ? (
-              <Box
-                component="img"
-                src={`${THUMBNAIL_BASE}/${item.thumbnailImageUid}`}
-                alt=""
-                sx={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 0.5, mr: 1.5 }}
+        {results.map((item) => {
+          const imageUrl = getImageUrl(item.coverImageUid, true);
+          return (
+            <ListItemButton key={item.id} onClick={() => onSelect(item)}>
+              {imageUrl ? (
+                <Box
+                  component="img"
+                  src={imageUrl}
+                  alt=""
+                  sx={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 0.5, mr: 1.5 }}
+                />
+              ) : (
+                <Box sx={{ width: 40, height: 40, bgcolor: 'grey.300', borderRadius: 0.5, mr: 1.5 }} />
+              )}
+              <ListItemText
+                primary={item.name}
+                secondary={item.subtitle}
+                primaryTypographyProps={{ noWrap: true }}
               />
-            ) : (
-              <Box sx={{ width: 40, height: 40, bgcolor: 'grey.300', borderRadius: 0.5, mr: 1.5 }} />
-            )}
-            <ListItemText
-              primary={item.name}
-              secondary={item.subtitle}
-              primaryTypographyProps={{ noWrap: true }}
-            />
-          </ListItemButton>
-        ))}
+            </ListItemButton>
+          );
+        })}
       </List>
     </Box>
   );

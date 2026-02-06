@@ -11,6 +11,7 @@ import {
   SelectChangeEvent,
 } from '@mui/material';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import PlatformSelect from '../shared/PlatformSelect';
 import type { BacklogFilterState } from './types';
 
 interface Props {
@@ -67,31 +68,19 @@ export default function BacklogFilters({ value, onChange }: Props) {
         </Select>
       </FormControl>
 
-      <FormControl size="small" sx={{ minWidth: 160 }}>
-        <InputLabel>Platforms</InputLabel>
-        <Select
-          multiple
-          value={value.platformUids}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              platformUids: e.target.value as string[],
-            })
-          }
-          input={<OutlinedInput label="Platforms" />}
-          renderValue={(selected) =>
-            selected
-              .map((uid) => platforms.find((p) => p.uid === uid)?.name ?? uid)
-              .join(', ')
-          }
-        >
-          {platforms.map((p) => (
-            <MenuItem key={p.uid} value={p.uid}>
-              {p.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <PlatformSelect
+        value={value.platformUids}
+        onChange={(v) =>
+          onChange({
+            ...value,
+            platformUids: Array.isArray(v) ? v : v ? [v] : [],
+          })
+        }
+        label="Platforms"
+        multiple
+        size="small"
+        fullWidth={false}
+      />
 
       <FormControlLabel
         control={
