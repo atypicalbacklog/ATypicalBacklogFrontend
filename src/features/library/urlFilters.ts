@@ -1,6 +1,6 @@
 import { LibraryFilterState } from './types';
 
-/** True if any filter differs from initial (search, platform, console, backlog, active, completion, sort). */
+/** True if any filter differs from initial. */
 export function hasActiveFilters(
   filters: LibraryFilterState,
   initial: LibraryFilterState
@@ -12,6 +12,9 @@ export function hasActiveFilters(
     filters.inBacklog !== null ||
     filters.hasActivePlaythrough !== null ||
     filters.completionStateUids.length > 0 ||
+    filters.playthroughTypeUids.length > 0 ||
+    filters.includeDlc !== initial.includeDlc ||
+    filters.onlyGamesWithDlc !== null ||
     filters.sortMode !== initial.sortMode
   );
 }
@@ -27,6 +30,11 @@ export function filtersToSearchParams(f: LibraryFilterState) {
     p.set('active', String(f.hasActivePlaythrough));
   if (f.completionStateUids.length)
     p.set('completion', f.completionStateUids.join(','));
+  if (f.playthroughTypeUids.length)
+    p.set('playthroughTypes', f.playthroughTypeUids.join(','));
+  if (f.includeDlc === false) p.set('includeDlc', 'false');
+  if (f.onlyGamesWithDlc !== null)
+    p.set('onlyGamesWithDlc', String(f.onlyGamesWithDlc));
   if (f.sortMode) p.set('sort', f.sortMode);
 
   return p;
@@ -47,6 +55,13 @@ export function searchParamsToFilters(
       ? p.get('active') === 'true'
       : null,
     completionStateUids: p.get('completion')?.split(',') ?? [],
+    playthroughTypeUids: p.get('playthroughTypes')?.split(',').filter(Boolean) ?? [],
+    includeDlc: p.has('includeDlc')
+      ? p.get('includeDlc') === 'true'
+      : fallback.includeDlc,
+    onlyGamesWithDlc: p.has('onlyGamesWithDlc')
+      ? p.get('onlyGamesWithDlc') === 'true'
+      : null,
     sortMode:
       (p.get('sort') as LibraryFilterState['sortMode']) ??
       fallback.sortMode,

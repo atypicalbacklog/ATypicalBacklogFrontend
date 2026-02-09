@@ -11,6 +11,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { getImageUrl } from '../../services/imageApi';
+import CompletionBar from '../shared/CompletionBar';
 import { pickDefaultInstance, otherInstances } from './instanceDisplay';
 import type {
   BacklogOverviewGameDto,
@@ -38,6 +39,14 @@ function InstanceRow({
     referenceData?.data.completionStates.find(
       (c) => c.uid === instance.completionStateUid
     )?.name ?? null;
+  const playthroughStateName =
+    instance.activePlaythroughUid
+      ? 'Active'
+      : instance.playthroughs?.[0]?.playthroughStateUid
+        ? (referenceData?.data.playthroughStates.find(
+            (s) => s.uid === instance.playthroughs?.[0]?.playthroughStateUid
+          )?.name ?? null)
+        : null;
   const variantName =
     referenceData?.data.variants.find((v) => v.uid === instance.variantUid)
       ?.name ?? null;
@@ -116,12 +125,10 @@ function InstanceRow({
           )}
         </Stack>
         <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" useFlexGap>
-          {instance.activePlaythroughUid && (
-            <Chip label="Active" size="small" color="primary" sx={{ height: 20 }} />
-          )}
-          {completionName && (
-            <Chip label={completionName} size="small" variant="outlined" sx={{ height: 20 }} />
-          )}
+          <CompletionBar
+            completionState={completionName ?? 'Backlog'}
+            playthroughState={playthroughStateName}
+          />
           {playthroughs.length > 0 && (
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
               {playthroughs.map((p, idx) => {

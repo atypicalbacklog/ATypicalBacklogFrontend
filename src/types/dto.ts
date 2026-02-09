@@ -172,3 +172,61 @@ export interface TimeBookingQueryDto {
   startTime: string | null; // ISO instant
   endTime: string | null; // ISO instant; null if still open
 }
+
+// ---------------------------------------------------------------------------
+// Reviews (year tierlist)
+// ---------------------------------------------------------------------------
+
+export interface ReviewSearchPlaythroughDto {
+  playthroughUid: string;
+  playthroughTypeUid: string | null;
+  playthroughStateUid: string;
+  startedAt: string | null; // YYYY-MM-DD
+  reviewUid: string | null;
+  reviewDate: string | null; // YYYY-MM-DD
+  tierUid: string | null;
+}
+
+export interface ReviewSearchResultDto {
+  displayName: string;
+  thumbnailImageUid: string | null;
+  playthroughs: ReviewSearchPlaythroughDto[];
+}
+
+export interface ReviewSearchByYearRequest {
+  years: number[];
+  includeActivePlaythroughs: boolean;
+}
+
+export interface ReviewUpdateTierBulkRequest {
+  playthroughUids: string[];
+  reviewUids: string[];
+  tierUid: string;
+}
+
+export interface ReviewUpdateRequest {
+  reviewUid: string;
+  reviewDate: string | null; // YYYY-MM-DD
+  tierUid: string | null;
+  text: string | null;
+}
+
+/** Response of GET /api/reviews/{uid}. */
+export interface ReviewByUidDto {
+  reviewUid: string;
+  reviewDate: string | null; // YYYY-MM-DD
+  tierUid: string | null;
+  text: string | null;
+  linkedPlaythrough: {
+    uid: string;
+    playthroughTypeUid: string | null;
+    playthroughStateUid: string;
+  };
+  displayName: string;
+  coverImageUid: string | null;
+  otherPlaythroughs: Array<{
+    uid: string;
+    playthroughTypeUid: string | null;
+    playthroughStateUid: string;
+  }>;
+}

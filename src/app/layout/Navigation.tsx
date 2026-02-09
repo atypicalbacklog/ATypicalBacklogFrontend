@@ -23,6 +23,9 @@ export default function Navigation() {
         <ListItemButton component={Link} to="/playthroughs/new">
           <ListItemText primary="Add Playthrough" />
         </ListItemButton>
+        <ListItemButton component={Link} to="/reviews/year-tierlist">
+          <ListItemText primary="Manage Year Tierlist" />
+        </ListItemButton>
       </List>
     </nav>
   );

@@ -13,6 +13,11 @@ function toQueryRequestBody(f: LibraryFilterState) {
     completionStateUids: f.completionStateUids.length
       ? f.completionStateUids
       : null,
+    playthroughTypeUids: f.playthroughTypeUids.length
+      ? f.playthroughTypeUids
+      : null,
+    includeDlc: f.includeDlc,
+    onlyGamesWithDlc: f.onlyGamesWithDlc,
     sortMode: f.sortMode,
   };
 }

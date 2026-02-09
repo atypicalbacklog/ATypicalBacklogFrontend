@@ -8,6 +8,8 @@ import BacklogPage from '../features/backlog/BacklogPage';
 import ActivePlaythroughsPage from '../features/playthroughs/ActivePlaythroughsPage';
 import AddPlaythroughPage from '../features/playthroughs/AddPlaythroughPage';
 import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPage';
+import ManageYearTierlistPage from '../features/reviews/ManageYearTierlistPage';
+import EditReviewPage from '../features/reviews/EditReviewPage';
 
 export const appRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -20,4 +22,6 @@ export const appRoutes = [
   { path: '/play-activity/active', element: <ActivePlaythroughsPage /> },
   { path: '/playthroughs/new', element: <AddPlaythroughPage /> },
   { path: '/playthroughs/:uid', element: <PlaythroughDetailPage /> },
+  { path: '/reviews/year-tierlist', element: <ManageYearTierlistPage /> },
+  { path: '/reviews/edit', element: <EditReviewPage /> },
 ];

@@ -14,7 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { getImageUrl } from '../../services/imageApi';
-import { searchGameOverview } from '../../services/gameOverviewApi';
+import { searchGameOverviewForPlaythrough } from '../../services/gameOverviewApi';
 import { PlaythroughApi } from '../../services/playthroughApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import StepSection from '../catalog/components/StepSection';
@@ -22,9 +22,11 @@ import DateField from '../catalog/components/DateField';
 import SelectedItemChip from '../catalog/components/SelectedItemChip';
 import type { GameOverviewRowDto } from '../library/types';
 
-/** Rows that have an instance (one row per instance). */
+/** Rows that have an instance (one row per instance), excluding DLC rows. */
 function instanceRows(rows: GameOverviewRowDto[]): GameOverviewRowDto[] {
-  return rows.filter((r) => r.gameInstanceUid != null);
+  return rows.filter(
+    (r) => r.gameInstanceUid != null && !r.isDlc
+  );
 }
 
 export default function AddPlaythroughPage() {
@@ -59,7 +61,7 @@ export default function AddPlaythroughPage() {
     }
     setSearching(true);
     const t = setTimeout(() => {
-      searchGameOverview(searchText)
+      searchGameOverviewForPlaythrough(searchText)
         .then(setSearchResults)
         .catch(() => setSearchResults([]))
         .finally(() => setSearching(false));
@@ -99,8 +101,13 @@ export default function AddPlaythroughPage() {
     );
   }
 
+  const displayName = (r: GameOverviewRowDto) =>
+    r.instanceName ?? r.gameName;
+  const displayImageUid = (r: GameOverviewRowDto) =>
+    r.instanceCoverImageUid ?? r.coverImageUid;
+
   const instanceLabel = selectedInstance
-    ? [selectedInstance.gameName, selectedInstance.platformName, selectedInstance.variantName]
+    ? [displayName(selectedInstance), selectedInstance.platformName, selectedInstance.variantName]
         .filter(Boolean)
         .join(' · ')
     : '';
@@ -138,7 +145,7 @@ export default function AddPlaythroughPage() {
           {selectedInstanceUid && selectedInstance ? (
             <SelectedItemChip
               label={instanceLabel}
-              coverImageUid={selectedInstance.coverImageUid}
+              coverImageUid={displayImageUid(selectedInstance)}
               onClear={() => setSelectedInstanceUid(null)}
             />
           ) : (
@@ -168,10 +175,10 @@ export default function AddPlaythroughPage() {
                         onClick={() => handleSelectInstance(r.gameInstanceUid!)}
                         selected={selectedInstanceUid === r.gameInstanceUid}
                       >
-                        {getImageUrl(r.coverImageUid, true) ? (
+                        {getImageUrl(displayImageUid(r), true) ? (
                           <Box
                             component="img"
-                            src={getImageUrl(r.coverImageUid, true)!}
+                            src={getImageUrl(displayImageUid(r), true)!}
                             alt=""
                             sx={{
                               width: 40,
@@ -193,7 +200,7 @@ export default function AddPlaythroughPage() {
                           />
                         )}
                         <ListItemText
-                          primary={r.gameName}
+                          primary={displayName(r)}
                           secondary={
                             [r.platformName ?? r.platformUid, r.variantName ?? r.variantUid]
                               .filter(Boolean)

@@ -8,6 +8,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { getImageUrl } from '../../services/imageApi';
+import CompletionBar from '../shared/CompletionBar';
 import { GameOverviewRowDto } from './types';
 import { formatPlaytime } from './formatPlaytime';
 
@@ -73,9 +74,11 @@ export default function LibraryListItem({ item }: Props) {
             </Typography>
           )}
           {item.inBacklog && <Chip label="Backlog" size="small" />}
-          {item.hasActivePlaythrough && <Chip label="Active" size="small" />}
           {completionStateName && (
-            <Chip label={completionStateName} size="small" />
+            <CompletionBar
+              completionState={completionStateName}
+              playthroughState={item.hasActivePlaythrough ? 'Active' : null}
+            />
           )}
         </Stack>
       </Stack>

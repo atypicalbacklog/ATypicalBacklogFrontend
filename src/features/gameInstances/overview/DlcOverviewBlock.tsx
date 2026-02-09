@@ -1,4 +1,5 @@
 import { Box, Typography } from '@mui/material';
+import CompletionBar from '../../shared/CompletionBar';
 import type { DlcDto } from '../../../services/dlcApi';
 import type { GameCompletionDTO } from '../../../types/dto';
 
@@ -32,6 +33,10 @@ export default function DlcOverviewBlock({
       </Typography>
       {dlcs.map((d) => {
         const comp = completionByDlc.get(d.uid);
+        const completionState = comp
+          ? completionStateName(comp.completionStateUid)
+          : 'Backlog';
+        const playthroughState = null;
         return (
           <Box
             key={d.uid}
@@ -49,13 +54,14 @@ export default function DlcOverviewBlock({
                 flexShrink: 0,
               }}
             />
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ minWidth: 80 }}>
               {d.name}
               {d.receivedDate ? ` · ${d.receivedDate}` : ''}
-              {comp
-                ? ` · ${completionStateName(comp.completionStateUid)}`
-                : ''}
             </Typography>
+            <CompletionBar
+              completionState={completionState}
+              playthroughState={playthroughState}
+            />
           </Box>
         );
       })}

@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 12
+Version: 17
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -134,6 +134,9 @@ Response: 200 OK
   "inPossession": true | false
 }
 
+Notes:
+- On create, a game_completion is always created with state "None" for the instance.
+
 --------------------------------------------------------------------------------
 2.2 Get Game Instance Detail (by UID)
 --------------------------------------------------------------------------------
@@ -191,6 +194,9 @@ Request Body:
   "forFree": true | false | null,
   "inPossession": true | false | null
 }
+
+Notes:
+- If no game_completion exists for the instance, one is created with state "None".
 
 Response: 200 OK
 {
@@ -315,6 +321,9 @@ Response: 200 OK
     ],
     "playthroughTypes": [
       { "uid": "string", "name": "string", "order": 0 }   // SimpleLookupDto
+    ],
+    "tiers": [
+      { "uid": "string", "name": "string", "order": 0 }   // SimpleLookupDto
     ]
   }
 }
@@ -333,13 +342,16 @@ Content-Type: application/json
 
 Request Body:
 {
-  "searchText": "string" | null,           // optional; LIKE %text% on game name
+  "searchText": "string" | null,           // optional; LIKE %text% on game/instance/dlc name
   "platformUids": [ "string" ] | null,     // optional; filter by platform UIDs
   "consoleUids": [ "string" ] | null,      // optional; filter by console UIDs
   "inBacklog": true | false | null,        // optional; filter by backlog state
   "hasActivePlaythrough": true | false | null,  // optional
   "completionStateUids": [ "string" ] | null,   // optional; filter by completion
-  "sortMode": "NAME_ASC" | "NAME_DESC" | "PLAYTIME_DESC" | "LAST_PLAYED_DESC"
+  "playthroughTypeUids": [ "string" ] | null,   // optional; filter by playthrough type UIDs
+  "includeDlc": true | false | null,       // optional; when true, include DLC as own records
+  "onlyGamesWithDlc": true | false | null, // optional; when true, only games that have DLC
+  "sortMode": "NAME_ASC" | "NAME_DESC" | "PLAYTIME_DESC" | "LAST_PLAYED_DESC" | "NEWEST_CREATED" | "RELEASE_DATE"
 }
 
 SortMode enum:
@@ -347,13 +359,18 @@ SortMode enum:
 - NAME_DESC
 - PLAYTIME_DESC
 - LAST_PLAYED_DESC
+- NEWEST_CREATED      // sort by creation date (instance or game) descending
+- RELEASE_DATE        // sort by release date (instance if set, else game) descending
 
 Response: 200 OK
-Array of GameOverviewRowDto:
+Array of GameOverviewRowDto (each row is either an instance or a DLC):
 [
   {
+    "isDlc": true | false,                 // true = DLC row, false = instance row
+
     "gameUid": "string",
-    "gameInstanceUid": "string" | null,     // null if no instance exists
+    "gameInstanceUid": "string" | null,    // null if no instance exists
+    "dlcUid": "string" | null,             // non-null when isDlc is true
     "hasInstance": true | false,
 
     "gameName": "string",
@@ -361,6 +378,7 @@ Array of GameOverviewRowDto:
 
     "instanceName": "string" | null,
     "instanceReleaseDate": "YYYY-MM-DD" | null,
+    "instanceReceivedDate": "YYYY-MM-DD" | null,
     "inPossession": true | false,
 
     "platformUid": "string" | null,
@@ -368,14 +386,26 @@ Array of GameOverviewRowDto:
     "variantUid": "string" | null,
     "variantName": "string" | null,
 
+    "instanceCoverImageUid": "string" | null,  // game instance cover when available
+
+    "dlcName": "string" | null,            // non-null when isDlc is true
+    "dlcReceivedDate": "YYYY-MM-DD" | null,    // non-null when isDlc is true
+
     "inBacklog": true | false,
-    "hasActivePlaythrough": true | false,
+    "hasActivePlaythrough": true | false | null,  // null when DLC not linked to playthrough
     "completionStateUid": "string" | null,
 
-    "totalPlaytimeSeconds": 0,
-    "coverImageUid": "string" | null
+    "totalPlaytimeSeconds": 0 | null,      // null when DLC not linked to playthrough
+    "coverImageUid": "string" | null,      // game/instance fallback cover
+
+    "hasDlc": true | false                 // instance has at least one DLC
   }
 ]
+
+Notes:
+- DLC rows (isDlc=true) have playthrough/completion data from the DLC's linked playthrough;
+  null when DLC is not linked to a playthrough
+- Instance rows (isDlc=false) always have playthrough/completion data from instance
 
 ================================================================================
 6. PLAYTHROUGH ENDPOINTS
@@ -725,7 +755,47 @@ Request Body:
   "gameInstanceUid": "string",
   "name": "string",
   "receivedDate": "YYYY-MM-DD" | null,   // LocalDate
-  "playthroughUid": "string" | null
+  "releaseDate": "YYYY-MM-DD",           // LocalDate; required on creation
+  "playthroughUid": "string" | null,
+
+  "completionStateUid": "string" | null, // optional; when omitted, uses "None" state
+  "info": "string" | null                 // optional; info text for game_completion
+}
+
+Notes:
+- On create, a game_completion is always created with: game_instance from DLC,
+  dlc_uid = new DLC, completion_state = completionStateUid or "None", info = info
+
+Response: 200 OK
+{
+  "uid": "string",
+  "gameInstanceUid": "string",
+  "name": "string",
+  "receivedDate": "YYYY-MM-DD" | null,
+  "releaseDate": "YYYY-MM-DD" | null,
+  "playthroughUid": "string" | null,
+  "completionStateUid": "string" | null
+}
+
+--------------------------------------------------------------------------------
+15.2 Update DLC
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/dlcs/{uid}
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the DLC
+
+Request Body:
+{
+  "name": "string",
+  "receivedDate": "YYYY-MM-DD" | null,   // LocalDate
+  "releaseDate": "YYYY-MM-DD" | null,    // LocalDate
+
+  "completionStateUid": "string" | null,  // optional; updates DLC's game_completion
+  "playthroughUid": "string" | null,      // optional; links DLC to playthrough
+  "removePreviousPlaythrough": true | false | null  // optional, default false; if true and no playthroughUid given, sets playthroughUid to null
 }
 
 Response: 200 OK
@@ -733,12 +803,14 @@ Response: 200 OK
   "uid": "string",
   "gameInstanceUid": "string",
   "name": "string",
-  "receivedDate": "YYYY-MM-DD" | null,   // LocalDate
-  "playthroughUid": "string" | null
+  "receivedDate": "YYYY-MM-DD" | null,
+  "releaseDate": "YYYY-MM-DD" | null,
+  "playthroughUid": "string" | null,
+  "completionStateUid": "string" | null
 }
 
 --------------------------------------------------------------------------------
-15.2 Get DLCs by Game Instance
+15.3 Get DLCs by Game Instance
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/dlcs/by-game-instance/{gameInstanceUid}
@@ -754,7 +826,9 @@ Array of DlcResponse:
     "gameInstanceUid": "string",
     "name": "string",
     "receivedDate": "YYYY-MM-DD" | null,
-    "playthroughUid": "string" | null
+    "releaseDate": "YYYY-MM-DD" | null,
+    "playthroughUid": "string" | null,
+    "completionStateUid": "string" | null
   }
 ]
 
@@ -833,6 +907,146 @@ Content-Type: image/jpeg
 Body: Binary image data
 
 ================================================================================
+18. REVIEW ENDPOINTS
+================================================================================
+Base Path: /api/reviews
+
+--------------------------------------------------------------------------------
+18.1 Get Review by UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/reviews/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the review
+
+Response: 200 OK
+{
+  "reviewUid": "string",
+  "reviewDate": "YYYY-MM-DD" | null,
+  "tierUid": "string" | null,
+  "text": "string" | null,
+
+  "linkedPlaythrough": {
+    "uid": "string",
+    "playthroughTypeUid": "string" | null,
+    "playthroughStateUid": "string"
+  },
+
+  "displayName": "string",           // game instance name or game name
+  "coverImageUid": "string" | null,  // instance cover or game cover
+
+  "otherPlaythroughs": [             // same instance, same year (excluding linked)
+    {
+      "uid": "string",
+      "playthroughTypeUid": "string" | null,
+      "playthroughStateUid": "string"
+    }
+  ]
+}
+
+--------------------------------------------------------------------------------
+18.2 Get Reviews by Game Instance
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/reviews/by-game-instance/{gameInstanceUid}
+
+Path Parameters:
+- gameInstanceUid (string): Unique identifier of the game instance
+
+Response: 200 OK
+Array of ReviewDetailDto (same structure as 18.1):
+[
+  {
+    "reviewUid": "string",
+    "reviewDate": "YYYY-MM-DD" | null,
+    "tierUid": "string" | null,
+    "text": "string" | null,
+
+    "linkedPlaythrough": {
+      "uid": "string",
+      "playthroughTypeUid": "string" | null,
+      "playthroughStateUid": "string"
+    },
+
+    "displayName": "string",
+    "coverImageUid": "string" | null,
+
+    "otherPlaythroughs": [ ... ]
+  }
+]
+
+Ordered by reviewDate DESC, creationDate DESC.
+
+--------------------------------------------------------------------------------
+18.3 Search Reviews by Year
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/reviews/search-by-year
+Content-Type: application/json
+
+Request Body:
+{
+  "years": [ 2024, 2025 ],               // list of years to filter
+  "includeActivePlaythroughs": true | false   // when false, excludes active playthroughs
+}
+
+Response: 200 OK
+Array of ReviewSearchResultDto:
+[
+  {
+    "displayName": "string",
+    "thumbnailImageUid": "string" | null,
+    "playthroughs": [
+      {
+        "playthroughUid": "string",
+        "playthroughTypeUid": "string" | null,
+        "playthroughStateUid": "string",
+        "startedAt": "YYYY-MM-DD" | null,
+        "reviewUid": "string" | null,
+        "reviewDate": "YYYY-MM-DD" | null,
+        "tierUid": "string" | null
+      }
+    ]
+  }
+]
+
+--------------------------------------------------------------------------------
+18.4 Update Review Tier (Bulk)
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/reviews/update-tier-bulk
+Content-Type: application/json
+
+Request Body:
+{
+  "playthroughUids": [ "string" ],
+  "reviewUids": [ "string" ],
+  "tierUid": "string"
+}
+
+Response: 200 OK
+Body: empty
+
+--------------------------------------------------------------------------------
+18.5 Update Review
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/reviews
+Content-Type: application/json
+
+Request Body:
+{
+  "reviewUid": "string",
+  "reviewDate": "YYYY-MM-DD" | null,    // LocalDate
+  "tierUid": "string" | null,
+  "text": "string" | null
+}
+
+Response: 200 OK
+Body: empty
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -844,5 +1058,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-06  |  Document version: 12
+Generated: 2026-02-08  |  Document version: 17
 ================================================================================

@@ -3,42 +3,56 @@ import {
   Alert,
   Box,
   Button,
+  CircularProgress,
   FormControlLabel,
   Checkbox,
+  List,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
+import { getImageUrl } from '../../services/imageApi';
+import { searchGameOverviewForPlaythrough } from '../../services/gameOverviewApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { BacklogApi } from '../../services/backlogApi';
-import { GameCompletionApi } from '../../services/gameCompletionApi';
 import { DlcApi } from '../../services/dlcApi';
-import { searchGameInstances } from '../../services/gameInstanceSearchApi';
 import { PlaythroughApi } from '../../services/playthroughApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import StepSection from './components/StepSection';
 import DateField from './components/DateField';
-import SearchSuggestions from './components/SearchSuggestions';
 import SelectedItemChip from './components/SelectedItemChip';
-import type {
-  GameInstanceQueryResultDto,
-  GameInstanceDetailDTO,
-  PlaythroughQueryResultDto,
-} from '../../types/dto';
-import type { SearchResultItem } from './components/SearchSuggestions';
+import CompletionBar from '../shared/CompletionBar';
+import type { GameInstanceDetailDTO, PlaythroughQueryResultDto } from '../../types/dto';
+import type { GameOverviewRowDto } from '../library/types';
+
+/** Instance rows only (no DLC), for selection. */
+function instanceRows(rows: GameOverviewRowDto[]): GameOverviewRowDto[] {
+  return rows.filter((r) => r.gameInstanceUid != null && !r.isDlc);
+}
+
+function displayName(r: GameOverviewRowDto) {
+  return r.instanceName ?? r.gameName;
+}
+
+function displayImageUid(r: GameOverviewRowDto) {
+  return r.instanceCoverImageUid ?? r.coverImageUid;
+}
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function AddDLCForm() {
   const { referenceData } = useReferenceData();
-  const [selectedInstance, setSelectedInstance] =
-    useState<GameInstanceQueryResultDto | null>(null);
+  const [selectedInstance, setSelectedInstance] = useState<GameOverviewRowDto | null>(null);
   const [instanceDetail, setInstanceDetail] = useState<GameInstanceDetailDTO | null>(null);
   const [instanceSearchQuery, setInstanceSearchQuery] = useState('');
-  const [instanceSearchResults, setInstanceSearchResults] = useState<SearchResultItem[]>([]);
+  const [instanceSearchResults, setInstanceSearchResults] = useState<GameOverviewRowDto[]>([]);
+  const [instanceSearching, setInstanceSearching] = useState(false);
   const [dlcName, setDlcName] = useState('');
   const [receivedDate, setReceivedDate] = useState(today());
+  const [releaseDate, setReleaseDate] = useState(today());
   const [connectToPlaythrough, setConnectToPlaythrough] = useState(false);
   const [playthroughs, setPlaythroughs] = useState<PlaythroughQueryResultDto[]>([]);
   const [selectedPlaythroughUid, setSelectedPlaythroughUid] = useState<string | null>(null);
@@ -63,30 +77,25 @@ export default function AddDLCForm() {
   const step2Valid = selectedInstance != null;
   const step3Valid = step2Valid;
 
+  const instanceList = instanceRows(instanceSearchResults);
+
   useEffect(() => {
     if (!instanceSearchQuery.trim() || instanceSearchQuery.length < 2) {
       setInstanceSearchResults([]);
       return;
     }
+    setInstanceSearching(true);
     const t = setTimeout(() => {
-      searchGameInstances(instanceSearchQuery)
-        .then((rows) =>
-          setInstanceSearchResults(
-            rows.map((r) => ({
-              id: r.gameInstanceUid,
-              name: r.name || r.gameInstanceUid,
-              coverImageUid: r.coverImageUid,
-              subtitle: r.platformUid,
-            }))
-          )
-        )
-        .catch(() => setInstanceSearchResults([]));
+      searchGameOverviewForPlaythrough(instanceSearchQuery)
+        .then(setInstanceSearchResults)
+        .catch(() => setInstanceSearchResults([]))
+        .finally(() => setInstanceSearching(false));
     }, 300);
     return () => clearTimeout(t);
   }, [instanceSearchQuery]);
 
   useEffect(() => {
-    if (!selectedInstance) {
+    if (!selectedInstance?.gameInstanceUid) {
       setInstanceDetail(null);
       setPlaythroughs([]);
       setSelectedPlaythroughUid(null);
@@ -102,23 +111,25 @@ export default function AddDLCForm() {
       .catch(() => setPlaythroughs([]));
   }, [selectedInstance?.gameInstanceUid]);
 
-  const handleSelectInstance = useCallback((item: SearchResultItem) => {
-    setSelectedInstance({
-      gameInstanceUid: item.id,
-      name: item.name,
-      platformUid: item.subtitle ?? '',
-      coverImageUid: item.coverImageUid,
-    });
+  const handleSelectInstance = useCallback((row: GameOverviewRowDto) => {
+    if (!row.gameInstanceUid) return;
+    setSelectedInstance(row);
     setInstanceSearchQuery('');
     setInstanceSearchResults([]);
   }, []);
 
-  const instanceCompletionLabel =
-    instanceDetail?.completions?.length
-      ? referenceData?.data.completionStates.find(
-          (c) => c.uid === instanceDetail.completions[0]?.completionStateUid
-        )?.name ?? instanceDetail.completions[0]?.completionStateUid
-      : '—';
+  const instanceMainCompletion = instanceDetail?.completions?.find((c) => !c.dlcUid);
+  const instanceCompletionStateName = instanceMainCompletion
+    ? (referenceData?.data.completionStates.find(
+        (c) => c.uid === instanceMainCompletion.completionStateUid
+      )?.name ?? instanceMainCompletion.completionStateUid)
+    : 'Backlog';
+  const instancePlaythroughState =
+    selectedPlaythroughUid && playthroughs.length > 0
+      ? (playthroughStates.find(
+          (s) => s.uid === playthroughs.find((p) => p.playthroughUid === selectedPlaythroughUid)?.playthroughStateUid
+        )?.name ?? null)
+      : null;
   const backlog = instanceDetail?.backlogEntries?.find((e) => !e.removedDate) ?? null;
 
   const handleSubmit = useCallback(async () => {
@@ -127,20 +138,15 @@ export default function AddDLCForm() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const dlc = await DlcApi.create({
+      await DlcApi.create({
         gameInstanceUid: selectedInstance.gameInstanceUid,
-        name: dlcName.trim() || selectedInstance.name || 'DLC',
+        name: dlcName.trim() || (selectedInstance ? displayName(selectedInstance) : '') || 'DLC',
         receivedDate: receivedDate || null,
+        releaseDate: releaseDate || today(),
         playthroughUid: selectedPlaythroughUid ?? null,
+        completionStateUid: dlcCompletionStateUid || null,
+        info: dlcCompletionInfo || null,
       });
-      if (dlcCompletionStateUid) {
-        await GameCompletionApi.update(
-          selectedInstance.gameInstanceUid,
-          dlcCompletionStateUid,
-          dlcCompletionInfo || '',
-          dlc.uid
-        );
-      }
       const gameUidForBacklog = instanceDetail?.gameUid;
       if (putBackInBacklog && gameUidForBacklog) {
         await BacklogApi.add(gameUidForBacklog, backlogAddedDate, backlogReason || '');
@@ -150,6 +156,7 @@ export default function AddDLCForm() {
       setInstanceDetail(null);
       setDlcName('');
       setReceivedDate(today());
+      setReleaseDate(today());
       setConnectToPlaythrough(false);
       setSelectedPlaythroughUid(null);
       setDlcCompletionStateUid('');
@@ -167,6 +174,7 @@ export default function AddDLCForm() {
     instanceDetail?.gameUid,
     dlcName,
     receivedDate,
+    releaseDate,
     selectedPlaythroughUid,
     dlcCompletionStateUid,
     dlcCompletionInfo,
@@ -188,29 +196,92 @@ export default function AddDLCForm() {
         </Typography>
       )}
 
-      <StepSection title="Step 1">
+      <StepSection title="Step 1 — Search and select game instance">
         <Stack spacing={2}>
+          <TextField
+            label="Search game"
+            value={instanceSearchQuery}
+            onChange={(e) => setInstanceSearchQuery(e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="Type to search"
+          />
           {selectedInstance ? (
             <SelectedItemChip
-              label={selectedInstance.name || selectedInstance.gameInstanceUid}
-              coverImageUid={selectedInstance.coverImageUid}
+              label={(displayName(selectedInstance) || selectedInstance.gameInstanceUid) ?? ''}
+              coverImageUid={displayImageUid(selectedInstance)}
               onClear={() => setSelectedInstance(null)}
             />
           ) : (
             <>
-              <TextField
-                label="Game instance"
-                value={instanceSearchQuery}
-                onChange={(e) => setInstanceSearchQuery(e.target.value)}
-                required
-                fullWidth
-                size="small"
-                placeholder="Search for a game instance"
-              />
-              <SearchSuggestions
-                results={instanceSearchResults}
-                onSelect={handleSelectInstance}
-              />
+              {instanceSearching && (
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">
+                    Searching…
+                  </Typography>
+                </Stack>
+              )}
+              {!instanceSearching && instanceList.length > 0 && (
+                <Box
+                  sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    maxHeight: 240,
+                    overflow: 'auto',
+                  }}
+                >
+                  <List dense disablePadding>
+                    {instanceList.map((r) => (
+                      <ListItemButton
+                        key={r.gameInstanceUid!}
+                        onClick={() => handleSelectInstance(r)}
+                      >
+                        {getImageUrl(displayImageUid(r), true) ? (
+                          <Box
+                            component="img"
+                            src={getImageUrl(displayImageUid(r), true)!}
+                            alt=""
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              objectFit: 'cover',
+                              borderRadius: 0.5,
+                              mr: 1.5,
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              bgcolor: 'grey.300',
+                              borderRadius: 0.5,
+                              mr: 1.5,
+                            }}
+                          />
+                        )}
+                        <ListItemText
+                          primary={displayName(r)}
+                          secondary={
+                            [r.platformName ?? r.platformUid, r.variantName ?? r.variantUid]
+                              .filter(Boolean)
+                              .join(' · ') || undefined
+                          }
+                          primaryTypographyProps={{ noWrap: true }}
+                          secondaryTypographyProps={{ noWrap: true }}
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Box>
+              )}
+              {!instanceSearching && instanceSearchQuery.length >= 2 && instanceList.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No game instances found.
+                </Typography>
+              )}
             </>
           )}
         </Stack>
@@ -224,13 +295,18 @@ export default function AddDLCForm() {
             onChange={(e) => setDlcName(e.target.value)}
             fullWidth
             size="small"
-            placeholder={selectedInstance?.name ?? 'Game name'}
+            placeholder={selectedInstance ? displayName(selectedInstance) : 'Game name'}
+          />
+          <DateField
+            label="Release date"
+            value={releaseDate}
+            onChange={setReleaseDate}
+            required
           />
           <DateField
             label="Received date"
             value={receivedDate}
             onChange={setReceivedDate}
-            required
           />
         </Stack>
       </StepSection>
@@ -282,13 +358,15 @@ export default function AddDLCForm() {
               )}
             </Stack>
           )}
-          <TextField
-            label="Game completion (instance)"
-            value={instanceCompletionLabel}
-            size="small"
-            fullWidth
-            InputProps={{ readOnly: true }}
-          />
+          <Box>
+            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+              Game completion (instance)
+            </Typography>
+            <CompletionBar
+              completionState={instanceCompletionStateName}
+              playthroughState={instancePlaythroughState}
+            />
+          </Box>
           <TextField
             select
             label="DLC completion state"

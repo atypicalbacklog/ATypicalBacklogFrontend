@@ -34,5 +34,6 @@ export interface ReferenceDataPayload {
     variants: SimpleLookupDto[];
     playthroughStates: SimpleLookupDto[];
     playthroughTypes: SimpleLookupDto[];
+    tiers: SimpleLookupDto[];
   };
 }

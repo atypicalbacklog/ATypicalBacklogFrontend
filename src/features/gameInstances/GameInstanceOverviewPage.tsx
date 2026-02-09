@@ -12,13 +12,16 @@ import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { GameApi } from '../../services/gameApi';
 import { DlcApi } from '../../services/dlcApi';
 import { PlaythroughApi } from '../../services/playthroughApi';
+import { ReviewsApi } from '../../services/reviewsApi';
 import { getTimeBookingsByPlaythrough } from '../../services/timeBookingApi';
+import { getTierColorByIndex } from '../../constants/tierColors';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type {
   GameInstanceDetailDTO,
   GameDTO,
   GameInstanceSummaryDto,
   PlaythroughQueryResultDto,
+  ReviewByUidDto,
 } from '../../types/dto';
 import type { DlcDto } from '../../services/dlcApi';
 import { totalDurationSeconds } from './overview/timeBookingUtils';
@@ -33,7 +36,7 @@ import DlcOverviewBlock from './overview/DlcOverviewBlock';
 import PlaytimeSummary from './overview/PlaytimeSummary';
 import HowLongToBeatPlaceholder from './overview/HowLongToBeatPlaceholder';
 import PlaythroughGallery from './overview/PlaythroughGallery';
-import ReviewsPlaceholder from './overview/ReviewsPlaceholder';
+import ReviewOverviewBlock from './overview/ReviewOverviewBlock';
 import ImageGalleryPlaceholder from './overview/ImageGalleryPlaceholder';
 
 export default function GameInstanceOverviewPage() {
@@ -52,6 +55,7 @@ export default function GameInstanceOverviewPage() {
   const [totalPlaytimeSeconds, setTotalPlaytimeSeconds] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const [lastPlayedIso, setLastPlayedIso] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<ReviewByUidDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,6 +127,10 @@ export default function GameInstanceOverviewPage() {
     setTotalPlaytimeSeconds(totalSec);
     setSessionCount(sessions);
     setLastPlayedIso(lastPlayed);
+
+    ReviewsApi.getByGameInstance(instanceUid)
+      .then(setReviews)
+      .catch(() => setReviews([]));
   }, []);
 
   useEffect(() => {
@@ -164,6 +172,20 @@ export default function GameInstanceOverviewPage() {
     inputs.find((i) => i.uid === u)?.name ?? u;
   const completionStateName = (u: string) =>
     completionStates.find((c) => c.uid === u)?.name ?? u;
+  const activeStateUid = playthroughStates.find((s) => s.name === 'Active')?.uid;
+  const instancePlaythroughState =
+    activeStateUid && playthroughsWithTime.some((p) => p.playthrough.playthroughStateUid === activeStateUid)
+      ? 'Active'
+      : null;
+  const tiers = (referenceData?.data?.tiers ?? []).slice().sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+  const tierName = (u: string | null) =>
+    u ? tiers.find((t) => t.uid === u)?.name ?? u : '—';
+  const getTierColor = (tierUid: string | null) => {
+    const idx = tierUid != null ? tiers.findIndex((t) => t.uid === tierUid) : -1;
+    return getTierColorByIndex(idx >= 0 ? idx : 0);
+  };
 
   return (
     <Box>
@@ -239,6 +261,7 @@ export default function GameInstanceOverviewPage() {
           <CurrentCompletionBlock
             completions={instance.completions}
             completionStateName={completionStateName}
+            playthroughState={instancePlaythroughState}
           />
           <DlcOverviewBlock
             dlcs={dlcs}
@@ -273,9 +296,16 @@ export default function GameInstanceOverviewPage() {
         />
       </Box>
 
-      {/* Area 3: Reviews placeholder */}
+      {/* Area 3: Reviews */}
       <Box sx={{ mb: 4 }}>
-        <ReviewsPlaceholder />
+        <ReviewOverviewBlock
+          reviews={reviews}
+          gameInstanceUid={instance.uid}
+          typeName={(uid) => (uid ? typeName(uid) : '—')}
+          stateName={stateName}
+          tierName={tierName}
+          getTierColor={getTierColor}
+        />
       </Box>
 
       {/* Area 4: Image gallery placeholder */}

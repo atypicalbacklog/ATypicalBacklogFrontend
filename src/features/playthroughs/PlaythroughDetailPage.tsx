@@ -4,8 +4,10 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   FormControl,
+  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
@@ -17,7 +19,9 @@ import { PlaythroughApi } from '../../services/playthroughApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { BacklogApi } from '../../services/backlogApi';
 import { GameCompletionApi } from '../../services/gameCompletionApi';
+import { DlcApi, type DlcDto } from '../../services/dlcApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import CompletionBar from '../shared/CompletionBar';
 import type {
   PlaythroughDTO,
   GameInstanceDetailDTO,
@@ -51,6 +55,12 @@ export default function PlaythroughDetailPage() {
   const [completionInfo, setCompletionInfo] = useState('');
   const [completionSubmitting, setCompletionSubmitting] = useState(false);
 
+  // DLCs for this game instance (linked to playthrough = this uid)
+  const [dlcs, setDlcs] = useState<DlcDto[]>([]);
+  const [dlcUpdatingUid, setDlcUpdatingUid] = useState<string | null>(null);
+  /** Per-DLC completion state edit (dlc.uid -> completionStateUid) for "Update" button. */
+  const [dlcCompletionEdit, setDlcCompletionEdit] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!uid) return;
     PlaythroughApi.get(uid)
@@ -60,10 +70,14 @@ export default function PlaythroughDetailPage() {
         setInputUid(p.inputUid);
         setStartedAt(p.startedAt);
         setPlaythroughStateUid(p.playthroughStateUid);
-        return GameInstanceApi.get(p.gameInstanceUid);
+        return Promise.all([
+          GameInstanceApi.get(p.gameInstanceUid),
+          DlcApi.getByGameInstance(p.gameInstanceUid),
+        ]);
       })
-      .then((inst) => {
+      .then(([inst, dlcList]) => {
         setInstance(inst);
+        setDlcs(dlcList ?? []);
         const currentBacklog = inst.backlogEntries?.find((e) => !e.removedDate);
         if (currentBacklog) setReasonEdit(currentBacklog.reason);
       })
@@ -81,6 +95,60 @@ export default function PlaythroughDetailPage() {
       })
       .catch(() => {});
   }, [playthrough]);
+
+  const refetchDlcs = useCallback(() => {
+    if (!playthrough) return;
+    DlcApi.getByGameInstance(playthrough.gameInstanceUid)
+      .then((list) => setDlcs(list ?? []))
+      .catch(() => {});
+  }, [playthrough]);
+
+  const handleDlcPlaythroughToggle = useCallback(
+    async (dlc: DlcDto, linked: boolean) => {
+      if (!uid) return;
+      setDlcUpdatingUid(dlc.uid);
+      setError(null);
+      try {
+        if (linked) {
+          await DlcApi.update(dlc.uid, { playthroughUid: uid });
+        } else {
+          await DlcApi.update(dlc.uid, { removePreviousPlaythrough: true });
+        }
+        refetchDlcs();
+      } catch {
+        setError('Failed to update DLC link.');
+      } finally {
+        setDlcUpdatingUid(null);
+      }
+    },
+    [uid, refetchDlcs]
+  );
+
+  const handleDlcCompletionChange = useCallback((dlcUid: string, completionStateUid: string) => {
+    setDlcCompletionEdit((prev) => ({ ...prev, [dlcUid]: completionStateUid }));
+  }, []);
+
+  const handleDlcCompletionUpdate = useCallback(
+    async (dlc: DlcDto) => {
+      const value = dlcCompletionEdit[dlc.uid] ?? dlc.completionStateUid ?? '';
+      setDlcUpdatingUid(dlc.uid);
+      setError(null);
+      try {
+        await DlcApi.update(dlc.uid, { completionStateUid: value || null });
+        refetchDlcs();
+        setDlcCompletionEdit((prev) => {
+          const next = { ...prev };
+          delete next[dlc.uid];
+          return next;
+        });
+      } catch {
+        setError('Failed to update DLC completion.');
+      } finally {
+        setDlcUpdatingUid(null);
+      }
+    },
+    [dlcCompletionEdit, refetchDlcs]
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,6 +340,84 @@ export default function PlaythroughDetailPage() {
         </Button>
       </Box>
 
+      {/* Manage DLC to playthrough + completion state per DLC */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+          Manage DLC to playthrough
+        </Typography>
+        {dlcs.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            No DLCs for this game instance.
+          </Typography>
+        ) : (
+          <Stack spacing={1.5} sx={{ maxWidth: 560 }}>
+            {dlcs.map((dlc) => {
+              const linked = dlc.playthroughUid === uid;
+              const updating = dlcUpdatingUid === dlc.uid;
+              const currentCompletion = dlc.completionStateUid ?? '';
+              const editCompletion = dlcCompletionEdit[dlc.uid] ?? currentCompletion;
+              const completionDirty = editCompletion !== currentCompletion;
+              return (
+                <Box
+                  key={dlc.uid}
+                  sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    gap: 2,
+                    py: 1,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={linked}
+                        disabled={updating}
+                        onChange={() => handleDlcPlaythroughToggle(dlc, !linked)}
+                      />
+                    }
+                    label={dlc.name}
+                  />
+                  <CompletionBar
+                    completionState={
+                      dlc.completionStateUid
+                        ? completionStateName(dlc.completionStateUid)
+                        : 'Backlog'
+                    }
+                    playthroughState={null}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 160 }}>
+                    <InputLabel>Completion</InputLabel>
+                    <Select
+                      label="Completion"
+                      value={editCompletion}
+                      disabled={updating}
+                      onChange={(e) => handleDlcCompletionChange(dlc.uid, e.target.value)}
+                    >
+                      {completionStates.map((c) => (
+                        <MenuItem key={c.uid} value={c.uid}>
+                          {c.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={updating || !completionDirty}
+                    onClick={() => handleDlcCompletionUpdate(dlc)}
+                  >
+                    Update
+                  </Button>
+                </Box>
+              );
+            })}
+          </Stack>
+        )}
+      </Box>
+
       {/* Backlog (Game) — link to backlog entry and update state */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -353,26 +499,28 @@ export default function PlaythroughDetailPage() {
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
           Game completion
         </Typography>
-        {instance && instance.completions.length > 0 ? (
-          <Box sx={{ mb: 2 }}>
-            {instance.completions.map((c) => (
-              <Typography
-                key={c.uid}
-                variant="body2"
-                color="text.secondary"
-                gutterBottom
-                component="div"
-              >
-                {completionStateName(c.completionStateUid)}
-                {c.info ? ` — ${c.info}` : ''}
-              </Typography>
-            ))}
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            No completion set
-          </Typography>
-        )}
+        {instance && (() => {
+          const mainCompletion = instance.completions.find((c) => !c.dlcUid);
+          const completionState =
+            mainCompletion
+              ? completionStateName(mainCompletion.completionStateUid)
+              : 'Backlog';
+          const playthroughState =
+            playthroughStates.find((s) => s.uid === playthroughStateUid)?.name ?? null;
+          return (
+            <Box sx={{ mb: 2 }}>
+              <CompletionBar
+                completionState={completionState}
+                playthroughState={playthroughState}
+              />
+              {mainCompletion?.info && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  {mainCompletion.info}
+                </Typography>
+              )}
+            </Box>
+          );
+        })()}
         <Stack spacing={2} direction="row" flexWrap="wrap" alignItems="center">
           <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>Completion state</InputLabel>

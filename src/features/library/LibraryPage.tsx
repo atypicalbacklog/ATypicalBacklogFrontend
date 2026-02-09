@@ -18,6 +18,9 @@ const initialFilters: LibraryFilterState = {
   inBacklog: null,
   hasActivePlaythrough: null,
   completionStateUids: [],
+  playthroughTypeUids: [],
+  includeDlc: true,
+  onlyGamesWithDlc: null,
   sortMode: 'NAME_ASC',
 };
 
