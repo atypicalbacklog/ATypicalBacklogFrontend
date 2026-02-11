@@ -12,6 +12,9 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { getImageUrl } from '../../services/imageApi';
 import CompletionBar from '../shared/CompletionBar';
+import VariantConsolePlatformDisplay, {
+  getVariantConsolePlatformDisplayProps,
+} from '../shared/VariantConsolePlatformDisplay';
 import { pickDefaultInstance, otherInstances } from './instanceDisplay';
 import type {
   BacklogOverviewGameDto,
@@ -47,14 +50,14 @@ function InstanceRow({
             (s) => s.uid === instance.playthroughs?.[0]?.playthroughStateUid
           )?.name ?? null)
         : null;
-  const variantName =
-    referenceData?.data.variants.find((v) => v.uid === instance.variantUid)
-      ?.name ?? null;
-  const originalConsoleName =
-    instance.originalConsoleUid &&
-    referenceData?.data.consoles.find((c) => c.uid === instance.originalConsoleUid)
-      ? referenceData.data.consoles.find((c) => c.uid === instance.originalConsoleUid)?.name ?? null
-      : null;
+  const variantConsolePlatformDisplay = getVariantConsolePlatformDisplayProps(
+    {
+      platformUid: instance.platformUid,
+      variantUid: instance.variantUid,
+      originalConsoleUid: instance.originalConsoleUid,
+    },
+    referenceData
+  );
 
   const thumbnailUrl = instance.coverImageUid
     ? getImageUrl(instance.coverImageUid, true)
@@ -79,7 +82,8 @@ function InstanceRow({
         py: 0.75,
         px: 1,
         borderRadius: 1,
-        bgcolor: 'action.hover',
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        backdropFilter: 'blur(4px)',
         border: '1px solid',
         borderColor: 'divider',
         textDecoration: 'none',
@@ -112,17 +116,13 @@ function InstanceRow({
           </Stack>
         )}
         <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" useFlexGap>
-          {variantName && (
-            <Chip label={variantName} size="small" variant="outlined" sx={{ height: 20 }} />
-          )}
-          <Typography variant="body2" color="text.secondary">
-            {instance.platformName}
+          <Typography variant="body2" color="text.secondary" component="div">
+            <VariantConsolePlatformDisplay
+              {...variantConsolePlatformDisplay}
+              variant="body2"
+              color="text.secondary"
+            />
           </Typography>
-          {originalConsoleName && (
-            <Typography variant="caption" color="text.secondary">
-              · {originalConsoleName}
-            </Typography>
-          )}
         </Stack>
         <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" useFlexGap>
           <CompletionBar
@@ -173,7 +173,11 @@ export default function BacklogListItem({
       border={1}
       borderRadius={2}
       borderColor="divider"
-      sx={{ overflow: 'hidden' }}
+      sx={{
+        overflow: 'hidden',
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        backdropFilter: 'blur(10px)',
+      }}
     >
       <Stack direction="row" spacing={0} alignItems="stretch">
         {/* Left: Main segment */}

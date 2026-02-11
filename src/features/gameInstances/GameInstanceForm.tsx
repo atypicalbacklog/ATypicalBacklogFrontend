@@ -164,7 +164,10 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
         <PlatformSelect
           value={platformUid}
-          onChange={(v) => setPlatformUid(typeof v === 'string' ? v : v[0] || '')}
+          onChange={(v) => {
+            if (v === undefined || v === null) return;
+            setPlatformUid(typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || '');
+          }}
           required={mode === 'create'}
           allowEmpty={mode === 'update'}
           size="small"

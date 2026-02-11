@@ -69,6 +69,8 @@ export default function PlaythroughCard({
         display: 'flex',
         flexDirection: 'column',
         bgcolor: 'background.paper',
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        backdropFilter: 'blur(4px)',
         maxWidth: 280,
       }}
     >

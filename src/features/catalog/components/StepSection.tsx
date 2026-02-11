@@ -19,7 +19,9 @@ export default function StepSection({
         borderRadius: 1,
         p: 2,
         mb: 2,
-        opacity: locked ? 0.6 : 1,
+        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        backdropFilter: 'blur(4px)',
+        opacity: locked ? 0.3 : 1,
         pointerEvents: locked ? 'none' : 'auto',
       }}
     >

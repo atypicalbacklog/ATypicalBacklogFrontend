@@ -1,29 +1,37 @@
 import { Box, Typography } from '@mui/material';
 import type { GameInstanceDetailDTO } from '../../../types/dto';
+import VariantConsolePlatformDisplay from '../../shared/VariantConsolePlatformDisplay';
 
 interface Props {
   instance: GameInstanceDetailDTO;
-  platformName: string;
   variantName: string;
-  consoleName: string;
+  platformName: string;
+  /** Name of the console this platform belongs to (for display logic) */
+  platformConsoleName: string;
+  /** Original console display name for "Orig:" part */
+  originalConsoleName: string | null;
 }
 
 export default function InstanceDetailsCard({
   instance,
-  platformName,
   variantName,
-  consoleName,
+  platformName,
+  platformConsoleName,
+  originalConsoleName,
 }: Props) {
   return (
     <Box>
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
         Game instance
       </Typography>
-      <Typography variant="body2">
-        Platform: {platformName}
-      </Typography>
-      <Typography variant="body2">
-        Variant: {variantName}
+      <Typography variant="body2" component="div">
+        <VariantConsolePlatformDisplay
+          variantName={variantName}
+          platformName={platformName}
+          platformConsoleName={platformConsoleName}
+          originalConsoleName={originalConsoleName}
+          variant="body2"
+        />
       </Typography>
       {instance.name && (
         <Typography variant="body2">Name: {instance.name}</Typography>
@@ -36,11 +44,6 @@ export default function InstanceDetailsCard({
       {instance.receivedDate && (
         <Typography variant="body2">
           Received: {instance.receivedDate}
-        </Typography>
-      )}
-      {instance.originalConsoleUid && (
-        <Typography variant="body2">
-          Original console: {consoleName}
         </Typography>
       )}
       <Typography variant="body2">

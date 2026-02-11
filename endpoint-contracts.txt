@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 17
+Version: 23
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -389,7 +389,7 @@ Array of GameOverviewRowDto (each row is either an instance or a DLC):
     "instanceCoverImageUid": "string" | null,  // game instance cover when available
 
     "dlcName": "string" | null,            // non-null when isDlc is true
-    "dlcReceivedDate": "YYYY-MM-DD" | null,    // non-null when isDlc is true
+    "dlcReleaseDate": "YYYY-MM-DD" | null,    // non-null when isDlc is true
 
     "inBacklog": true | false,
     "hasActivePlaythrough": true | false | null,  // null when DLC not linked to playthrough
@@ -423,7 +423,8 @@ Request Body:
 {
   "gameInstanceUid": "string",
   "startedAt": "YYYY-MM-DD",             // LocalDate
-  "playthroughTypeUid": "string"         // optional
+  "playthroughTypeUid": "string" | null, // optional
+  "inputUid": "string" | null            // optional
 }
 
 Response: 200 OK
@@ -709,6 +710,40 @@ Array of PlaythroughQueryResultDto:
     "playthroughTypeUid": "string",
     "inputUid": "string" | null,
     "startedAt": "YYYY-MM-DD"
+  }
+]
+
+--------------------------------------------------------------------------------
+13.2 Search Playthrough History
+--------------------------------------------------------------------------------
+Base Path: /api/query/playthroughs/history
+
+Method: POST
+Path: /api/query/playthroughs/history/search
+Content-Type: application/json
+
+Request Body (PlaythroughSearchRequest):
+{
+  "name": "string" | null,                 // optional; filter by display name
+  "playthroughStateUid": "string" | null,  // optional; filter by playthrough state
+  "playthroughTypeUid": "string" | null,   // optional; filter by playthrough type
+  "year": 2024 | null                      // optional; filter by year (e.g. review or playthrough year)
+}
+
+Response: 200 OK
+Array of ActivePlaythroughOverviewRow:
+[
+  {
+    "playthroughUid": "string",
+    "gameInstanceUid": "string",
+    "displayName": "string",
+    "coverImageUid": "string" | null,
+    "playthroughTypeUid": "string" | null,
+    "inputUid": "string" | null,
+    "playthroughStateUid": "string",
+    "isTimeTrackingActive": true | false,
+    "activeSessionStartedAt": "2024-01-01T12:00:00Z" | null,  // ISO-8601 Instant
+    "totalPlaytimeSeconds": 0
   }
 ]
 
@@ -1005,7 +1040,8 @@ Array of ReviewSearchResultDto:
         "startedAt": "YYYY-MM-DD" | null,
         "reviewUid": "string" | null,
         "reviewDate": "YYYY-MM-DD" | null,
-        "tierUid": "string" | null
+        "tierUid": "string" | null,
+        "hasTextReview": true | false       // true when reviewUid is non-null and review text is not blank
       }
     ]
   }
@@ -1047,6 +1083,173 @@ Response: 200 OK
 Body: empty
 
 ================================================================================
+19. ADMIN IMPORT – STAGING ENDPOINTS
+================================================================================
+Base Path: /api/admin/import
+
+--------------------------------------------------------------------------------
+19.1 Update StagedGame
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/admin/import/staged-games/{uid}
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the staged game
+
+Request Body (UpdateStagedGameRequest; all fields optional, only non-null applied):
+{
+  "proposedName": "string" | null,
+  "proposedReleaseDate": "YYYY-MM-DD" | null,
+  "proposedReceivedDate": "YYYY-MM-DD" | null,
+  "proposedVariantUid": "string" | null,
+  "proposedPlatformUid": "string" | null,
+  "matchedGameUid": "string" | null,
+  "matchedGameInstanceUid": "string" | null,
+  "proposedCompletionStateUid": "string" | null,
+  "backlogStartDate": "YYYY-MM-DD" | null,
+  "backlogEndDate": "YYYY-MM-DD" | null,
+  "backlogReason": "string" | null,
+  "resolutionStatus": "UPDATED" | "CURATED" | "FINALIZED" | null   // intention for resolution
+}
+
+Response: 200 OK
+StagedGame entity (full entity as persisted):
+{
+  "uid": "string",
+  "importBatchUid": "string",
+  "proposedName": "string",
+  "proposedReleaseDate": "YYYY-MM-DD" | null,
+  "proposedReceivedDate": "YYYY-MM-DD" | null,
+  "proposedVariantUid": "string" | null,
+  "proposedPlatformUid": "string" | null,
+  "matchedGameUid": "string" | null,
+  "matchedExternalIgdbId": "string" | null,
+  "matchedOriginalConsoleUid": "string" | null,
+  "proposedCompletionStateUid": "string" | null,
+  "backlogStartDate": "YYYY-MM-DD" | null,
+  "backlogEndDate": "YYYY-MM-DD" | null,
+  "backlogReason": "string" | null,
+  "matchedGameInstanceUid": "string" | null,
+  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
+}
+
+--------------------------------------------------------------------------------
+19.2 Update StagedPlaythroughGroup
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/admin/import/staged-playthrough-groups/{uid}
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the staged playthrough group
+
+Request Body (UpdateStagedGroupRequest; all fields optional):
+{
+  "stagedGameUid": "string" | null,
+  "importedName": "string" | null,
+  "inferredTypeUid": "string" | null,
+  "inferredYear": 0 | null,
+  "proposedPlaythroughStateUid": "string" | null,
+  "resolutionStatus": "UPDATED" | "CURATED" | "FINALIZED" | null
+}
+
+Response: 200 OK
+StagedPlaythroughGroup entity:
+{
+  "uid": "string",
+  "importBatchUid": "string",
+  "stagedGameUid": "string" | null,
+  "importedPlaythroughName": "string" | null,
+  "inferredTypeUid": "string" | null,
+  "inferredYear": 0 | null,
+  "proposedPlaythroughStateUid": "string" | null,
+  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
+}
+
+--------------------------------------------------------------------------------
+19.3 Get StagedGame by UID (with linked playthrough groups)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/import/staged-games/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the staged game
+
+Response: 200 OK
+StagedGameDetailDto:
+{
+  "uid": "string",
+  "importBatchUid": "string",
+  "proposedName": "string",
+  "proposedReleaseDate": "YYYY-MM-DD" | null,
+  "proposedReceivedDate": "YYYY-MM-DD" | null,
+  "proposedVariantUid": "string" | null,
+  "proposedPlatformUid": "string" | null,
+  "matchedGameUid": "string" | null,
+  "matchedExternalIgdbId": "string" | null,
+  "matchedOriginalConsoleUid": "string" | null,
+  "proposedCompletionStateUid": "string" | null,
+  "backlogStartDate": "YYYY-MM-DD" | null,
+  "backlogEndDate": "YYYY-MM-DD" | null,
+  "backlogReason": "string" | null,
+  "matchedGameInstanceUid": "string" | null,
+  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED",
+  "playthroughGroups": [
+    {
+      "uid": "string",
+      "importBatchUid": "string",
+      "stagedGameUid": "string" | null,
+      "importedName": "string" | null,
+      "inferredTypeUid": "string" | null,
+      "inferredYear": 0 | null,
+      "proposedPlaythroughStateUid": "string" | null,
+      "resolutionStatus": "string"
+    }
+  ]
+}
+
+--------------------------------------------------------------------------------
+19.4 List StagedGames by Status
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/import/staged-games?status={status}
+
+Query Parameters:
+- status (optional): CREATED | UPDATED | CURATED | FINALIZED | IMPORTED – filter by resolution status; omit to return all
+
+Response: 200 OK
+Array of StagedGameSummaryDto (uid + name + status):
+[
+  {
+    "uid": "string",
+    "proposedName": "string",
+    "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
+  }
+]
+
+--------------------------------------------------------------------------------
+19.5 List StagedPlaythroughGroups without staged game
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/import/staged-playthrough-groups/unmapped
+
+Response: 200 OK
+Array of StagedPlaythroughGroupSummaryDto (groups that have no stagedGameUid):
+[
+  {
+    "uid": "string",
+    "importBatchUid": "string",
+    "stagedGameUid": "string" | null,
+    "importedName": "string" | null,
+    "inferredTypeUid": "string" | null,
+    "inferredYear": 0 | null,
+    "proposedPlaythroughStateUid": "string" | null,
+    "resolutionStatus": "string"
+  }
+]
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -1058,5 +1261,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-08  |  Document version: 17
+Generated: 2026-02-11  |  Document version: 23
 ================================================================================

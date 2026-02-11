@@ -120,6 +120,7 @@ export interface CreatePlaythroughRequest {
   gameInstanceUid: string;
   startedAt: string; // YYYY-MM-DD
   playthroughTypeUid?: string; // optional
+  inputUid?: string; // optional
 }
 
 export interface PlaythroughDTO {
@@ -185,6 +186,8 @@ export interface ReviewSearchPlaythroughDto {
   reviewUid: string | null;
   reviewDate: string | null; // YYYY-MM-DD
   tierUid: string | null;
+  /** true when reviewUid is non-null and review text is not blank. */
+  hasTextReview: boolean;
 }
 
 export interface ReviewSearchResultDto {

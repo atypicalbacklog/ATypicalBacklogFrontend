@@ -175,8 +175,10 @@ export default function GamesPage() {
           <Stack spacing={2}>
             <PlatformSelect
               value={vm.platformUid ?? ''}
-              onChange={(v) =>
-                setVm({ ...vm, platformUid: typeof v === 'string' ? v : v[0] || undefined })
+              onChange={(v) => {
+                if (v === undefined || v === null) return;
+                setVm({ ...vm, platformUid: typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || undefined });
+              }}
               }
               required
             />

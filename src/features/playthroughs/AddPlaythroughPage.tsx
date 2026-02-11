@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -41,6 +41,7 @@ export default function AddPlaythroughPage() {
     new Date().toISOString().slice(0, 10)
   );
   const [playthroughTypeUid, setPlaythroughTypeUid] = useState('');
+  const [inputUid, setInputUid] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -51,8 +52,9 @@ export default function AddPlaythroughPage() {
   );
 
   const step1Valid = selectedInstanceUid != null;
-  const step2Valid = step1Valid && startedAt && !!playthroughTypeUid;
+  const canSubmit = selectedInstanceUid != null && startedAt && !!playthroughTypeUid;
   const playthroughTypes = referenceData?.data.playthroughTypes ?? [];
+  const inputs = referenceData?.data.inputs ?? [];
 
   useEffect(() => {
     if (!searchText.trim() || searchText.length < 2) {
@@ -83,6 +85,7 @@ export default function AddPlaythroughPage() {
         gameInstanceUid: selectedInstanceUid,
         startedAt,
         playthroughTypeUid: playthroughTypeUid || undefined,
+        inputUid: inputUid ? inputUid : undefined,
       });
       setSuccessMessage('Playthrough created.');
       setTimeout(() => navigate(`/playthroughs/${playthrough.uid}`), 1500);
@@ -91,7 +94,7 @@ export default function AddPlaythroughPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [selectedInstanceUid, startedAt, playthroughTypeUid, navigate]);
+  }, [selectedInstanceUid, startedAt, playthroughTypeUid, inputUid, navigate]);
 
   if (!isLoaded || !referenceData) {
     return (
@@ -132,7 +135,7 @@ export default function AddPlaythroughPage() {
         </Typography>
       )}
 
-      <StepSection title="Step 1 — Search and select game instance">
+      <StepSection title="Search and select game instance">
         <Stack spacing={2}>
           <TextField
             label="Search game"
@@ -224,40 +227,56 @@ export default function AddPlaythroughPage() {
         </Stack>
       </StepSection>
 
-      <StepSection title="Step 2 — Start date and type" locked={!step1Valid}>
-        <Stack direction="row" spacing={2} alignItems="flex-start" flexWrap="wrap">
-          <DateField
-            label="Started at"
-            value={startedAt}
-            onChange={setStartedAt}
-            required
-          />
+      <StepSection title="Start date and type" locked={!step1Valid}>
+        <Stack spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="flex-start" flexWrap="wrap">
+            <DateField
+              label="Started at"
+              value={startedAt}
+              onChange={setStartedAt}
+              required
+            />
+            <TextField
+              select
+              label="Playthrough type"
+              value={playthroughTypeUid}
+              onChange={(e) => setPlaythroughTypeUid(e.target.value)}
+              required
+              size="small"
+              sx={{ minWidth: 160 }}
+            >
+              {playthroughTypes.map((t) => (
+                <MenuItem key={t.uid} value={t.uid}>
+                  {t.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
           <TextField
             select
-            label="Playthrough type"
-            value={playthroughTypeUid}
-            onChange={(e) => setPlaythroughTypeUid(e.target.value)}
-            required
+            label="Input"
+            value={inputUid}
+            onChange={(e) => setInputUid(e.target.value)}
             size="small"
             sx={{ minWidth: 160 }}
           >
-            {playthroughTypes.map((t) => (
-              <MenuItem key={t.uid} value={t.uid}>
-                {t.name}
+            <MenuItem value="">
+              <em>None</em>
+            </MenuItem>
+            {inputs.map((input) => (
+              <MenuItem key={input.uid} value={input.uid}>
+                {input.name}
               </MenuItem>
             ))}
           </TextField>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={submitting || !canSubmit}
+          >
+            {submitting ? 'Creating…' : 'Create Playthrough'}
+          </Button>
         </Stack>
-      </StepSection>
-
-      <StepSection title="Step 3 — Create" locked={!step2Valid}>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={submitting || !step2Valid}
-        >
-          {submitting ? 'Creating…' : 'Create Playthrough'}
-        </Button>
       </StepSection>
     </Box>
   );

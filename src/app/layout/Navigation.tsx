@@ -1,9 +1,18 @@
-import { List, ListItemButton, ListItemText } from '@mui/material';
+import { Box, List, ListItemButton, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 export default function Navigation() {
   return (
-    <nav aria-label="Primary Navigation">
+    <Box
+      component="nav"
+      aria-label="Primary Navigation"
+      sx={{
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backdropFilter: 'blur(4px)',
+        minWidth: 200,
+        p: 1,
+      }}
+    >
       <List>
         <ListItemButton component={Link} to="/">
           <ListItemText primary="Dashboard" />
@@ -27,6 +36,6 @@ export default function Navigation() {
           <ListItemText primary="Manage Year Tierlist" />
         </ListItemButton>
       </List>
-    </nav>
+    </Box>
   );
 }

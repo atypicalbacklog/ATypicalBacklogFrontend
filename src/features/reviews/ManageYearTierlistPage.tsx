@@ -14,6 +14,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import NotesIcon from '@mui/icons-material/Notes';
 import { getImageUrl } from '../../services/imageApi';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
@@ -62,6 +63,7 @@ function TierCard({ card, playthroughTypeNames, onDragStart, onEdit, isDragging 
   const types = [...new Set(card.playthroughs.map((p) => p.playthroughTypeUid).filter(Boolean))];
   const typeLabels = types.map((uid) => playthroughTypeNames(uid)).filter(Boolean).join(', ') || '—';
   const preferredForEdit = pickReviewPlaythroughForEdit(card, playthroughTypeNames);
+  const hasTextReview = card.playthroughs.some((p) => p.hasTextReview);
 
   return (
     <Box
@@ -82,6 +84,7 @@ function TierCard({ card, playthroughTypeNames, onDragStart, onEdit, isDragging 
         opacity: isDragging ? 0.5 : 1,
         cursor: 'grab',
         '&:active': { cursor: 'grabbing' },
+        position: 'relative',
       }}
     >
       <Box
@@ -117,6 +120,26 @@ function TierCard({ card, playthroughTypeNames, onDragStart, onEdit, isDragging 
           </Link>
         )}
       </Box>
+      {hasTextReview && (
+        <Box
+          sx={{
+            position: 'absolute',
+            right: 4,
+            bottom: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'text.secondary',
+            bgcolor: 'background.paper',
+            borderRadius: '50%',
+            width: 20,
+            height: 20,
+            boxShadow: 1,
+          }}
+        >
+          <NotesIcon fontSize="small" />
+        </Box>
+      )}
     </Box>
   );
 }
@@ -342,7 +365,7 @@ export default function ManageYearTierlistPage() {
                     display: 'flex',
                     alignItems: 'stretch',
                     minHeight: 120,
-                    bgcolor: 'grey.100',
+                    bgcolor: '#000000',
                     borderRadius: 1,
                     mb: 1,
                     overflow: 'hidden',
@@ -353,12 +376,14 @@ export default function ManageYearTierlistPage() {
                       width: 80,
                       flexShrink: 0,
                       bgcolor: color,
-                      color: 'white',
+                      color: '#000',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 700,
-                      fontSize: '1.1rem',
+                      fontSize: '1.15rem',
+                      fontFamily: 'sans-serif',
+                      letterSpacing: 0.3,
                     }}
                   >
                     {tier.name}

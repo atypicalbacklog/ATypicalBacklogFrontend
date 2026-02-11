@@ -43,7 +43,7 @@ export interface GameOverviewRowDto {
   instanceCoverImageUid?: string | null;
 
   dlcName?: string | null;
-  dlcReceivedDate?: string | null;
+  dlcReleaseDate?: string | null;
 
   inBacklog: boolean;
   hasActivePlaythrough: boolean;

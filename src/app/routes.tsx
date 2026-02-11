@@ -10,6 +10,7 @@ import AddPlaythroughPage from '../features/playthroughs/AddPlaythroughPage';
 import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPage';
 import ManageYearTierlistPage from '../features/reviews/ManageYearTierlistPage';
 import EditReviewPage from '../features/reviews/EditReviewPage';
+import AdminImportStagingPage from '../features/admin/AdminImportStagingPage';
 
 export const appRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -24,4 +25,5 @@ export const appRoutes = [
   { path: '/playthroughs/:uid', element: <PlaythroughDetailPage /> },
   { path: '/reviews/year-tierlist', element: <ManageYearTierlistPage /> },
   { path: '/reviews/edit', element: <EditReviewPage /> },
+  { path: '/admin/import/staging', element: <AdminImportStagingPage /> },
 ];

@@ -155,15 +155,20 @@ export default function GameInstanceOverviewPage() {
   const inputs = referenceData?.data.inputs ?? [];
   const completionStates = referenceData?.data.completionStates ?? [];
 
-  const platformName =
-    platforms.find((p) => p.uid === instance.platformUid)?.name ?? instance.platformUid;
+  const platform = platforms.find((p) => p.uid === instance.platformUid);
+  const platformName = platform?.name ?? instance.platformUid;
+  const platformConsoleName =
+    platform != null
+      ? (consoles.find((c) => c.uid === platform.consoleUid)?.name ?? '')
+      : '';
   const variantName =
     variants.find((v) => v.uid === instance.variantUid)?.name ?? instance.variantUid;
-  const consoleName =
-    consoles.find((c) => c.uid === instance.originalConsoleUid)?.fullname ??
-    consoles.find((c) => c.uid === instance.originalConsoleUid)?.name ??
-    instance.originalConsoleUid ??
-    '—';
+  const originalConsoleName =
+    instance.originalConsoleUid != null && instance.originalConsoleUid !== ''
+      ? (consoles.find((c) => c.uid === instance.originalConsoleUid)?.fullname ??
+         consoles.find((c) => c.uid === instance.originalConsoleUid)?.name ??
+         instance.originalConsoleUid)
+      : null;
   const typeName = (u: string) =>
     playthroughTypes.find((t) => t.uid === u)?.name ?? u;
   const stateName = (u: string) =>
@@ -233,7 +238,16 @@ export default function GameInstanceOverviewPage() {
       {/* Instance switcher + Edit instance link */}
       <Box sx={{ mb: 2 }} display="flex" alignItems="center" gap={2}>
         {game && instances.length > 0 && (
-          <InstanceSwitcher instances={instances} currentUid={instance.uid} />
+          <InstanceSwitcher
+            instances={instances}
+            currentUid={instance.uid}
+            currentVariantConsoleDisplay={{
+              variantName,
+              platformName,
+              platformConsoleName,
+              originalConsoleName,
+            }}
+          />
         )}
         <Typography
           component={Link}
@@ -254,9 +268,10 @@ export default function GameInstanceOverviewPage() {
         <Stack spacing={2} flex={1}>
           <InstanceDetailsCard
             instance={instance}
-            platformName={platformName}
             variantName={variantName}
-            consoleName={consoleName}
+            platformName={platformName}
+            platformConsoleName={platformConsoleName}
+            originalConsoleName={originalConsoleName}
           />
           <CurrentCompletionBlock
             completions={instance.completions}

@@ -353,7 +353,10 @@ export default function AddInstanceForm() {
           </TextField>
           <PlatformSelect
             value={platformUid}
-            onChange={(v) => setPlatformUid(typeof v === 'string' ? v : v[0] || '')}
+            onChange={(v) => {
+              if (v === undefined || v === null) return;
+              setPlatformUid(typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || '');
+            }}
             required
             size="small"
           />

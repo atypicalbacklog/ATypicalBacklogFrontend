@@ -11,15 +11,21 @@ import {
 import { Link } from 'react-router-dom';
 import type { GameInstanceSummaryDto } from '../../../types/dto';
 import { getImageUrl } from '../../../services/imageApi';
+import VariantConsolePlatformDisplay, {
+  type VariantConsolePlatformDisplayProps,
+} from '../../shared/VariantConsolePlatformDisplay';
 
 interface Props {
   instances: GameInstanceSummaryDto[];
   currentUid: string;
+  /** Optional display info for the currently selected instance */
+  currentVariantConsoleDisplay?: VariantConsolePlatformDisplayProps;
 }
 
 export default function InstanceSwitcher({
   instances,
   currentUid,
+  currentVariantConsoleDisplay,
 }: Props) {
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
 
@@ -79,6 +85,16 @@ export default function InstanceSwitcher({
                 <ListItemText
                   primary={inst.name || inst.uid}
                   primaryTypographyProps={{ noWrap: true }}
+                  secondary={
+                    isCurrent && currentVariantConsoleDisplay ? (
+                      <VariantConsolePlatformDisplay
+                        {...currentVariantConsoleDisplay}
+                        variant="caption"
+                        color="text.secondary"
+                      />
+                    ) : undefined
+                  }
+                  secondaryTypographyProps={{ component: 'div' }}
                 />
               </ListItemButton>
             );

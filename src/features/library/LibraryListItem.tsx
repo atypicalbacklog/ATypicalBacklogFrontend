@@ -9,6 +9,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { getImageUrl } from '../../services/imageApi';
 import CompletionBar from '../shared/CompletionBar';
+import VariantConsolePlatformDisplay from '../shared/VariantConsolePlatformDisplay';
 import { GameOverviewRowDto } from './types';
 import { formatPlaytime } from './formatPlaytime';
 
@@ -22,9 +23,40 @@ export default function LibraryListItem({ item }: Props) {
     )?.name ?? null;
 
   const thumbnailUrl = getImageUrl(item.coverImageUid, true);
+  const isDlc = item.isDlc === true;
+  const baseName = item.instanceName || item.gameName;
+  const dlcPrimaryName = item.dlcName || baseName;
+  const dlcSecondaryName = item.instanceName || item.gameName;
+  const mainName = isDlc ? `${dlcPrimaryName} - (${dlcSecondaryName})` : baseName;
+  const releaseDate = isDlc
+    ? item.dlcReleaseDate ?? null
+    : item.instanceReleaseDate ?? item.gameReleaseDate;
+
+  const platforms = referenceData?.data.platforms ?? [];
+  const consoles = referenceData?.data.consoles ?? [];
+  const platform = item.platformUid
+    ? platforms.find((p) => p.uid === item.platformUid) ?? null
+    : null;
+  const platformName =
+    item.platformName ??
+    platform?.name ??
+    (item.platformUid ?? '');
+  const platformConsoleName =
+    platform != null
+      ? consoles.find((c) => c.uid === platform.consoleUid)?.name ?? ''
+      : '';
+  const variantName = item.variantName ?? '';
 
   return (
-    <Box border={1} borderRadius={2} p={2}>
+    <Box
+      border={1}
+      borderRadius={2}
+      p={2}
+      sx={{
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        backdropFilter: 'blur(4px)',
+      }}
+    >
       <Stack direction="row" spacing={2} alignItems="center">
         {thumbnailUrl ? (
           <Box
@@ -56,14 +88,43 @@ export default function LibraryListItem({ item }: Props) {
               color="primary"
               underline="hover"
             >
-              {item.gameName}
+              <Stack direction="row" spacing={0.5} alignItems="center" component="span">
+                {isDlc && (
+                  <Chip
+                    label="DLC"
+                    size="small"
+                    color="default"
+                    sx={{ height: 20, fontSize: '0.7rem' }}
+                  />
+                )}
+                <Box component="span">
+                  {mainName}
+                </Box>
+              </Stack>
             </Link>
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {[item.platformName, item.variantName].filter(Boolean).join(' · ') ||
-              '—'}
-            {(item.instanceReleaseDate ?? item.gameReleaseDate) &&
-              ` · ${item.instanceReleaseDate ?? item.gameReleaseDate}`}
+          <Typography variant="body2" color="text.secondary" component="div">
+            {item.platformUid ? (
+              <VariantConsolePlatformDisplay
+                variantName={variantName}
+                platformName={platformName}
+                platformConsoleName={platformConsoleName}
+                originalConsoleName={null}
+                variant="body2"
+                color="text.secondary"
+              />
+            ) : (
+              '—'
+            )}
+            {releaseDate && (
+              <Typography
+                component="span"
+                variant="body2"
+                color="text.secondary"
+              >
+                {` · ${releaseDate}`}
+              </Typography>
+            )}
           </Typography>
         </Box>
 

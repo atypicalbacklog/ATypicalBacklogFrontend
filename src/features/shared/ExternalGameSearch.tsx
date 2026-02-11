@@ -76,7 +76,19 @@ export default function ExternalGameSearch({
       setSelectedActions([]);
     } else {
       setSelectedResult(result);
-      setSelectedActions([]);
+      // Preselect all available actions: name (always), date (if available), image (if available)
+      const actions: string[] = ['name'];
+      if (result.releaseDate) {
+        actions.push('date');
+      }
+      if (result.coverImageUrl) {
+        actions.push('image');
+      }
+      // If all three are available, also add 'all'
+      if (actions.length === 3) {
+        actions.push('all');
+      }
+      setSelectedActions(actions);
     }
   };
 
