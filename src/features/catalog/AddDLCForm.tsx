@@ -25,6 +25,8 @@ import StepSection from './components/StepSection';
 import DateField from './components/DateField';
 import SelectedItemChip from './components/SelectedItemChip';
 import CompletionBar from '../shared/CompletionBar';
+import ExternalDlcSearch from '../shared/ExternalDlcSearch';
+import { IgdbApi } from '../../services/igdbApi';
 import type { GameInstanceDetailDTO, PlaythroughQueryResultDto } from '../../types/dto';
 import type { GameOverviewRowDto } from '../library/types';
 
@@ -64,6 +66,7 @@ export default function AddDLCForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingDlcCoverImport, setPendingDlcCoverImport] = useState<number | null>(null);
 
   const completionStates = referenceData?.data.completionStates ?? [];
   const playthroughTypes = referenceData?.data.playthroughTypes ?? [];
@@ -138,7 +141,7 @@ export default function AddDLCForm() {
     setError(null);
     setSuccessMessage(null);
     try {
-      await DlcApi.create({
+      const created = await DlcApi.create({
         gameInstanceUid: selectedInstance.gameInstanceUid,
         name: dlcName.trim() || (selectedInstance ? displayName(selectedInstance) : '') || 'DLC',
         receivedDate: receivedDate || null,
@@ -147,6 +150,19 @@ export default function AddDLCForm() {
         completionStateUid: dlcCompletionStateUid || null,
         info: dlcCompletionInfo || null,
       });
+      if (pendingDlcCoverImport != null) {
+        try {
+          await IgdbApi.importCover({
+            externalId: pendingDlcCoverImport,
+            ownerType: 'DLC',
+            dlcUid: created.uid,
+            gameInstanceUid: selectedInstance.gameInstanceUid,
+          });
+        } catch {
+          // Error handling can be added
+        }
+        setPendingDlcCoverImport(null);
+      }
       const gameUidForBacklog = instanceDetail?.gameUid;
       if (putBackInBacklog && gameUidForBacklog) {
         await BacklogApi.add(gameUidForBacklog, backlogAddedDate, backlogReason || '');
@@ -181,6 +197,7 @@ export default function AddDLCForm() {
     putBackInBacklog,
     backlogAddedDate,
     backlogReason,
+    pendingDlcCoverImport,
   ]);
 
   return (
@@ -289,14 +306,24 @@ export default function AddDLCForm() {
 
       <StepSection title="Step 2" locked={!step2Valid}>
         <Stack spacing={2}>
-          <TextField
-            label="DLC name"
-            value={dlcName}
-            onChange={(e) => setDlcName(e.target.value)}
-            fullWidth
-            size="small"
-            placeholder={selectedInstance ? displayName(selectedInstance) : 'Game name'}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <TextField
+              label="DLC name"
+              value={dlcName}
+              onChange={(e) => setDlcName(e.target.value)}
+              fullWidth
+              size="small"
+              placeholder={selectedInstance ? displayName(selectedInstance) : 'Game name'}
+            />
+            <ExternalDlcSearch
+              gameInstanceExternalIgdbId={instanceDetail?.externalIgdbId ?? null}
+              dlcName={dlcName}
+              releaseDate={releaseDate}
+              onOverwriteName={setDlcName}
+              onOverwriteDate={setReleaseDate}
+              onMarkCoverImport={(externalId) => setPendingDlcCoverImport(externalId)}
+            />
+          </Box>
           <DateField
             label="Release date"
             value={releaseDate}

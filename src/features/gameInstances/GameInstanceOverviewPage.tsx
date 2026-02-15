@@ -37,7 +37,7 @@ import PlaytimeSummary from './overview/PlaytimeSummary';
 import HowLongToBeatPlaceholder from './overview/HowLongToBeatPlaceholder';
 import PlaythroughGallery from './overview/PlaythroughGallery';
 import ReviewOverviewBlock from './overview/ReviewOverviewBlock';
-import ImageGalleryPlaceholder from './overview/ImageGalleryPlaceholder';
+import ImageGallery from './overview/ImageGallery';
 
 export default function GameInstanceOverviewPage() {
   const { uid } = useParams<{ uid: string }>();
@@ -323,10 +323,12 @@ export default function GameInstanceOverviewPage() {
         />
       </Box>
 
-      {/* Area 4: Image gallery placeholder */}
-      <Box>
-        <ImageGalleryPlaceholder />
-      </Box>
+      {/* Area 4: Image gallery (all images for this game) */}
+      {game?.uid && (
+        <Box>
+          <ImageGallery gameUid={game.uid} />
+        </Box>
+      )}
     </Box>
   );
 }

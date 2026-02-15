@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -6,12 +6,17 @@ import {
   InputLabel,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   MenuItem,
   Select,
   Stack,
+  Switch,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
+import { Link } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { AdminImportApi } from '../../services/adminImportApi';
 import type {
@@ -20,13 +25,12 @@ import type {
   StagedResolutionStatus,
 } from '../../types/adminImport';
 
-const STATUS_OPTIONS: { value: '' | StagedResolutionStatus; label: string }[] = [
-  { value: '', label: 'All' },
-  { value: 'CREATED', label: 'CREATED' },
-  { value: 'UPDATED', label: 'UPDATED' },
-  { value: 'CURATED', label: 'CURATED' },
-  { value: 'FINALIZED', label: 'FINALIZED' },
-  { value: 'IMPORTED', label: 'IMPORTED' },
+const STATUS_ORDER: StagedResolutionStatus[] = [
+  'CREATED',
+  'UPDATED',
+  'CURATED',
+  'FINALIZED',
+  'IMPORTED',
 ];
 
 export default function AdminImportStagingPage() {
@@ -35,16 +39,33 @@ export default function AdminImportStagingPage() {
   const playthroughTypeName = (uid: string | null) =>
     uid ? playthroughTypes.find((t) => t.uid === uid)?.name ?? uid : '—';
 
+  const [tabIndex, setTabIndex] = useState(0);
+
+  // Staged Games tab
+  const [countsByStatus, setCountsByStatus] = useState<Record<string, number> | null>(null);
+  const [countsLoading, setCountsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'' | StagedResolutionStatus>('');
   const [stagedGames, setStagedGames] = useState<StagedGameSummaryDto[] | null>(null);
   const [stagedGamesLoading, setStagedGamesLoading] = useState(false);
   const [stagedGamesError, setStagedGamesError] = useState<string | null>(null);
 
-  const [unmappedGroups, setUnmappedGroups] = useState<
+  // Playthrough groups tab
+  const [unmappedOnly, setUnmappedOnly] = useState(true);
+  const [playthroughGroups, setPlaythroughGroups] = useState<
     StagedPlaythroughGroupSummaryDto[] | null
   >(null);
-  const [unmappedLoading, setUnmappedLoading] = useState(false);
-  const [unmappedError, setUnmappedError] = useState<string | null>(null);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+
+  // When Staged Games tab is selected, fetch counts by status
+  useEffect(() => {
+    if (tabIndex !== 0) return;
+    setCountsLoading(true);
+    AdminImportApi.getStagedGameCountsByStatus()
+      .then(setCountsByStatus)
+      .catch(() => setCountsByStatus(null))
+      .finally(() => setCountsLoading(false));
+  }, [tabIndex]);
 
   const loadStagedGames = async () => {
     setStagedGamesLoading(true);
@@ -61,20 +82,30 @@ export default function AdminImportStagingPage() {
     }
   };
 
-  const loadUnmappedGroups = async () => {
-    setUnmappedLoading(true);
-    setUnmappedError(null);
+  const loadPlaythroughGroups = async () => {
+    setGroupsLoading(true);
+    setGroupsError(null);
     try {
-      const data = await AdminImportApi.listUnmappedStagedPlaythroughGroups();
-      setUnmappedGroups(data);
+      const data = await AdminImportApi.listStagedPlaythroughGroups(unmappedOnly);
+      setPlaythroughGroups(data);
     } catch (e) {
-      setUnmappedError(
-        e instanceof Error ? e.message : 'Failed to load unmapped playthrough groups'
+      setGroupsError(
+        e instanceof Error ? e.message : 'Failed to load staged playthrough groups'
       );
-      setUnmappedGroups(null);
+      setPlaythroughGroups(null);
     } finally {
-      setUnmappedLoading(false);
+      setGroupsLoading(false);
     }
+  };
+
+  const statusLabelWithCount = (status: '' | StagedResolutionStatus) => {
+    if (status === '') {
+      if (countsByStatus == null) return 'All';
+      const total = STATUS_ORDER.reduce((sum, s) => sum + (countsByStatus[s] ?? 0), 0);
+      return `All (${total})`;
+    }
+    const count = countsByStatus?.[status] ?? 0;
+    return `${status} (${count})`;
   };
 
   return (
@@ -82,19 +113,25 @@ export default function AdminImportStagingPage() {
       <Typography variant="h5" gutterBottom>
         Admin – Import staging
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Search and list staged games and unmapped staged playthrough groups. Not linked in app
-        navigation.
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Search and list staged games and staged playthrough groups. Not linked in app navigation.
       </Typography>
 
-      <Stack spacing={4}>
-        {/* Staged Games */}
-        <Box>
-          <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-            Staged games
-          </Typography>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            <FormControl size="small" sx={{ minWidth: 160 }}>
+      <Tabs value={tabIndex} onChange={(_, v) => setTabIndex(v)} sx={{ mb: 3 }}>
+        <Tab label="Staged games" id="staging-tab-0" aria-controls="staging-panel-0" />
+        <Tab label="Playthrough groups" id="staging-tab-1" aria-controls="staging-panel-1" />
+      </Tabs>
+
+      {/* Tab 1: Staged games */}
+      <Box
+        role="tabpanel"
+        id="staging-panel-0"
+        aria-labelledby="staging-tab-0"
+        hidden={tabIndex !== 0}
+      >
+        <Stack spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap">
+            <FormControl size="small" sx={{ minWidth: 280 }}>
               <InputLabel>Status</InputLabel>
               <Select
                 label="Status"
@@ -102,10 +139,14 @@ export default function AdminImportStagingPage() {
                 onChange={(e) =>
                   setStatusFilter(e.target.value as '' | StagedResolutionStatus)
                 }
+                disabled={countsLoading}
               >
-                {STATUS_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value || 'all'} value={opt.value}>
-                    {opt.label}
+                <MenuItem value="">
+                  {countsLoading ? 'Loading counts…' : statusLabelWithCount('')}
+                </MenuItem>
+                {STATUS_ORDER.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {countsLoading ? status : statusLabelWithCount(status)}
                   </MenuItem>
                 ))}
               </Select>
@@ -120,7 +161,7 @@ export default function AdminImportStagingPage() {
             </Button>
           </Stack>
           {stagedGamesError && (
-            <Typography color="error" variant="body2" sx={{ mb: 1 }}>
+            <Typography color="error" variant="body2">
               {stagedGamesError}
             </Typography>
           )}
@@ -132,48 +173,76 @@ export default function AdminImportStagingPage() {
                 </ListItem>
               ) : (
                 stagedGames.map((g) => (
-                  <ListItem key={g.uid} divider>
+                  <ListItemButton
+                    key={g.uid}
+                    component={Link}
+                    to={`/admin/import/staged-games/${g.uid}`}
+                    divider
+                  >
                     <ListItemText
                       primary={g.proposedName || g.uid}
                       secondary={`UID: ${g.uid} · ${g.resolutionStatus}`}
                       primaryTypographyProps={{ variant: 'body2' }}
                       secondaryTypographyProps={{ variant: 'caption' }}
                     />
-                  </ListItem>
+                  </ListItemButton>
                 ))
               )}
             </List>
           )}
-        </Box>
+        </Stack>
+      </Box>
 
-        {/* Unmapped staged playthrough groups */}
-        <Box>
-          <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-            Staged playthrough groups (unmapped)
-          </Typography>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+      {/* Tab 2: Playthrough groups */}
+      <Box
+        role="tabpanel"
+        id="staging-panel-1"
+        aria-labelledby="staging-tab-1"
+        hidden={tabIndex !== 1}
+      >
+        <Stack spacing={2}>
+          <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap">
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Mapped
+              </Typography>
+              <Switch
+                checked={unmappedOnly}
+                onChange={(_, c) => setUnmappedOnly(c)}
+                color="primary"
+              />
+              <Typography variant="body2" color="text.secondary">
+                Unmapped
+              </Typography>
+            </Stack>
             <Button
               variant="contained"
               size="small"
-              onClick={loadUnmappedGroups}
-              disabled={unmappedLoading}
+              onClick={loadPlaythroughGroups}
+              disabled={groupsLoading}
             >
-              {unmappedLoading ? 'Loading…' : 'Load unmapped groups'}
+              {groupsLoading ? 'Loading…' : `Load ${unmappedOnly ? 'unmapped' : 'mapped'} groups`}
             </Button>
           </Stack>
-          {unmappedError && (
-            <Typography color="error" variant="body2" sx={{ mb: 1 }}>
-              {unmappedError}
+          {groupsError && (
+            <Typography color="error" variant="body2">
+              {groupsError}
             </Typography>
           )}
-          {unmappedGroups !== null && (
+          {playthroughGroups !== null && (
             <List dense disablePadding sx={{ bgcolor: 'action.hover', borderRadius: 1 }}>
-              {unmappedGroups.length === 0 ? (
+              {playthroughGroups.length === 0 ? (
                 <ListItem>
-                  <ListItemText primary="No unmapped staged playthrough groups." />
+                  <ListItemText
+                    primary={
+                      unmappedOnly
+                        ? 'No unmapped staged playthrough groups.'
+                        : 'No mapped staged playthrough groups.'
+                    }
+                  />
                 </ListItem>
               ) : (
-                unmappedGroups.map((g) => {
+                playthroughGroups.map((g) => {
                   const typeName = playthroughTypeName(g.inferredTypeUid ?? null);
                   const primary =
                     g.importedName != null && g.importedName !== ''
@@ -182,7 +251,12 @@ export default function AdminImportStagingPage() {
                         ? `${g.uid} – ${typeName}`
                         : g.uid;
                   return (
-                    <ListItem key={g.uid} divider>
+                    <ListItemButton
+                      key={g.uid}
+                      component={Link}
+                      to={`/admin/import/staged-playthrough-groups/${g.uid}`}
+                      divider
+                    >
                       <ListItemText
                         primary={primary}
                         secondary={
@@ -202,14 +276,14 @@ export default function AdminImportStagingPage() {
                         primaryTypographyProps={{ variant: 'body2' }}
                         secondaryTypographyProps={{ variant: 'caption' }}
                       />
-                    </ListItem>
+                    </ListItemButton>
                   );
                 })
               )}
             </List>
           )}
-        </Box>
-      </Stack>
+        </Stack>
+      </Box>
     </Box>
   );
 }

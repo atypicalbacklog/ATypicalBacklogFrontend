@@ -32,6 +32,38 @@ interface Props {
   ownerType: 'GAME' | 'GAME_INSTANCE';
   /** Owner UID (gameUid or gameInstanceUid) for cover import. */
   ownerUid: string | null;
+  /** Optional: when an external game is committed, set external ID (e.g. IGDB id as string). */
+  onSetExternalId?: (externalId: string) => void;
+  /** Optional: callback when selected result changes (for displaying details). */
+  onSelectedResultChange?: (result: IgdbGameSearchResultDto | null) => void;
+}
+
+/** Platforms in release-date order, with date in brackets; fallback to releasedPlatforms list. */
+function formatPlatformsByReleaseDate(result: IgdbGameSearchResultDto): string {
+  const releaseDates = result.releaseDates?.filter(
+    (rd) => rd.platformAbbreviation != null && rd.platformAbbreviation.trim() !== ''
+  );
+  if (releaseDates && releaseDates.length > 0) {
+    const sorted = [...releaseDates].sort((a, b) => {
+      const da = a.date ?? '';
+      const db = b.date ?? '';
+      if (da && db) return da.localeCompare(db);
+      if (da) return -1;
+      if (db) return 1;
+      return 0;
+    });
+    return sorted
+      .map((rd) =>
+        rd.date
+          ? `${rd.platformAbbreviation} (${rd.date})`
+          : String(rd.platformAbbreviation)
+      )
+      .join(', ');
+  }
+  if (result.releasedPlatforms?.length) {
+    return result.releasedPlatforms.join(', ');
+  }
+  return '';
 }
 
 /**
@@ -46,6 +78,8 @@ export default function ExternalGameSearch({
   onMarkCoverImport,
   ownerType,
   ownerUid,
+  onSetExternalId,
+  onSelectedResultChange,
 }: Props) {
   const [results, setResults] = useState<IgdbGameSearchResultDto[]>([]);
   const [searching, setSearching] = useState(false);
@@ -74,8 +108,10 @@ export default function ExternalGameSearch({
     if (selectedResult?.externalId === result.externalId) {
       setSelectedResult(null);
       setSelectedActions([]);
+      onSelectedResultChange?.(null);
     } else {
       setSelectedResult(result);
+      onSelectedResultChange?.(result);
       // Preselect all available actions: name (always), date (if available), image (if available)
       const actions: string[] = ['name'];
       if (result.releaseDate) {
@@ -130,7 +166,7 @@ export default function ExternalGameSearch({
 
   const handleCommit = () => {
     if (!selectedResult) return;
-    
+
     if (selectedActions.includes('all') || selectedActions.includes('name')) {
       onOverwriteName(selectedResult.name);
     }
@@ -144,15 +180,20 @@ export default function ExternalGameSearch({
         onMarkCoverImport(selectedResult.externalId);
       }
     }
-    
+    if (selectedResult.externalId != null && onSetExternalId) {
+      onSetExternalId(String(selectedResult.externalId));
+    }
+
     // Close search and clear selection
     setSelectedResult(null);
+    onSelectedResultChange?.(null);
     setSelectedActions([]);
     setResults([]);
   };
 
   const handleClose = () => {
     setSelectedResult(null);
+    onSelectedResultChange?.(null);
     setSelectedActions([]);
     setResults([]);
   };
@@ -231,11 +272,57 @@ export default function ExternalGameSearch({
                 )}
               </Stack>
             )}
-            {result.releasedPlatforms && result.releasedPlatforms.length > 0 && (
-              <Typography variant="caption" color="text.secondary" display="block">
-                {result.releasedPlatforms.join(', ')}
-              </Typography>
-            )}
+            {(() => {
+              const releaseDates = result.releaseDates?.filter(
+                (rd) => rd.platformAbbreviation != null && rd.platformAbbreviation.trim() !== ''
+              );
+              if (releaseDates && releaseDates.length > 0) {
+                const sorted = [...releaseDates].sort((a, b) => {
+                  const da = a.date ?? '';
+                  const db = b.date ?? '';
+                  if (da && db) return da.localeCompare(db);
+                  if (da) return -1;
+                  if (db) return 1;
+                  return 0;
+                });
+                return (
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: 0.5,
+                      mt: 0.5,
+                    }}
+                  >
+                    {sorted.map((rd, idx) => (
+                      <Typography key={idx} variant="caption" color="text.secondary">
+                        {rd.platformAbbreviation}
+                        {rd.date && ` (${rd.date})`}
+                      </Typography>
+                    ))}
+                  </Box>
+                );
+              }
+              if (result.releasedPlatforms && result.releasedPlatforms.length > 0) {
+                return (
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: 0.5,
+                      mt: 0.5,
+                    }}
+                  >
+                    {result.releasedPlatforms.map((platform, idx) => (
+                      <Typography key={idx} variant="caption" color="text.secondary">
+                        {platform}
+                      </Typography>
+                    ))}
+                  </Box>
+                );
+              }
+              return null;
+            })()}
           </Stack>
         </Stack>
       </CardContent>
@@ -385,7 +472,7 @@ export default function ExternalGameSearch({
 
     if (selectedResult) {
       return (
-        <Stack direction="row" spacing={1} alignItems="stretch" sx={{ mt: 1, width: '100%' }}>
+        <Stack direction="row" spacing={1} alignItems="stretch" sx={{ mt: 1, width: '100%', position: 'relative', zIndex: 1 }}>
           <Box
             sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer' }}
             onClick={() => handleResultClick(selectedResult)}
@@ -404,6 +491,8 @@ export default function ExternalGameSearch({
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: 1,
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {results.map((result) => renderResultCard(result, false))}

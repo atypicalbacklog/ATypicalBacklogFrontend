@@ -3,6 +3,7 @@ import AddCatalogPage from '../features/catalog/AddCatalogPage';
 import GameDetailPage from '../features/games/GameDetailPage';
 import GameInstanceOverviewPage from '../features/gameInstances/GameInstanceOverviewPage';
 import GameInstanceDetailPage from '../features/gameInstances/GameInstanceDetailPage';
+import EditImagePage from '../features/gameInstances/EditImagePage';
 import LibraryPage from '../features/library/LibraryPage';
 import BacklogPage from '../features/backlog/BacklogPage';
 import ActivePlaythroughsPage from '../features/playthroughs/ActivePlaythroughsPage';
@@ -11,6 +12,8 @@ import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPag
 import ManageYearTierlistPage from '../features/reviews/ManageYearTierlistPage';
 import EditReviewPage from '../features/reviews/EditReviewPage';
 import AdminImportStagingPage from '../features/admin/AdminImportStagingPage';
+import EditStagedGamePage from '../features/admin/EditStagedGamePage';
+import EditStagedPlaythroughGroupPage from '../features/admin/EditStagedPlaythroughGroupPage';
 
 export const appRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -18,6 +21,7 @@ export const appRoutes = [
   { path: '/games/:uid', element: <GameDetailPage /> },
   { path: '/game-instances/:uid', element: <GameInstanceOverviewPage /> },
   { path: '/game-instances/:uid/edit', element: <GameInstanceDetailPage /> },
+  { path: '/game-instances/:instanceUid/images/:imageUid/edit', element: <EditImagePage /> },
   { path: '/library', element: <LibraryPage /> },
   { path: '/backlog', element: <BacklogPage /> },
   { path: '/play-activity/active', element: <ActivePlaythroughsPage /> },
@@ -26,4 +30,6 @@ export const appRoutes = [
   { path: '/reviews/year-tierlist', element: <ManageYearTierlistPage /> },
   { path: '/reviews/edit', element: <EditReviewPage /> },
   { path: '/admin/import/staging', element: <AdminImportStagingPage /> },
+  { path: '/admin/import/staged-games/:uid', element: <EditStagedGamePage /> },
+  { path: '/admin/import/staged-playthrough-groups/:uid', element: <EditStagedPlaythroughGroupPage /> },
 ];

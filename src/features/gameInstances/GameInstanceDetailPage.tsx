@@ -31,7 +31,10 @@ import { GameDTO } from '../../types/dto';
 import GameInstanceForm from './GameInstanceForm';
 import GameForm from '../games/GameForm';
 import CompletionBar from '../shared/CompletionBar';
+import ExternalDlcSearch from '../shared/ExternalDlcSearch';
+import { IgdbApi } from '../../services/igdbApi';
 import SearchSuggestions, { type SearchResultItem } from '../catalog/components/SearchSuggestions';
+import ImageGallery from './overview/ImageGallery';
 
 export default function GameInstanceDetailPage() {
   const { uid } = useParams<{ uid: string }>();
@@ -579,13 +582,32 @@ export default function GameInstanceDetailPage() {
                   </Box>
                   <Collapse in={expanded}>
                     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 480 }}>
-                      <TextField
-                        label="Name"
-                        value={edit.name}
-                        onChange={(e) => handleDlcFieldChange(dlc.uid, 'name', e.target.value)}
-                        size="small"
-                        fullWidth
-                      />
+                      <Box>
+                        <TextField
+                          label="Name"
+                          value={edit.name}
+                          onChange={(e) => handleDlcFieldChange(dlc.uid, 'name', e.target.value)}
+                          size="small"
+                          fullWidth
+                        />
+                        <ExternalDlcSearch
+                          gameInstanceExternalIgdbId={instance?.externalIgdbId ?? null}
+                          dlcName={edit.name}
+                          releaseDate={edit.releaseDate}
+                          onOverwriteName={(name) => handleDlcFieldChange(dlc.uid, 'name', name)}
+                          onOverwriteDate={(date) => handleDlcFieldChange(dlc.uid, 'releaseDate', date)}
+                          onMarkCoverImport={(externalId) => {
+                            IgdbApi.importCover({
+                              externalId,
+                              ownerType: 'DLC',
+                              dlcUid: dlc.uid,
+                              gameInstanceUid: uid ?? undefined,
+                            }).then(refetchDlcs).catch(() => {});
+                          }}
+                          dlcUid={dlc.uid}
+                          gameInstanceUid={uid ?? undefined}
+                        />
+                      </Box>
                       <Stack direction="row" spacing={2} flexWrap="wrap">
                         <TextField
                           type="date"
@@ -651,6 +673,13 @@ export default function GameInstanceDetailPage() {
           </Stack>
         )}
       </Paper>
+
+      {/* Image gallery (all images for this game) */}
+      {instance.gameUid && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+          <ImageGallery gameUid={instance.gameUid} />
+        </Paper>
+      )}
     </Box>
   );
 }

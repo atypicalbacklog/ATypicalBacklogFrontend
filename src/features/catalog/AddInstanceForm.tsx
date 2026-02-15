@@ -24,6 +24,7 @@ import SearchSuggestions from './components/SearchSuggestions';
 import SelectedItemChip from './components/SelectedItemChip';
 import PlatformSelect from '../shared/PlatformSelect';
 import ExternalGameSearch from '../shared/ExternalGameSearch';
+import DirectExternalIdBlock from '../shared/DirectExternalIdBlock';
 import type { GameQueryResultDto } from '../../types/dto';
 import type { SearchResultItem } from './components/SearchSuggestions';
 
@@ -54,6 +55,8 @@ export default function AddInstanceForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingCoverImport, setPendingCoverImport] = useState<number | null>(null);
+  const [newGameExternalIgdbId, setNewGameExternalIgdbId] = useState<string | null>(null);
+  const [instanceExternalIgdbId, setInstanceExternalIgdbId] = useState<string | null>(null);
   const [createdGameUid, setCreatedGameUid] = useState<string | null>(null);
 
   const consoles = referenceData?.data.consoles ?? [];
@@ -132,6 +135,8 @@ export default function AddInstanceForm() {
       } else {
         gameUid = selectedGame!.gameUid;
       }
+      const instanceExternalId =
+        instanceExternalIgdbId ?? (addNewGame ? newGameExternalIgdbId : null);
       const instance = await GameInstanceApi.create({
         gameUid,
         platformUid,
@@ -142,6 +147,7 @@ export default function AddInstanceForm() {
         receivedDate,
         forFree,
         inPossession,
+        externalIgdbId: instanceExternalId || undefined,
       });
       
       // Import cover if marked (for instance)
@@ -181,6 +187,8 @@ export default function AddInstanceForm() {
       setCompletionStateUid('');
       setCompletionInfo('');
       setPendingCoverImport(null);
+      setNewGameExternalIgdbId(null);
+      setInstanceExternalIgdbId(null);
       setCreatedGameUid(null);
     } catch {
       setError('Failed to save. Please try again.');
@@ -259,26 +267,43 @@ export default function AddInstanceForm() {
           {addNewGame && (
             <Stack spacing={2} sx={{ pl: 2, borderLeft: 2, borderColor: 'divider' }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: '1 1 auto', minWidth: 200, order: 1 }}>
-                  <TextField
-                    label="Name"
-                    value={newGameName}
-                    onChange={(e) => setNewGameName(e.target.value)}
-                    required
-                    fullWidth
-                    size="small"
-                  />
-                  <Box sx={{ flexShrink: 0 }}>
-                    <ExternalGameSearch
-                      gameName={newGameName}
-                      releaseDate={newGameReleaseDate}
-                      onOverwriteName={(newName) => setNewGameName(newName)}
-                      onOverwriteDate={(newDate) => setNewGameReleaseDate(newDate)}
-                      onMarkCoverImport={(externalId) => {
-                        setPendingCoverImport(externalId);
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, flex: '1 1 auto', minWidth: 200 }}>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <TextField
+                      label="Name"
+                      value={newGameName}
+                      onChange={(e) => setNewGameName(e.target.value)}
+                      required
+                      fullWidth
+                      size="small"
+                      sx={{ flex: '1 1 200px' }}
+                    />
+                    <Box sx={{ flexShrink: 0 }}>
+                      <ExternalGameSearch
+                        gameName={newGameName}
+                        releaseDate={newGameReleaseDate}
+                        onOverwriteName={(newName) => setNewGameName(newName)}
+                        onOverwriteDate={(newDate) => setNewGameReleaseDate(newDate)}
+                        onMarkCoverImport={(externalId) => {
+                          setPendingCoverImport(externalId);
+                        }}
+                        onSetExternalId={(id) => setNewGameExternalIgdbId(id)}
+                        ownerType="GAME"
+                        ownerUid={createdGameUid}
+                      />
+                    </Box>
+                    {newGameExternalIgdbId && (
+                      <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                        IGDB ID: {newGameExternalIgdbId}
+                      </Typography>
+                    )}
+                    <DirectExternalIdBlock
+                      onConfirm={(res, actions) => {
+                        if (actions.name) setNewGameName(res.name);
+                        if (actions.date && res.releaseDate) setNewGameReleaseDate(res.releaseDate);
+                        if (actions.image) setPendingCoverImport(res.externalId);
+                        setNewGameExternalIgdbId(String(res.externalId));
                       }}
-                      ownerType="GAME"
-                      ownerUid={createdGameUid}
                     />
                   </Box>
                 </Box>
@@ -305,28 +330,43 @@ export default function AddInstanceForm() {
       <StepSection title="Step 2" locked={!gameResolved}>
         <Stack spacing={2}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: '1 1 auto', minWidth: 200, order: 1 }}>
-              <TextField
-                label="Instance name"
-                value={instanceName}
-                onChange={(e) => setInstanceName(e.target.value)}
-                fullWidth
-                size="small"
-                placeholder={selectedGame?.name ?? 'Game name'}
-              />
-              <Box sx={{ flexShrink: 0 }}>
-                <ExternalGameSearch
-                  gameName={instanceName || ''}
-                  releaseDate={releaseDate || ''}
-                  onOverwriteName={(newName) => setInstanceName(newName)}
-                  onOverwriteDate={(newDate) => setReleaseDate(newDate)}
-                  onMarkCoverImport={(externalId) => {
-                    // For instance creation, we'll need to import after instance is created
-                    // Store it for later import
-                    setPendingCoverImport(externalId);
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, flex: '1 1 auto', minWidth: 200 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <TextField
+                  label="Instance name"
+                  value={instanceName}
+                  onChange={(e) => setInstanceName(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder={selectedGame?.name ?? 'Game name'}
+                  sx={{ flex: '1 1 200px' }}
+                />
+                <Box sx={{ flexShrink: 0 }}>
+                  <ExternalGameSearch
+                    gameName={instanceName || ''}
+                    releaseDate={releaseDate || ''}
+                    onOverwriteName={(newName) => setInstanceName(newName)}
+                    onOverwriteDate={(newDate) => setReleaseDate(newDate)}
+                    onMarkCoverImport={(externalId) => {
+                      setPendingCoverImport(externalId);
+                    }}
+                    onSetExternalId={(id) => setInstanceExternalIgdbId(id)}
+                    ownerType="GAME_INSTANCE"
+                    ownerUid={null}
+                  />
+                </Box>
+                {instanceExternalIgdbId && (
+                  <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+                    IGDB ID: {instanceExternalIgdbId}
+                  </Typography>
+                )}
+                <DirectExternalIdBlock
+                  onConfirm={(res, actions) => {
+                    if (actions.name) setInstanceName(res.name);
+                    if (actions.date && res.releaseDate) setReleaseDate(res.releaseDate);
+                    if (actions.image) setPendingCoverImport(res.externalId);
+                    setInstanceExternalIgdbId(String(res.externalId));
                   }}
-                  ownerType="GAME_INSTANCE"
-                  ownerUid={null}
                 />
               </Box>
             </Box>

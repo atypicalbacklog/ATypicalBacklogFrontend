@@ -9,6 +9,7 @@ import {
   MenuItem,
   Select,
   TextField,
+  Typography,
 } from '@mui/material';
 import {
   CreateGameInstanceRequest,
@@ -18,6 +19,7 @@ import {
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import PlatformSelect from '../shared/PlatformSelect';
 import ExternalGameSearch from '../shared/ExternalGameSearch';
+import DirectExternalIdBlock from '../shared/DirectExternalIdBlock';
 
 type CreateProps = {
   mode: 'create';
@@ -46,6 +48,9 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
   const [variantUid, setVariantUid] = useState(initial.variantUid ?? '');
   const [name, setName] = useState(initial.name ?? '');
   const [releaseDate, setReleaseDate] = useState(initial.releaseDate ?? '');
+  const [externalIgdbId, setExternalIgdbId] = useState<string | null>(
+    (initial as { externalIgdbId?: string | null }).externalIgdbId ?? null
+  );
   const [pendingCoverImport, setPendingCoverImport] = useState<number | null>(null);
   const [originalConsoleUid, setOriginalConsoleUid] = useState(
     initial.originalConsoleUid ?? ''
@@ -61,30 +66,32 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(
-      mode === 'create'
-        ? {
-            gameUid,
-            platformUid,
-            variantUid: variantUid || '',
-            name: name || null,
-            releaseDate: releaseDate || null,
-            originalConsoleUid: originalConsoleUid || null,
-            receivedDate: receivedDate || null,
-            forFree,
-            inPossession,
-          }
-        : {
-            platformUid: platformUid || null,
-            variantUid: variantUid || null,
-            name: name || null,
-            releaseDate: releaseDate || null,
-            originalConsoleUid: originalConsoleUid || null,
-            receivedDate: receivedDate || null,
-            forFree,
-            inPossession,
-          }
-    );
+    if (mode === 'create') {
+      await onSubmit({
+        gameUid,
+        platformUid,
+        variantUid: variantUid || '',
+        name: name || null,
+        releaseDate: releaseDate || null,
+        originalConsoleUid: originalConsoleUid || null,
+        receivedDate: receivedDate || null,
+        forFree,
+        inPossession,
+        externalIgdbId: externalIgdbId || null,
+      });
+    } else {
+      await onSubmit({
+        platformUid: platformUid || null,
+        variantUid: variantUid || null,
+        name: name || null,
+        releaseDate: releaseDate || null,
+        originalConsoleUid: originalConsoleUid || null,
+        receivedDate: receivedDate || null,
+        forFree,
+        inPossession,
+        externalIgdbId: externalIgdbId ?? undefined,
+      });
+    }
     // Import cover after save if marked (only in update mode where we have uid)
     if (pendingCoverImport && mode === 'update') {
       const instanceUid = (props.initial as GameInstanceDTO).uid;
@@ -129,25 +136,41 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
       )}
 
       {/* Name + search in same row */}
-      <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-        <TextField
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          size="small"
-          sx={{ flex: '1 1 200px', minWidth: 200 }}
-        />
-        <Box sx={{ flexShrink: 0 }}>
-          <ExternalGameSearch
-            gameName={name || ''}
-            releaseDate={releaseDate || ''}
-            onOverwriteName={(newName) => setName(newName)}
-            onOverwriteDate={(newDate) => setReleaseDate(newDate)}
-            onMarkCoverImport={(externalId) => {
-              setPendingCoverImport(externalId);
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+          <TextField
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            size="small"
+            sx={{ flex: '1 1 200px', minWidth: 200 }}
+          />
+          <Box sx={{ flexShrink: 0 }}>
+            <ExternalGameSearch
+              gameName={name || ''}
+              releaseDate={releaseDate || ''}
+              onOverwriteName={(newName) => setName(newName)}
+              onOverwriteDate={(newDate) => setReleaseDate(newDate)}
+              onMarkCoverImport={(externalId) => {
+                setPendingCoverImport(externalId);
+              }}
+              onSetExternalId={(id) => setExternalIgdbId(id)}
+              ownerType="GAME_INSTANCE"
+              ownerUid={mode === 'update' ? (props.initial as GameInstanceDTO).uid : null}
+            />
+          </Box>
+          {externalIgdbId && (
+            <Typography variant="body2" color="text.secondary" sx={{ alignSelf: 'center' }}>
+              IGDB ID: {externalIgdbId}
+            </Typography>
+          )}
+          <DirectExternalIdBlock
+            onConfirm={(res, actions) => {
+              if (actions.name) setName(res.name);
+              if (actions.date && res.releaseDate) setReleaseDate(res.releaseDate);
+              if (actions.image) setPendingCoverImport(res.externalId);
+              setExternalIgdbId(String(res.externalId));
             }}
-            ownerType="GAME_INSTANCE"
-            ownerUid={mode === 'update' ? (props.initial as GameInstanceDTO).uid : null}
           />
         </Box>
       </Box>

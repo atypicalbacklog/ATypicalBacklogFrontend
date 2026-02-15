@@ -22,8 +22,11 @@ export default function LibraryListItem({ item }: Props) {
       (c) => c.uid === item.completionStateUid
     )?.name ?? null;
 
-  const thumbnailUrl = getImageUrl(item.coverImageUid, true);
   const isDlc = item.isDlc === true;
+  const coverUid = isDlc
+    ? (item.dlcCoverImageUid ?? item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid)
+    : (item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid);
+  const thumbnailUrl = getImageUrl(coverUid, true);
   const baseName = item.instanceName || item.gameName;
   const dlcPrimaryName = item.dlcName || baseName;
   const dlcSecondaryName = item.instanceName || item.gameName;

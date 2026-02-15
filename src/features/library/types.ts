@@ -40,7 +40,9 @@ export interface GameOverviewRowDto {
   variantUid: string | null;
   variantName: string | null;
 
+  gameCoverImageUid?: string | null;
   instanceCoverImageUid?: string | null;
+  dlcCoverImageUid?: string | null;
 
   dlcName?: string | null;
   dlcReleaseDate?: string | null;
@@ -50,6 +52,7 @@ export interface GameOverviewRowDto {
   completionStateUid: string | null;
 
   totalPlaytimeSeconds: number;
+  /** Fallback when separate covers not set; prefer dlcCoverImageUid when isDlc, else instanceCoverImageUid, else gameCoverImageUid. */
   coverImageUid: string | null;
 
   hasDlc?: boolean;

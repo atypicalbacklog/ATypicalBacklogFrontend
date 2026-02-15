@@ -46,6 +46,11 @@ export default function InstanceDetailsCard({
           Received: {instance.receivedDate}
         </Typography>
       )}
+      {instance.externalIgdbId && (
+        <Typography variant="body2">
+          IGDB ID: {instance.externalIgdbId}
+        </Typography>
+      )}
       <Typography variant="body2">
         In possession: {instance.inPossession ? 'Yes' : 'No'}
       </Typography>

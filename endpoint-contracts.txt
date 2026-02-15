@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 23
+Version: 24
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -115,7 +115,9 @@ Request Body:
   "receivedDate": "YYYY-MM-DD" | null,
 
   "forFree": true | false | null,
-  "inPossession": true | false | null
+  "inPossession": true | false | null,
+
+  "externalIgdbId": "string" | null   // optional IGDB game ID
 }
 
 Response: 200 OK
@@ -131,7 +133,9 @@ Response: 200 OK
   "receivedDate": "YYYY-MM-DD" | null,
 
   "forFree": true | false,
-  "inPossession": true | false
+  "inPossession": true | false,
+
+  "externalIgdbId": "string" | null
 }
 
 Notes:
@@ -161,6 +165,8 @@ Response: 200 OK  (GameInstanceDetailResponse)
   "forFree": true | false,
   "inPossession": true | false,
 
+  "externalIgdbId": "string" | null,
+
   "coverImageUid": "string" | null,
 
   "backlogEntries": [
@@ -183,6 +189,7 @@ Path Parameters:
 
 Request Body:
 {
+  "gameUid": "string" | null,
   "platformUid": "string" | null,
   "variantUid": "string" | null,
 
@@ -192,7 +199,9 @@ Request Body:
   "receivedDate": "YYYY-MM-DD" | null,
 
   "forFree": true | false | null,
-  "inPossession": true | false | null
+  "inPossession": true | false | null,
+
+  "externalIgdbId": "string" | null   // if null, existing value is kept
 }
 
 Notes:
@@ -211,7 +220,9 @@ Response: 200 OK
   "receivedDate": "YYYY-MM-DD" | null,
 
   "forFree": true | false,
-  "inPossession": true | false
+  "inPossession": true | false,
+
+  "externalIgdbId": "string" | null
 }
 
 ================================================================================
@@ -386,7 +397,9 @@ Array of GameOverviewRowDto (each row is either an instance or a DLC):
     "variantUid": "string" | null,
     "variantName": "string" | null,
 
-    "instanceCoverImageUid": "string" | null,  // game instance cover when available
+    "gameCoverImageUid": "string" | null,      // game-level cover (owner_type GAME)
+    "instanceCoverImageUid": "string" | null,  // game instance cover (owner_type GAME_INSTANCE)
+    "dlcCoverImageUid": "string" | null,       // DLC cover (owner_type DLC); non-null only when isDlc and DLC has cover
 
     "dlcName": "string" | null,            // non-null when isDlc is true
     "dlcReleaseDate": "YYYY-MM-DD" | null,    // non-null when isDlc is true
@@ -396,7 +409,6 @@ Array of GameOverviewRowDto (each row is either an instance or a DLC):
     "completionStateUid": "string" | null,
 
     "totalPlaytimeSeconds": 0 | null,      // null when DLC not linked to playthrough
-    "coverImageUid": "string" | null,      // game/instance fallback cover
 
     "hasDlc": true | false                 // instance has at least one DLC
   }
@@ -406,6 +418,8 @@ Notes:
 - DLC rows (isDlc=true) have playthrough/completion data from the DLC's linked playthrough;
   null when DLC is not linked to a playthrough
 - Instance rows (isDlc=false) always have playthrough/completion data from instance
+- Covers are separate: gameCoverImageUid (game), instanceCoverImageUid (instance), dlcCoverImageUid (DLC when isDlc). Client may choose which to display (e.g. prefer dlcCoverImageUid when isDlc, else instanceCoverImageUid, else gameCoverImageUid).
+- searchText filters on game name, instance name, and (for DLC rows) DLC name
 
 ================================================================================
 6. PLAYTHROUGH ENDPOINTS
@@ -438,7 +452,29 @@ Response: 200 OK
 }
 
 --------------------------------------------------------------------------------
-6.2 Update Playthrough
+6.2 Get Playthrough by UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/playthroughs/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the playthrough
+
+Response: 200 OK
+{
+  "uid": "string",
+  "gameInstanceUid": "string",
+  "playthroughTypeUid": "string",
+  "inputUid": "string",
+  "startedAt": "YYYY-MM-DD",              // LocalDate
+  "playthroughStateUid": "string"
+}
+
+Response: 404 Not Found
+When no playthrough exists for the given uid.
+
+--------------------------------------------------------------------------------
+6.3 Update Playthrough
 --------------------------------------------------------------------------------
 Method: PUT
 Path: /api/playthroughs/{uid}
@@ -863,7 +899,8 @@ Array of DlcResponse:
     "receivedDate": "YYYY-MM-DD" | null,
     "releaseDate": "YYYY-MM-DD" | null,
     "playthroughUid": "string" | null,
-    "completionStateUid": "string" | null
+    "completionStateUid": "string" | null,
+    "coverImageUid": "string" | null     // DLC cover image UID when one exists (owner_type DLC, type COVER)
   }
 ]
 
@@ -887,15 +924,47 @@ Array of IgdbGameSearchResultDto (sorted by name asc, category asc):
   {
     "externalId": 0,                    // long integer (IGDB game ID)
     "name": "string",
-    "releaseDate": "YYYY-MM-DD" | null,  // LocalDate
+    "releaseDate": "YYYY-MM-DD" | null,  // LocalDate (first_release_date)
     "coverImageUrl": "string" | null,    // URL to cover image
     "category": "string" | null,         // from game_type.type (e.g. main_game, expansion)
-    "releasedPlatforms": ["string"]      // platform abbreviations (e.g. PC, PS5)
+    "releasedPlatforms": ["string"],     // platform abbreviations (e.g. PC, PS5)
+    "releaseDates": [                   // from /release_dates endpoint, per game
+      {
+        "date": "YYYY-MM-DD" | null,
+        "platformId": 0 | null,          // IGDB platform ID
+        "platformAbbreviation": "string" | null,
+        "region": 0 | null               // ReleaseDateRegion enum
+      }
+    ]
   }
 ]
 
 --------------------------------------------------------------------------------
-16.2 Import IGDB Cover Image
+16.2 Get IGDB Game by External ID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/external/igdb/games/{externalId}
+
+Path Parameters:
+- externalId (long): IGDB game ID
+
+Response: 200 OK
+IgdbGameSearchResultDto (same shape as 16.1 single item):
+{
+  "externalId": 0,
+  "name": "string",
+  "releaseDate": "YYYY-MM-DD" | null,
+  "coverImageUrl": "string" | null,
+  "category": "string" | null,
+  "releasedPlatforms": ["string"],
+  "releaseDates": [ { "date": "YYYY-MM-DD" | null, "platformId": 0 | null, "platformAbbreviation": "string" | null, "region": 0 | null } ]
+}
+
+Response: 404 Not Found
+When no game exists for the given external ID (or IGDB API error).
+
+--------------------------------------------------------------------------------
+16.3 Import IGDB Cover Image
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/external/igdb/import-cover
@@ -904,13 +973,32 @@ Content-Type: application/json
 Request Body:
 {
   "externalId": 0,                      // long integer (IGDB game ID)
-  "ownerType": "GAME" | "GAME_INSTANCE", // ImageOwnerType enum
-  "gameUid": "string",                   // required if ownerType is GAME
-  "gameInstanceUid": "string" | null    // required if ownerType is GAME_INSTANCE
+  "ownerType": "GAME" | "GAME_INSTANCE" | "DLC",  // ImageOwnerType enum
+  "gameUid": "string",                   // required if ownerType is GAME; optional for DLC (parent game)
+  "gameInstanceUid": "string" | null,   // required if ownerType is GAME_INSTANCE; optional for DLC
+  "dlcUid": "string" | null              // required if ownerType is DLC; used for filename and image ownership
 }
 
 Response: 200 OK
 (no body)
+
+Notes:
+- When ownerType is DLC, display name for saving the image is resolved from Dlc.name (dlcUid). gameUid/gameInstanceUid may be set for context.
+
+--------------------------------------------------------------------------------
+16.4 Get Related Content for IGDB Game
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/external/igdb/games/{externalId}/related
+
+Path Parameters:
+- externalId (long): IGDB game ID
+
+Query Parameters:
+- name (string, optional): Filter related items by name (case-insensitive contains). When omitted, all related items are returned.
+
+Response: 200 OK
+Array of IgdbGameSearchResultDto (same shape as 16.1). Related content includes DLCs, expansions, standalone expansions, and similar games from IGDB (fields: dlcs, expansions, standalone_expansions, similar_games). When name is provided, only items whose name contains the value are included.
 
 ================================================================================
 17. IMAGE DELIVERY ENDPOINTS
@@ -940,6 +1028,104 @@ Behaviour:
 Response: 200 OK
 Content-Type: image/jpeg
 Body: Binary image data
+
+--------------------------------------------------------------------------------
+17.2 List Images for Game
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/images/game/{gameUid}
+
+Path Parameters:
+- gameUid (string): Unique identifier of the game
+
+Response: 200 OK
+Array of ImageMetadataDto:
+[
+  {
+    "uid": "string",
+    "creationDate": "ISO-8601",
+    "ownerType": "GAME" | "GAME_INSTANCE" | "DLC",
+    "gameUid": "string" | null,
+    "gameInstanceUid": "string" | null,
+    "dlcUid": "string" | null,
+    "type": "COVER" | "SCREENSHOT" | "ARTWORK" | "OTHER",
+    "aspectHint": "VERTICAL" | "HORIZONTAL" | "SQUARE" | "FREE",
+    "source": "MANUAL" | "AI" | "IMPORT",
+    "primaryImage": true | false,
+    "filename": "string",
+    "mimetype": "string"
+  }
+]
+
+--------------------------------------------------------------------------------
+17.3 List Images for Game Instance
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/images/game-instance/{gameInstanceUid}
+
+Path Parameters:
+- gameInstanceUid (string): Unique identifier of the game instance
+
+Response: 200 OK
+Array of ImageMetadataDto (same shape as 17.2).
+
+--------------------------------------------------------------------------------
+17.4 Update Image Metadata
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/images/{uid}
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the image
+
+Request Body (all fields optional; only non-null applied; source, filename, mimetype are not updatable):
+{
+  "ownerType": "GAME" | "GAME_INSTANCE" | "DLC",
+  "gameUid": "string" | null,
+  "gameInstanceUid": "string" | null,
+  "dlcUid": "string" | null,
+  "type": "COVER" | "SCREENSHOT" | "ARTWORK" | "OTHER",
+  "aspectHint": "VERTICAL" | "HORIZONTAL" | "SQUARE" | "FREE",
+  "primaryImage": true | false
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+17.5 Upload Image
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/images
+Content-Type: multipart/form-data
+
+Request (form fields):
+- file (file, required): Image file
+- ownerType (string, required): GAME | GAME_INSTANCE | DLC
+- gameUid (string, optional): Required when ownerType is GAME; optional for GAME_INSTANCE/DLC
+- gameInstanceUid (string, optional): Required when ownerType is GAME_INSTANCE; optional for DLC
+- type (string, required): COVER | SCREENSHOT | ARTWORK | OTHER
+- aspectHint (string, required): VERTICAL | HORIZONTAL | SQUARE | FREE
+- source (string, required): MANUAL | AI | IMPORT
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+17.6 Delete Image
+--------------------------------------------------------------------------------
+Method: DELETE
+Path: /api/images/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the image
+
+Response: 200 OK
+(no body). Removes the image record and associated files (original and thumbnail).
+
+Response: 404 / 400
+When no image exists for the given uid (implementation may throw IllegalArgumentException).
 
 ================================================================================
 18. REVIEW ENDPOINTS
@@ -1106,6 +1292,8 @@ Request Body (UpdateStagedGameRequest; all fields optional, only non-null applie
   "proposedPlatformUid": "string" | null,
   "matchedGameUid": "string" | null,
   "matchedGameInstanceUid": "string" | null,
+  "matchedExternalIgdbId": "string" | null,
+  "matchedOriginalConsoleUid": "string" | null,
   "proposedCompletionStateUid": "string" | null,
   "backlogStartDate": "YYYY-MM-DD" | null,
   "backlogEndDate": "YYYY-MM-DD" | null,
@@ -1210,7 +1398,40 @@ StagedGameDetailDto:
 }
 
 --------------------------------------------------------------------------------
-19.4 List StagedGames by Status
+19.4 Search StagedGames by Name
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/import/staged-games/search?name={name}
+
+Query Parameters:
+- name (string, required): Search text; ILIKE on proposed_name, matched game name_base, matched game_instance name
+
+Response: 200 OK
+Array of StagedGameDetailDto (same shape as 19.3), ordered by proposedName. Empty list if name is blank.
+[
+  {
+    "uid": "string",
+    "importBatchUid": "string",
+    "proposedName": "string",
+    "proposedReleaseDate": "YYYY-MM-DD" | null,
+    "proposedReceivedDate": "YYYY-MM-DD" | null,
+    "proposedVariantUid": "string" | null,
+    "proposedPlatformUid": "string" | null,
+    "matchedGameUid": "string" | null,
+    "matchedExternalIgdbId": "string" | null,
+    "matchedOriginalConsoleUid": "string" | null,
+    "proposedCompletionStateUid": "string" | null,
+    "backlogStartDate": "YYYY-MM-DD" | null,
+    "backlogEndDate": "YYYY-MM-DD" | null,
+    "backlogReason": "string" | null,
+    "matchedGameInstanceUid": "string" | null,
+    "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED",
+    "playthroughGroups": [ ... ]
+  }
+]
+
+--------------------------------------------------------------------------------
+19.5 List StagedGames by Status
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/admin/import/staged-games?status={status}
@@ -1229,13 +1450,54 @@ Array of StagedGameSummaryDto (uid + name + status):
 ]
 
 --------------------------------------------------------------------------------
-19.5 List StagedPlaythroughGroups without staged game
+19.6 Count StagedGames by resolution status
 --------------------------------------------------------------------------------
 Method: GET
-Path: /api/admin/import/staged-playthrough-groups/unmapped
+Path: /api/admin/import/staged-games/counts-by-resolution-status
 
 Response: 200 OK
-Array of StagedPlaythroughGroupSummaryDto (groups that have no stagedGameUid):
+Map of resolution status name (string) -> count (int). All statuses included.
+{
+  "CREATED": 0,
+  "UPDATED": 5,
+  "CURATED": 2,
+  "FINALIZED": 1,
+  "IMPORTED": 0
+}
+
+--------------------------------------------------------------------------------
+19.7 Get StagedPlaythroughGroup by UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/import/staged-playthrough-groups/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the staged playthrough group
+
+Response: 200 OK
+StagedPlaythroughGroupSummaryDto:
+{
+  "uid": "string",
+  "importBatchUid": "string",
+  "stagedGameUid": "string" | null,
+  "importedName": "string" | null,
+  "inferredTypeUid": "string" | null,
+  "inferredYear": 0 | null,
+  "proposedPlaythroughStateUid": "string" | null,
+  "resolutionStatus": "string"
+}
+
+--------------------------------------------------------------------------------
+19.8 List StagedPlaythroughGroups (by mapped/unmapped)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/import/staged-playthrough-groups?unmapped={unmapped}
+
+Query Parameters:
+- unmapped (boolean, required): true = only groups without a staged game; false = only groups with a staged game
+
+Response: 200 OK
+Array of StagedPlaythroughGroupSummaryDto:
 [
   {
     "uid": "string",
@@ -1250,6 +1512,47 @@ Array of StagedPlaythroughGroupSummaryDto (groups that have no stagedGameUid):
 ]
 
 ================================================================================
+20. ADMIN IMAGE ENDPOINTS
+================================================================================
+Base Path: /api/admin/images
+
+--------------------------------------------------------------------------------
+20.1 Scan Orphan Images
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/admin/images/orphans
+
+Response: 200 OK
+Array of OrphanImageReportDto (read-only preview of images that are orphaned: missing file, missing owner, or both):
+[
+  {
+    "imageUid": "string",
+    "ownerType": "GAME" | "GAME_INSTANCE" | "DLC",
+    "gameUid": "string" | null,
+    "gameInstanceUid": "string" | null,
+    "metadataExists": true | false,
+    "originalFileExists": true | false,
+    "thumbnailFileExists": true | false,
+    "reason": "string"
+  }
+]
+
+--------------------------------------------------------------------------------
+20.2 Cleanup (Delete) Images
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/admin/images/cleanup
+Content-Type: application/json
+
+Request Body:
+{
+  "imageUids": [ "string" ]
+}
+
+Response: 200 OK
+(no body). Deletes the specified images (storage and DB records).
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -1261,5 +1564,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-11  |  Document version: 23
+Generated: 2026-02-15  |  Document version: 24
 ================================================================================
