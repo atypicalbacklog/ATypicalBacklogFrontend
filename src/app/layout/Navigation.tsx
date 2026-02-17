@@ -35,6 +35,9 @@ export default function Navigation() {
         <ListItemButton component={Link} to="/reviews/year-tierlist">
           <ListItemText primary="Manage Year Tierlist" />
         </ListItemButton>
+        <ListItemButton component={Link} to="/reviews/yearly">
+          <ListItemText primary="Yearly review" />
+        </ListItemButton>
       </List>
     </Box>
   );

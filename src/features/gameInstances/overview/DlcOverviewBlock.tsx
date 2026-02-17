@@ -1,5 +1,7 @@
 import { Box, Typography } from '@mui/material';
 import CompletionBar from '../../shared/CompletionBar';
+import DateWithIcon from '../../shared/DateWithIcon';
+import SmartImage from '../../shared/SmartImage';
 import type { DlcDto } from '../../../services/dlcApi';
 import type { GameCompletionDTO } from '../../../types/dto';
 
@@ -37,31 +39,40 @@ export default function DlcOverviewBlock({
           ? completionStateName(comp.completionStateUid)
           : 'Backlog';
         const playthroughState = null;
+        const coverUid = d.coverImageUid ?? null;
         return (
           <Box
             key={d.uid}
             display="flex"
-            alignItems="center"
+            alignItems="flex-start"
             gap={1}
-            sx={{ py: 0.5 }}
+            sx={{ py: 0.75 }}
           >
-            <Box
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: 'action.hover',
-                borderRadius: 0.5,
-                flexShrink: 0,
-              }}
-            />
-            <Typography variant="body2" sx={{ minWidth: 80 }}>
-              {d.name}
-              {d.receivedDate ? ` · ${d.receivedDate}` : ''}
-            </Typography>
-            <CompletionBar
-              completionState={completionState}
-              playthroughState={playthroughState}
-            />
+            <Box sx={{ flexShrink: 0 }}>
+              <SmartImage
+                imageUid={coverUid}
+                thumbnail
+                alt=""
+                aspectRatio={2 / 3}
+                fit="cover"
+                sx={{ width: 45, height: 60, borderRadius: 0.5 }}
+                imgSx={{ borderRadius: 0.5 }}
+              />
+            </Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography variant="body2" fontWeight="medium" sx={{ display: 'block' }}>
+                {d.name}
+              </Typography>
+              <Box sx={{ mb: 0.5 }}>
+                <DateWithIcon date={d.releaseDate} tooltip="Release Date" />
+              </Box>
+              <Box sx={{ display: 'block' }}>
+                <CompletionBar
+                  completionState={completionState}
+                  playthroughState={playthroughState}
+                />
+              </Box>
+            </Box>
           </Box>
         );
       })}

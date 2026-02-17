@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Alert,
@@ -49,6 +49,9 @@ export default function PlaythroughDetailPage() {
   const [backlogSubmitting, setBacklogSubmitting] = useState(false);
   const [reasonEdit, setReasonEdit] = useState('');
   const [reasonSubmitting, setReasonSubmitting] = useState(false);
+  const [removedDate, setRemovedDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
 
   // Completions (for game instance)
   const [completionStateUid, setCompletionStateUid] = useState('');
@@ -150,8 +153,8 @@ export default function PlaythroughDetailPage() {
     [dlcCompletionEdit, refetchDlcs]
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: FormEvent) => {
+    if (e) e.preventDefault();
     if (!uid) return;
     setSubmitting(true);
     setError(null);
@@ -188,7 +191,6 @@ export default function PlaythroughDetailPage() {
     if (!gameUid) return;
     setBacklogSubmitting(true);
     setError(null);
-    const removedDate = new Date().toISOString().slice(0, 10);
     try {
       await BacklogApi.remove(gameUid, removedDate);
       refetchInstance();
@@ -262,296 +264,358 @@ export default function PlaythroughDetailPage() {
         </Alert>
       )}
 
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        Correction flow — fix type, input, state, or start date. Backend
-        validates allowed values.
-      </Typography>
-
+      {/* Panel: playthrough metadata + DLC + update button */}
       <Box
-        component="form"
-        onSubmit={handleSubmit}
-        display="flex"
-        flexDirection="column"
-        gap={2}
-        maxWidth={400}
-        mt={2}
+        sx={(theme) => ({
+          mt: 2,
+          p: 2,
+          maxWidth: 700,
+          borderRadius: 1,
+          bgcolor:
+            theme.palette.mode === 'dark'
+              ? theme.palette.grey[900]
+              : theme.palette.grey[100],
+        })}
       >
-        <FormControl fullWidth required>
-          <InputLabel>Playthrough type</InputLabel>
-          <Select
-            label="Playthrough type"
-            value={playthroughTypeUid}
-            onChange={(e) => setPlaythroughTypeUid(e.target.value)}
-          >
-            {playthroughTypes.map((t) => (
-              <MenuItem key={t.uid} value={t.uid}>
-                {t.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <FormControl fullWidth required>
-          <InputLabel>Input</InputLabel>
-          <Select
-            label="Input"
-            value={inputUid}
-            onChange={(e) => setInputUid(e.target.value)}
-          >
-            {inputs.map((i) => (
-              <MenuItem key={i.uid} value={i.uid}>
-                {i.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <TextField
-          type="date"
-          label="Started at"
-          value={startedAt}
-          onChange={(e) => setStartedAt(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          required
-          fullWidth
-        />
-
-        <FormControl fullWidth required>
-          <InputLabel>Playthrough state</InputLabel>
-          <Select
-            label="Playthrough state"
-            value={playthroughStateUid}
-            onChange={(e) => setPlaythroughStateUid(e.target.value)}
-          >
-            {playthroughStates.map((s) => (
-              <MenuItem key={s.uid} value={s.uid}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={submitting}
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          display="flex"
+          flexDirection="column"
+          gap={2}
+          maxWidth={400}
         >
-          {submitting ? 'Saving…' : 'Save'}
-        </Button>
-      </Box>
-
-      {/* Manage DLC to playthrough + completion state per DLC */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Manage DLC to playthrough
-        </Typography>
-        {dlcs.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
-            No DLCs for this game instance.
-          </Typography>
-        ) : (
-          <Stack spacing={1.5} sx={{ maxWidth: 560 }}>
-            {dlcs.map((dlc) => {
-              const linked = dlc.playthroughUid === uid;
-              const updating = dlcUpdatingUid === dlc.uid;
-              const currentCompletion = dlc.completionStateUid ?? '';
-              const editCompletion = dlcCompletionEdit[dlc.uid] ?? currentCompletion;
-              const completionDirty = editCompletion !== currentCompletion;
-              return (
-                <Box
-                  key={dlc.uid}
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    gap: 2,
-                    py: 1,
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={linked}
-                        disabled={updating}
-                        onChange={() => handleDlcPlaythroughToggle(dlc, !linked)}
-                      />
-                    }
-                    label={dlc.name}
-                  />
-                  <CompletionBar
-                    completionState={
-                      dlc.completionStateUid
-                        ? completionStateName(dlc.completionStateUid)
-                        : 'Backlog'
-                    }
-                    playthroughState={null}
-                  />
-                  <FormControl size="small" sx={{ minWidth: 160 }}>
-                    <InputLabel>Completion</InputLabel>
-                    <Select
-                      label="Completion"
-                      value={editCompletion}
-                      disabled={updating}
-                      onChange={(e) => handleDlcCompletionChange(dlc.uid, e.target.value)}
-                    >
-                      {completionStates.map((c) => (
-                        <MenuItem key={c.uid} value={c.uid}>
-                          {c.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    disabled={updating || !completionDirty}
-                    onClick={() => handleDlcCompletionUpdate(dlc)}
-                  >
-                    Update
-                  </Button>
-                </Box>
-              );
-            })}
-          </Stack>
-        )}
-      </Box>
-
-      {/* Backlog (Game) — link to backlog entry and update state */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Backlog (Game)
-        </Typography>
-        {!gameUid ? (
-          <Typography variant="body2" color="text.secondary">
-            No game linked to this instance.
-          </Typography>
-        ) : backlog ? (
-          <Stack spacing={2} maxWidth={400}>
-            <Typography variant="body2">
-              Added: {backlog.addedDate}
-              {backlog.removedDate != null &&
-                ` · Removed: ${backlog.removedDate}`}
-            </Typography>
-            <Stack direction="row" gap={2} alignItems="flex-start" flexWrap="wrap">
-              <TextField
-                label="Reason"
-                value={reasonEdit}
-                onChange={(e) => setReasonEdit(e.target.value)}
-                size="small"
-                sx={{ minWidth: 200, flex: 1 }}
-              />
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleUpdateBacklogReason}
-                disabled={
-                  reasonSubmitting ||
-                  reasonEdit === backlog.reason ||
-                  !reasonEdit.trim()
-                }
+          <Stack direction="row" spacing={2}>
+            <FormControl fullWidth required sx={{ flex: 1 }}>
+              <InputLabel>Playthrough type</InputLabel>
+              <Select
+                label="Playthrough type"
+                value={playthroughTypeUid}
+                onChange={(e) => setPlaythroughTypeUid(e.target.value)}
               >
-                Update reason
-              </Button>
-            </Stack>
-            <Button
-              variant="outlined"
-              color="error"
-              size="small"
-              onClick={handleRemoveFromBacklog}
-              disabled={backlogSubmitting}
-            >
-              Remove from backlog
-            </Button>
-          </Stack>
-        ) : (
-          <Stack spacing={2} maxWidth={400}>
+                {playthroughTypes.map((t) => (
+                  <MenuItem key={t.uid} value={t.uid}>
+                    {t.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <TextField
               type="date"
-              label="Added date"
-              value={addDate}
-              onChange={(e) => setAddDate(e.target.value)}
+              label="Started at"
+              value={startedAt}
+              onChange={(e) => setStartedAt(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              size="small"
+              required
               fullWidth
+              sx={{ flex: 1 }}
             />
+          </Stack>
+
+          <Stack direction="row" spacing={2}>
+            <FormControl fullWidth required sx={{ flex: 1 }}>
+              <InputLabel>Input</InputLabel>
+              <Select
+                label="Input"
+                value={inputUid}
+                onChange={(e) => setInputUid(e.target.value)}
+              >
+                {inputs.map((i) => (
+                  <MenuItem key={i.uid} value={i.uid}>
+                    {i.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth required sx={{ flex: 1 }}>
+              <InputLabel>Playthrough state</InputLabel>
+              <Select
+                label="Playthrough state"
+                value={playthroughStateUid}
+                onChange={(e) => setPlaythroughStateUid(e.target.value)}
+              >
+                {playthroughStates.map((s) => (
+                  <MenuItem key={s.uid} value={s.uid}>
+                    {s.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Box>
+
+        {/* Manage DLC to playthrough + completion state per DLC */}
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            Manage DLC to playthrough
+          </Typography>
+          {dlcs.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No DLCs for this game instance.
+            </Typography>
+          ) : (
+            <Stack spacing={1.5} sx={{ maxWidth: 560 }}>
+              {dlcs.map((dlc) => {
+                const linked = dlc.playthroughUid === uid;
+                const updating = dlcUpdatingUid === dlc.uid;
+                const currentCompletion = dlc.completionStateUid ?? '';
+                const editCompletion = dlcCompletionEdit[dlc.uid] ?? currentCompletion;
+                const completionDirty = editCompletion !== currentCompletion;
+                return (
+                  <Box
+                    key={dlc.uid}
+                    sx={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      alignItems: 'center',
+                      gap: 2,
+                      py: 1,
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 2,
+                        width: '100%',
+                      }}
+                    >
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={linked}
+                            disabled={updating}
+                            onChange={() => handleDlcPlaythroughToggle(dlc, !linked)}
+                          />
+                        }
+                        label={dlc.name}
+                      />
+                      <CompletionBar
+                        completionState={
+                          dlc.completionStateUid
+                            ? completionStateName(dlc.completionStateUid)
+                            : 'Backlog'
+                        }
+                        playthroughState={null}
+                      />
+                    </Box>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 2,
+                        mt: 1,
+                        width: '100%',
+                      }}
+                    >
+                      <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <InputLabel>Completion</InputLabel>
+                        <Select
+                          label="Completion"
+                          value={editCompletion}
+                          disabled={updating}
+                          onChange={(e) => handleDlcCompletionChange(dlc.uid, e.target.value)}
+                        >
+                          {completionStates.map((c) => (
+                            <MenuItem key={c.uid} value={c.uid}>
+                              {c.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        disabled={updating || !completionDirty}
+                        onClick={() => handleDlcCompletionUpdate(dlc)}
+                      >
+                        Set Completion
+                      </Button>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Stack>
+          )}
+        </Box>
+
+        {/* Update playthrough main fields */}
+        <Box sx={{ mt: 3 }}>
+          <Button
+            variant="contained"
+            disabled={submitting}
+            onClick={() => handleSubmit()}
+          >
+            {submitting ? 'Updating…' : 'Update Playthrough'}
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Panel: backlog + game completion */}
+      <Box
+        sx={(theme) => ({
+          mt: 4,
+          p: 2,
+          maxWidth: 700,
+          borderRadius: 1,
+          bgcolor:
+            theme.palette.mode === 'dark'
+              ? theme.palette.grey[900]
+              : theme.palette.grey[100],
+        })}
+      >
+        {/* Backlog (Game) — link to backlog entry and update state */}
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            Backlog (Game)
+          </Typography>
+          {!gameUid ? (
+            <Typography variant="body2" color="text.secondary">
+              No game linked to this instance.
+            </Typography>
+          ) : backlog ? (
+            <Stack spacing={2} maxWidth={400}>
+              <Typography variant="body2">
+                Added: {backlog.addedDate}
+                {backlog.removedDate != null &&
+                  ` · Removed: ${backlog.removedDate}`}
+              </Typography>
+              <Stack direction="row" gap={2} alignItems="flex-start" flexWrap="wrap">
+                <TextField
+                  label="Reason"
+                  value={reasonEdit}
+                  onChange={(e) => setReasonEdit(e.target.value)}
+                  size="small"
+                  sx={{ minWidth: 200, flex: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleUpdateBacklogReason}
+                  disabled={
+                    reasonSubmitting ||
+                    reasonEdit === backlog.reason ||
+                    !reasonEdit.trim()
+                  }
+                >
+                  Update reason
+                </Button>
+              </Stack>
+              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                <TextField
+                  type="date"
+                  label="Removed date"
+                  value={removedDate}
+                  onChange={(e) => setRemovedDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  sx={{ minWidth: 160 }}
+                />
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={handleRemoveFromBacklog}
+                  disabled={backlogSubmitting}
+                >
+                  Remove from backlog
+                </Button>
+              </Stack>
+            </Stack>
+          ) : (
+            <Stack spacing={2} maxWidth={400}>
+              <TextField
+                type="date"
+                label="Added date"
+                value={addDate}
+                onChange={(e) => setAddDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                fullWidth
+              />
+              <TextField
+                label="Reason"
+                value={addReason}
+                onChange={(e) => setAddReason(e.target.value)}
+                fullWidth
+                size="small"
+              />
+              <Button
+                variant="contained"
+                onClick={handleAddToBacklog}
+                disabled={backlogSubmitting || !addDate}
+              >
+                Add to backlog
+              </Button>
+            </Stack>
+          )}
+        </Box>
+
+        {/* Game completion (instance) */}
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+            Game completion
+          </Typography>
+          {instance && (() => {
+            const mainCompletion = instance.completions.find((c) => !c.dlcUid);
+            const completionState =
+              mainCompletion
+                ? completionStateName(mainCompletion.completionStateUid)
+                : 'Backlog';
+            const playthroughState =
+              playthroughStates.find((s) => s.uid === playthroughStateUid)?.name ?? null;
+            return (
+              <Box sx={{ mb: 2 }}>
+                <CompletionBar
+                  completionState={completionState}
+                  playthroughState={playthroughState}
+                />
+                {mainCompletion?.info && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {mainCompletion.info}
+                  </Typography>
+                )}
+              </Box>
+            );
+          })()}
+          <Stack spacing={2} direction="row" flexWrap="wrap" alignItems="center">
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>Completion state</InputLabel>
+              <Select
+                label="Completion state"
+                value={completionStateUid}
+                onChange={(e) => setCompletionStateUid(e.target.value)}
+              >
+                {completionStates.map((c) => (
+                  <MenuItem key={c.uid} value={c.uid}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
-              label="Reason"
-              value={addReason}
-              onChange={(e) => setAddReason(e.target.value)}
-              fullWidth
+              label="Info"
+              value={completionInfo}
+              onChange={(e) => setCompletionInfo(e.target.value)}
               size="small"
+              sx={{ minWidth: 120 }}
             />
             <Button
               variant="contained"
-              onClick={handleAddToBacklog}
-              disabled={backlogSubmitting || !addReason.trim()}
+              size="small"
+              onClick={handleSetCompletion}
+              disabled={completionSubmitting || !completionStateUid}
             >
-              Add to backlog
+              Set Completion
             </Button>
           </Stack>
-        )}
-      </Box>
-
-      {/* Game completion (instance) */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          Game completion
-        </Typography>
-        {instance && (() => {
-          const mainCompletion = instance.completions.find((c) => !c.dlcUid);
-          const completionState =
-            mainCompletion
-              ? completionStateName(mainCompletion.completionStateUid)
-              : 'Backlog';
-          const playthroughState =
-            playthroughStates.find((s) => s.uid === playthroughStateUid)?.name ?? null;
-          return (
-            <Box sx={{ mb: 2 }}>
-              <CompletionBar
-                completionState={completionState}
-                playthroughState={playthroughState}
-              />
-              {mainCompletion?.info && (
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {mainCompletion.info}
-                </Typography>
-              )}
-            </Box>
-          );
-        })()}
-        <Stack spacing={2} direction="row" flexWrap="wrap" alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Completion state</InputLabel>
-            <Select
-              label="Completion state"
-              value={completionStateUid}
-              onChange={(e) => setCompletionStateUid(e.target.value)}
-            >
-              {completionStates.map((c) => (
-                <MenuItem key={c.uid} value={c.uid}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField
-            label="Info"
-            value={completionInfo}
-            onChange={(e) => setCompletionInfo(e.target.value)}
-            size="small"
-            sx={{ minWidth: 120 }}
-          />
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleSetCompletion}
-            disabled={completionSubmitting || !completionStateUid}
-          >
-            Set completion
-          </Button>
-        </Stack>
+        </Box>
       </Box>
     </Box>
   );

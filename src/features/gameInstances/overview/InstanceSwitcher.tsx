@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import type { GameInstanceSummaryDto } from '../../../types/dto';
-import { getImageUrl } from '../../../services/imageApi';
+import SmartImage from '../../shared/SmartImage';
 import VariantConsolePlatformDisplay, {
   type VariantConsolePlatformDisplayProps,
 } from '../../shared/VariantConsolePlatformDisplay';
@@ -49,7 +49,6 @@ export default function InstanceSwitcher({
         <List dense disablePadding sx={{ minWidth: 220 }}>
           {instances.map((inst) => {
             const isCurrent = inst.uid === currentUid;
-            const coverUrl = getImageUrl(inst.coverImageUid, false);
             return (
               <ListItemButton
                 key={inst.uid}
@@ -58,30 +57,15 @@ export default function InstanceSwitcher({
                 selected={isCurrent}
                 onClick={() => setAnchor(null)}
               >
-                {coverUrl ? (
-                  <Box
-                    component="img"
-                    src={coverUrl}
-                    alt=""
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      objectFit: 'cover',
-                      borderRadius: 0.5,
-                      mr: 1.5,
-                    }}
-                  />
-                ) : (
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      bgcolor: 'grey.300',
-                      borderRadius: 0.5,
-                      mr: 1.5,
-                    }}
-                  />
-                )}
+                <SmartImage
+                  imageUid={inst.coverImageUid}
+                  thumbnail={false}
+                  alt=""
+                  aspectRatio={2 / 3}
+                  fit="contain"
+                  sx={{ width: 40, height: 40, borderRadius: 0.5, mr: 1.5 }}
+                  imgSx={{ borderRadius: 0.5 }}
+                />
                 <ListItemText
                   primary={inst.name || inst.uid}
                   primaryTypographyProps={{ noWrap: true }}

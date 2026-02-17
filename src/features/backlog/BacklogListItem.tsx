@@ -10,8 +10,9 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import { getImageUrl } from '../../services/imageApi';
 import CompletionBar from '../shared/CompletionBar';
+import DateWithIcon from '../shared/DateWithIcon';
+import SmartImage from '../shared/SmartImage';
 import VariantConsolePlatformDisplay, {
   getVariantConsolePlatformDisplayProps,
 } from '../shared/VariantConsolePlatformDisplay';
@@ -32,10 +33,12 @@ function InstanceRow({
   instance,
   gameName,
   gameReleaseDate,
+  gameCoverImageUid,
 }: {
   instance: BacklogOverviewInstanceDto;
   gameName: string;
   gameReleaseDate: string | null;
+  gameCoverImageUid: string | null;
 }) {
   const { referenceData } = useReferenceData();
   const completionName =
@@ -59,14 +62,11 @@ function InstanceRow({
     referenceData
   );
 
-  const thumbnailUrl = instance.coverImageUid
-    ? getImageUrl(instance.coverImageUid, true)
-    : null;
-
   const instanceNameDifferent = instance.instanceName != null && instance.instanceName !== gameName;
   const releaseDateDifferent =
     instance.releaseDate != null &&
     instance.releaseDate !== (gameReleaseDate ?? '');
+  const hasHeaderRow = instanceNameDifferent || releaseDateDifferent;
 
   const playthroughs = instance.playthroughs ?? [];
   const dlcNames = instance.dlcNames ?? [];
@@ -82,24 +82,34 @@ function InstanceRow({
         py: 0.75,
         px: 1,
         borderRadius: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        backdropFilter: 'blur(4px)',
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark'
+            ? theme.palette.grey[800]
+            : theme.palette.grey[50],
         border: '1px solid',
         borderColor: 'divider',
         textDecoration: 'none',
         color: 'inherit',
+        transition: (theme) => theme.transitions.create('border-color', {
+          duration: theme.transitions.duration.short,
+        }),
+        '&:hover': {
+          borderColor: 'primary.main',
+        },
       }}
     >
-      {thumbnailUrl && (
-        <Box
-          component="img"
-          src={thumbnailUrl}
+      {instance.coverImageUid && instance.coverImageUid !== gameCoverImageUid ? (
+        <SmartImage
+          imageUid={instance.coverImageUid}
+          thumbnail
           alt=""
-          width={40}
-          height={40}
-          sx={{ objectFit: 'cover', borderRadius: 0.5, bgcolor: 'grey.300', flexShrink: 0 }}
+          aspectRatio={2 / 3}
+          fit="contain"
+          sx={{ width: 40, height: 40, borderRadius: 0.5, flexShrink: 0 }}
+          imgSx={{ borderRadius: 0.5 }}
+          showPlaceholder={false}
         />
-      )}
+      ) : null}
       <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
         {(instanceNameDifferent || releaseDateDifferent) && (
           <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
@@ -109,26 +119,40 @@ function InstanceRow({
               </Typography>
             )}
             {releaseDateDifferent && (
-              <Typography variant="caption" color="text.secondary">
-                {instance.releaseDate}
-              </Typography>
+              <DateWithIcon date={instance.releaseDate} tooltip="Release Date" />
             )}
           </Stack>
         )}
-        <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" useFlexGap>
-          <Typography variant="body2" color="text.secondary" component="div">
+        <Stack
+          direction="row"
+          spacing={0.5}
+          flexWrap="wrap"
+          alignItems="center"
+          useFlexGap
+          sx={{ mt: hasHeaderRow ? 0.25 : 0.75 }}
+        >
+          <Typography variant="body2" color="text.secondary" component="div" sx={{ flex: 1, minWidth: 0 }}>
             <VariantConsolePlatformDisplay
               {...variantConsolePlatformDisplay}
               variant="body2"
               color="text.secondary"
             />
           </Typography>
+          <Box
+            sx={{
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'flex-end',
+              alignSelf: 'stretch',
+            }}
+          >
+            <CompletionBar
+              completionState={completionName ?? 'Backlog'}
+              playthroughState={playthroughStateName}
+            />
+          </Box>
         </Stack>
         <Stack direction="row" spacing={0.5} flexWrap="wrap" alignItems="center" useFlexGap>
-          <CompletionBar
-            completionState={completionName ?? 'Backlog'}
-            playthroughState={playthroughStateName}
-          />
           {playthroughs.length > 0 && (
             <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
               {playthroughs.map((p, idx) => {
@@ -166,8 +190,6 @@ export default function BacklogListItem({
   const others = otherInstances(item.instances, defaultInstance);
   const hasOthers = others.length > 0;
 
-  const thumbnailUrl = getImageUrl(item.coverImageUid, true);
-
   return (
     <Box
       border={1}
@@ -175,47 +197,112 @@ export default function BacklogListItem({
       borderColor="divider"
       sx={{
         overflow: 'hidden',
-        backgroundColor: 'rgba(255, 255, 255, 0.25)',
-        backdropFilter: 'blur(10px)',
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark'
+            ? theme.palette.grey[900]
+            : theme.palette.grey[100],
+        position: 'relative',
       }}
     >
+      {/* Order number overlay (top left) */}
+      {backlogCount != null && (
+        <Typography
+          variant="h6"
+          sx={{
+            position: 'absolute',
+            top: 6,
+            left: 6,
+            fontStyle: 'italic',
+            opacity: 0.35,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }}
+        >
+          #{backlogCount}
+        </Typography>
+      )}
       <Stack direction="row" spacing={0} alignItems="stretch">
         {/* Left: Main segment */}
-        <Box sx={{ flex: '1 1 0', minWidth: 200, maxWidth: 360, p: 1.5, borderRight: 1, borderColor: 'divider' }}>
-          <Stack direction="row" spacing={1.5} alignItems="flex-start">
-            <Typography variant="caption" color="text.secondary" sx={{ pt: 0.5, whiteSpace: 'nowrap' }}>
-              #{backlogCount ?? '—'} / SCORE {item.backlogScore}
+        <Box
+          sx={{
+            flex: '1 1 0',
+            minWidth: 220,
+            maxWidth: 400,
+            p: 1.5,
+            borderRight: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'flex-start',
+          }}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ width: '100%' }}>
+            {/* Score to the left of image */}
+            <Typography
+              variant="h6"
+              fontWeight={600}
+              title="Calculated Backlog Importance Score"
+              sx={{
+                minWidth: 40,
+                textAlign: 'right',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                alignSelf: 'stretch',
+              }}
+            >
+              {item.backlogScore}
             </Typography>
-            {thumbnailUrl ? (
-              <Box
-                component="img"
-                src={thumbnailUrl}
-                alt=""
-                width={64}
-                height={64}
-                sx={{ objectFit: 'cover', borderRadius: 1, bgcolor: 'grey.300', flexShrink: 0 }}
-              />
-            ) : (
-              <Box
-                width={64}
-                height={64}
-                bgcolor="grey.300"
-                sx={{ borderRadius: 1, flexShrink: 0 }}
-              />
-            )}
-            <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="subtitle2">
+            <SmartImage
+              imageUid={item.coverImageUid}
+              thumbnail
+              alt=""
+              aspectRatio={2 / 3}
+              fit="contain"
+              sx={{ width: 100, height: 133, borderRadius: 1, flexShrink: 0 }}
+              imgSx={{ borderRadius: 1 }}
+            />
+            <Stack
+              spacing={0.5}
+              sx={{ minWidth: 0, flex: 1 }}
+            >
+              <Typography variant="subtitle1">
                 {item.gameName}
               </Typography>
               {item.gameReleaseDate && (
-                <Typography variant="caption" color="text.secondary">
-                  {item.gameReleaseDate}
-                </Typography>
+                <DateWithIcon date={item.gameReleaseDate} tooltip="Release Date" />
               )}
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                Added {item.backlogAddedDate}
-                {item.backlogReason ? ` · ${item.backlogReason}` : ''}
-              </Typography>
+              <Box
+                sx={{
+                  pt: 3, // clear visual gap from name + release date
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.25,
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    In backlog since:
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.backlogAddedDate}
+                  </Typography>
+                </Box>
+                {item.backlogReason && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
+                    {item.backlogReason}
+                  </Typography>
+                )}
+              </Box>
             </Stack>
           </Stack>
         </Box>
@@ -231,6 +318,7 @@ export default function BacklogListItem({
               instance={item.instances[0]}
               gameName={item.gameName}
               gameReleaseDate={item.gameReleaseDate}
+              gameCoverImageUid={item.coverImageUid}
             />
           ) : (
             <Stack spacing={0.75}>
@@ -239,6 +327,7 @@ export default function BacklogListItem({
                   instance={defaultInstance}
                   gameName={item.gameName}
                   gameReleaseDate={item.gameReleaseDate}
+                  gameCoverImageUid={item.coverImageUid}
                 />
               )}
               {hasOthers && (
@@ -264,6 +353,7 @@ export default function BacklogListItem({
                           instance={inst}
                           gameName={item.gameName}
                           gameReleaseDate={item.gameReleaseDate}
+                          gameCoverImageUid={item.coverImageUid}
                         />
                       ))}
                     </Stack>

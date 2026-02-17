@@ -22,6 +22,7 @@ export interface DlcDto {
   releaseDate?: string | null; // YYYY-MM-DD
   playthroughUid: string | null;
   completionStateUid?: string | null;
+  coverImageUid?: string | null;
 }
 
 /** Request for PUT /api/dlcs/{uid}. */

@@ -54,6 +54,9 @@ export default function GameInstanceDetailPage() {
   // Backlog form (update reason)
   const [reasonEdit, setReasonEdit] = useState('');
   const [reasonSubmitting, setReasonSubmitting] = useState(false);
+  const [removedDate, setRemovedDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
   // Relink to other game
   const [relinkQuery, setRelinkQuery] = useState('');
   const [relinkResults, setRelinkResults] = useState<SearchResultItem[]>([]);
@@ -145,7 +148,6 @@ export default function GameInstanceDetailPage() {
     if (!gameUid) return;
     setBacklogSubmitting(true);
     setError(null);
-    const removedDate = new Date().toISOString().slice(0, 10);
     try {
       await BacklogApi.remove(gameUid, removedDate);
       refetchInstance();
@@ -349,7 +351,16 @@ export default function GameInstanceDetailPage() {
       </Collapse>
 
       {/* Game + Backlog: 2 columns */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          width: 900,
+          maxWidth: '100%',
+          bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+        }}
+      >
         <Grid container spacing={3}>
           {game && (
             <Grid item xs={12} md={6}>
@@ -393,15 +404,26 @@ export default function GameInstanceDetailPage() {
                     Update reason
                   </Button>
                 </Box>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  size="small"
-                  onClick={handleRemoveFromBacklog}
-                  disabled={backlogSubmitting}
-                >
-                  Remove from backlog
-                </Button>
+                <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                  <TextField
+                    type="date"
+                    label="Removed date"
+                    value={removedDate}
+                    onChange={(e) => setRemovedDate(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    size="small"
+                    sx={{ minWidth: 160 }}
+                  />
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    onClick={handleRemoveFromBacklog}
+                    disabled={backlogSubmitting}
+                  >
+                    Remove from backlog
+                  </Button>
+                </Stack>
               </Stack>
             ) : (
               <Stack spacing={2}>
@@ -424,7 +446,7 @@ export default function GameInstanceDetailPage() {
                 <Button
                   variant="contained"
                   onClick={handleAddToBacklog}
-                  disabled={backlogSubmitting || !addReason}
+                  disabled={backlogSubmitting || !addDate}
                 >
                   Add to backlog
                 </Button>
@@ -471,64 +493,89 @@ export default function GameInstanceDetailPage() {
         </Grid>
       </Paper>
 
-      {/* GameInstance metadata */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      {/* GameInstance metadata + completion above Save */}
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          width: 900,
+          maxWidth: '100%',
+          bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+        }}
+      >
         <GameInstanceForm
           mode="update"
           initial={instance}
           onSubmit={handleUpdateInstance}
           submitLabel="Save"
+          insertAboveSubmit={
+            <>
+              <Stack
+                direction="row"
+                flexWrap="nowrap"
+                alignItems="center"
+                gap={2}
+                sx={{ mb: 1, width: '100%', minWidth: 0 }}
+              >
+                <Box sx={{ minWidth: 100, maxWidth: 320, flex: '1 1 200px', overflow: 'hidden' }}>
+                  <CompletionBar
+                    completionState={instanceCompletionState}
+                    playthroughState={null}
+                  />
+                  {mainCompletion?.info && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      {mainCompletion.info}
+                    </Typography>
+                  )}
+                </Box>
+                <FormControl size="small" sx={{ minWidth: 180, flexShrink: 0 }}>
+                  <InputLabel>Completion state</InputLabel>
+                  <Select
+                    label="Completion state"
+                    value={completionStateUid}
+                    onChange={(e) => setCompletionStateUid(e.target.value)}
+                  >
+                    {completionStates.map((c) => (
+                      <MenuItem key={c.uid} value={c.uid}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Info"
+                  value={completionInfo}
+                  onChange={(e) => setCompletionInfo(e.target.value)}
+                  size="small"
+                  sx={{ minWidth: 120, flexShrink: 0 }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleSetCompletion}
+                  disabled={completionSubmitting || !completionStateUid}
+                  sx={{ flexShrink: 0 }}
+                >
+                  Set completion
+                </Button>
+              </Stack>
+            </>
+          }
         />
       </Paper>
 
-      {/* Game completion */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ mb: 2 }}>
-          <CompletionBar
-            completionState={instanceCompletionState}
-            playthroughState={null}
-          />
-          {mainCompletion?.info && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {mainCompletion.info}
-            </Typography>
-          )}
-        </Box>
-        <Stack spacing={2} direction="row" flexWrap="wrap" alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Completion state</InputLabel>
-            <Select
-              label="Completion state"
-              value={completionStateUid}
-              onChange={(e) => setCompletionStateUid(e.target.value)}
-            >
-              {completionStates.map((c) => (
-                <MenuItem key={c.uid} value={c.uid}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField
-            label="Info"
-            value={completionInfo}
-            onChange={(e) => setCompletionInfo(e.target.value)}
-            size="small"
-            sx={{ minWidth: 120 }}
-          />
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleSetCompletion}
-            disabled={completionSubmitting || !completionStateUid}
-          >
-            Set completion
-          </Button>
-        </Stack>
-      </Paper>
-
       {/* DLC */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          width: 900,
+          maxWidth: '100%',
+          bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+        }}
+      >
         {dlcs.length === 0 ? (
           <Typography variant="body2" color="text.secondary">
             No DLC for this game instance.
@@ -561,7 +608,7 @@ export default function GameInstanceDetailPage() {
                       justifyContent: 'space-between',
                       px: 1.5,
                       py: 1,
-                      bgcolor: 'action.hover',
+                      bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.700' : 'grey.200'),
                     }}
                   >
                     <Typography variant="body2" fontWeight="medium">
@@ -628,17 +675,14 @@ export default function GameInstanceDetailPage() {
                           sx={{ minWidth: 140 }}
                         />
                       </Stack>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-                          Completion
-                        </Typography>
-                        <CompletionBar
-                          completionState={completionState}
-                          playthroughState={null}
-                        />
-                      </Box>
-                      <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-                        <FormControl size="small" sx={{ minWidth: 160 }}>
+                      <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap" useFlexGap>
+                        <Box sx={{ flex: '1 1 120px', minWidth: 0 }}>
+                          <CompletionBar
+                            completionState={completionState}
+                            playthroughState={null}
+                          />
+                        </Box>
+                        <FormControl size="small" sx={{ minWidth: 160, flexShrink: 0 }}>
                           <InputLabel>Completion state</InputLabel>
                           <Select
                             label="Completion state"
@@ -661,6 +705,7 @@ export default function GameInstanceDetailPage() {
                           size="small"
                           onClick={() => handleDlcSave(dlc)}
                           disabled={updating}
+                          sx={{ flexShrink: 0 }}
                         >
                           {updating ? 'Saving…' : 'Save DLC'}
                         </Button>
@@ -676,8 +721,17 @@ export default function GameInstanceDetailPage() {
 
       {/* Image gallery (all images for this game) */}
       {instance.gameUid && (
-        <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-          <ImageGallery gameUid={instance.gameUid} />
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            mb: 3,
+            width: 900,
+            maxWidth: '100%',
+            bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+          }}
+        >
+          <ImageGallery gameUid={instance.gameUid} gameInstanceUid={instance.uid} />
         </Paper>
       )}
     </Box>

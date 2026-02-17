@@ -26,6 +26,8 @@ type CreateProps = {
   initial?: Partial<CreateGameInstanceRequest>;
   onSubmit: (data: CreateGameInstanceRequest) => void | Promise<void>;
   submitLabel?: string;
+  /** Rendered above the submit button (e.g. completion block). */
+  insertAboveSubmit?: React.ReactNode;
 };
 
 type UpdateProps = {
@@ -33,12 +35,14 @@ type UpdateProps = {
   initial: Partial<GameInstanceDTO>;
   onSubmit: (data: UpdateGameInstanceRequest) => void | Promise<void>;
   submitLabel?: string;
+  /** Rendered above the submit button (e.g. completion block). */
+  insertAboveSubmit?: React.ReactNode;
 };
 
 type GameInstanceFormProps = CreateProps | UpdateProps;
 
 export default function GameInstanceForm(props: GameInstanceFormProps) {
-  const { mode, onSubmit, submitLabel = 'Save' } = props;
+  const { mode, onSubmit, submitLabel = 'Save', insertAboveSubmit } = props;
   const initial = props.initial ?? {};
 
   const { referenceData, isLoaded } = useReferenceData();
@@ -139,7 +143,7 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
-            label="Name"
+            label="InstanceName"
             value={name}
             onChange={(e) => setName(e.target.value)}
             size="small"
@@ -174,48 +178,27 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
           />
         </Box>
       </Box>
-      <TextField
-        type="date"
-        label="Release date"
-        value={releaseDate}
-        onChange={(e) => setReleaseDate(e.target.value)}
-        InputLabelProps={{ shrink: true }}
-        fullWidth
-      />
 
-      {/* Platform + Original console */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-        <PlatformSelect
-          value={platformUid}
-          onChange={(v) => {
-            if (v === undefined || v === null) return;
-            setPlatformUid(typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || '');
-          }}
-          required={mode === 'create'}
-          allowEmpty={mode === 'update'}
+      {/* Release date + Received date + Variant in same row */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+        <TextField
+          type="date"
+          label="Release date"
+          value={releaseDate}
+          onChange={(e) => setReleaseDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
           size="small"
+          sx={{ minWidth: 160 }}
         />
-        <FormControl size="small" sx={{ minWidth: 160, flex: 1 }}>
-          <InputLabel>Original console</InputLabel>
-          <Select
-            label="Original console"
-            value={originalConsoleUid}
-            onChange={(e) => setOriginalConsoleUid(e.target.value)}
-          >
-            <MenuItem value="">
-              <em>—</em>
-            </MenuItem>
-            {consoles.map((c) => (
-              <MenuItem key={c.uid} value={c.uid}>
-                {c.fullname || c.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      {/* Variant + Received date */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+        <TextField
+          type="date"
+          label="Received date"
+          value={receivedDate}
+          onChange={(e) => setReceivedDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          size="small"
+          sx={{ minWidth: 140 }}
+        />
         <FormControl size="small" sx={{ minWidth: 120, flex: 1 }} required={mode === 'create'}>
           <InputLabel>Variant</InputLabel>
           <Select
@@ -235,19 +218,45 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
             ))}
           </Select>
         </FormControl>
-        <TextField
-          type="date"
-          label="Received date"
-          value={receivedDate}
-          onChange={(e) => setReceivedDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          size="small"
-          sx={{ minWidth: 140 }}
-        />
       </Box>
 
-      {/* For free / In possession */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+      {/* Platform (wider) + Original console (right) in same row */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
+        <Box sx={{ flex: 1, minWidth: 280 }}>
+          <PlatformSelect
+            value={platformUid}
+            onChange={(v) => {
+              if (v === undefined || v === null) return;
+              setPlatformUid(typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || '');
+            }}
+            required={mode === 'create'}
+            allowEmpty={mode === 'update'}
+            size="small"
+            fullWidth={false}
+            minWidth={280}
+          />
+        </Box>
+        <FormControl size="small" sx={{ minWidth: 180, width: 220, flexShrink: 0 }}>
+          <InputLabel>Original console</InputLabel>
+          <Select
+            label="Original console"
+            value={originalConsoleUid}
+            onChange={(e) => setOriginalConsoleUid(e.target.value)}
+          >
+            <MenuItem value="">
+              <em>—</em>
+            </MenuItem>
+            {consoles.map((c) => (
+              <MenuItem key={c.uid} value={c.uid}>
+                {c.fullname || c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* For free + In possession */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
         <FormControlLabel
           control={
             <Checkbox
@@ -267,6 +276,8 @@ export default function GameInstanceForm(props: GameInstanceFormProps) {
           label="In possession"
         />
       </Box>
+
+      {insertAboveSubmit}
 
       <Button type="submit" variant="contained" disabled={!canSubmit}>
         {submitLabel}

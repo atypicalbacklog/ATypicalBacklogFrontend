@@ -15,6 +15,7 @@ import {
   IconButton,
   InputAdornment,
 } from '@mui/material';
+import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { createConsoleMap, createConsoleNameMap } from '../../referenceData/referenceDataUtils';
@@ -222,31 +223,36 @@ export default function PlatformSelect({
     clearValue();
   };
 
-  return (
-    <Box ref={selectRef} sx={{ width: fullWidth ? '100%' : 'auto', position: 'relative' }}>
-      {!multiple && hasValue && allowEmpty && (
-        <IconButton
-          size="small"
-          onClick={handleClear}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 1,
-            padding: 0.5,
-          }}
-        >
-          <ClearIcon fontSize="small" />
-        </IconButton>
+  const singleSelectEndAdornment = (
+    <>
+      {hasValue && allowEmpty && (
+        <InputAdornment position="end">
+          <IconButton
+            size="small"
+            onClick={handleClear}
+            edge="end"
+            sx={{ mr: -0.5 }}
+            aria-label="Clear"
+          >
+            <ClearIcon fontSize="small" />
+          </IconButton>
+        </InputAdornment>
       )}
+      <InputAdornment position="end">
+        <ArrowDropDown sx={{ pointerEvents: 'none', color: 'action.active' }} />
+      </InputAdornment>
+    </>
+  );
+
+  return (
+    <Box ref={selectRef} sx={{ width: '100%', position: 'relative', minWidth: 0 }}>
       <FormControl
-        fullWidth={fullWidth}
+        fullWidth
         required={required}
         size={size}
-        sx={{ 
-          minWidth: effectiveMinWidth,
-          maxWidth: 400,
+        sx={{
+          minWidth: fullWidth ? undefined : effectiveMinWidth,
+          maxWidth: fullWidth ? undefined : 520,
         }}
       >
         <InputLabel>{label}</InputLabel>
@@ -255,6 +261,7 @@ export default function PlatformSelect({
           value={value}
           onChange={handleChange}
           multiple={multiple}
+          IconComponent={multiple ? undefined : () => null}
           input={
             multiple ? (
               <OutlinedInput
@@ -274,7 +281,12 @@ export default function PlatformSelect({
                   ) : undefined
                 }
               />
-            ) : undefined
+            ) : (
+              <OutlinedInput
+                label={label}
+                endAdornment={singleSelectEndAdornment}
+              />
+            )
           }
           renderValue={renderValue}
         MenuProps={{

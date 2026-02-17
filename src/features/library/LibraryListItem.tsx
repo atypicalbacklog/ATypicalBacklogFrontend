@@ -7,8 +7,8 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import { getImageUrl } from '../../services/imageApi';
 import CompletionBar from '../shared/CompletionBar';
+import SmartImage from '../shared/SmartImage';
 import VariantConsolePlatformDisplay from '../shared/VariantConsolePlatformDisplay';
 import { GameOverviewRowDto } from './types';
 import { formatPlaytime } from './formatPlaytime';
@@ -26,7 +26,6 @@ export default function LibraryListItem({ item }: Props) {
   const coverUid = isDlc
     ? (item.dlcCoverImageUid ?? item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid)
     : (item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid);
-  const thumbnailUrl = getImageUrl(coverUid, true);
   const baseName = item.instanceName || item.gameName;
   const dlcPrimaryName = item.dlcName || baseName;
   const dlcSecondaryName = item.instanceName || item.gameName;
@@ -61,23 +60,15 @@ export default function LibraryListItem({ item }: Props) {
       }}
     >
       <Stack direction="row" spacing={2} alignItems="center">
-        {thumbnailUrl ? (
-          <Box
-            component="img"
-            src={thumbnailUrl}
-            alt=""
-            width={64}
-            height={64}
-            sx={{ objectFit: 'cover', borderRadius: 1, bgcolor: 'grey.300' }}
-          />
-        ) : (
-          <Box
-            width={64}
-            height={64}
-            bgcolor="grey.300"
-            sx={{ borderRadius: 1 }}
-          />
-        )}
+        <SmartImage
+          imageUid={coverUid}
+          thumbnail
+          alt=""
+          aspectRatio={2 / 3}
+          fit="contain"
+          sx={{ width: 64, height: 64, borderRadius: 1 }}
+          imgSx={{ borderRadius: 1 }}
+        />
 
         <Box flexGrow={1} minWidth={0}>
           <Typography variant="subtitle1" component="span">

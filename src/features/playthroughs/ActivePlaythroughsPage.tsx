@@ -277,7 +277,7 @@ export default function ActivePlaythroughsPage() {
                       xs={12}
                       sm={6}
                       md={4}
-                      lg={3}
+                      lg={2}
                     >
                       <PlaythroughCard
                         row={row}
@@ -304,7 +304,7 @@ export default function ActivePlaythroughsPage() {
         ) : (
           <Grid container spacing={2} sx={{ mt: 2 }}>
             {rows.map((row) => (
-              <Grid item key={row.playthroughUid} xs={12} sm={6} md={4} lg={3}>
+              <Grid item key={row.playthroughUid} xs={12} sm={6} md={4} lg={2}>
                 <PlaythroughCard
                   row={row}
                   playthroughTypeName={typeName(row.playthroughTypeUid)}

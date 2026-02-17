@@ -24,9 +24,6 @@ export default function AddCatalogPage() {
       <Typography variant="h4" gutterBottom>
         Add to Catalog
       </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        Add a new game, instance, or DLC.
-      </Typography>
 
       <SegmentControl value={mode} onChange={setMode} />
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import { GameApi } from '../../services/gameApi';
 import { GameDTO } from '../../types/dto';
 import GameForm from './GameForm';
@@ -30,20 +30,26 @@ export default function GameDetailPage() {
 
   return (
     <Box>
-      <Box display="flex" alignItems="center" gap={2} mb={2}>
-        <Typography variant="h4">{game.name}</Typography>
-        <Button component={Link} to="/" size="small">
-          Back to Dashboard
-        </Button>
-      </Box>
-      <Typography color="text.secondary" gutterBottom>
-        First release: {game.firstReleaseDate}
-      </Typography>
-      <GameForm
-        initial={game}
-        onSubmit={handleUpdate}
-        submitLabel="Update"
-      />
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          width: 'fit-content',
+          bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={2} mb={2}>
+          <Typography variant="h4">{game.name}</Typography>
+          <Button component={Link} to="/" size="small">
+            Back to Dashboard
+          </Button>
+        </Box>
+        <GameForm
+          initial={game}
+          onSubmit={handleUpdate}
+          submitLabel="Update"
+        />
+      </Paper>
     </Box>
   );
 }

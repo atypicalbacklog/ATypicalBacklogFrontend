@@ -213,7 +213,7 @@ export default function AddDLCForm() {
         </Typography>
       )}
 
-      <StepSection title="Step 1 — Search and select game instance">
+      <StepSection>
         <Stack spacing={2}>
           <TextField
             label="Search game"
@@ -304,7 +304,7 @@ export default function AddDLCForm() {
         </Stack>
       </StepSection>
 
-      <StepSection title="Step 2" locked={!step2Valid}>
+      <StepSection locked={!step2Valid}>
         <Stack spacing={2}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <TextField
@@ -324,76 +324,90 @@ export default function AddDLCForm() {
               onMarkCoverImport={(externalId) => setPendingDlcCoverImport(externalId)}
             />
           </Box>
-          <DateField
-            label="Release date"
-            value={releaseDate}
-            onChange={setReleaseDate}
-            required
-          />
-          <DateField
-            label="Received date"
-            value={receivedDate}
-            onChange={setReceivedDate}
-          />
+          <Stack direction="row" spacing={2} flexWrap="wrap">
+            <DateField
+              label="Release date"
+              value={releaseDate}
+              onChange={setReleaseDate}
+              required
+            />
+            <DateField
+              label="Received date"
+              value={receivedDate}
+              onChange={setReceivedDate}
+            />
+          </Stack>
         </Stack>
       </StepSection>
 
-      <StepSection title="Step 3" locked={!step3Valid}>
+      <StepSection locked={!step3Valid}>
         <Stack spacing={2}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={connectToPlaythrough}
-                onChange={(e) => setConnectToPlaythrough(e.target.checked)}
-              />
-            }
-            label="Connect to Playthrough"
-          />
-          {connectToPlaythrough && playthroughs.length > 0 && (
-            <Stack spacing={1}>
-              {selectedPlaythroughUid ? (
-                <SelectedItemChip
-                  label={
-                    (() => {
-                      const p = playthroughs.find(
-                        (x) => x.playthroughUid === selectedPlaythroughUid
-                      );
-                      return p ? playthroughLabel(p) : selectedPlaythroughUid;
-                    })()
-                  }
-                  coverImageUid={null}
-                  onClear={() => setSelectedPlaythroughUid(null)}
+          <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={connectToPlaythrough}
+                  onChange={(e) => setConnectToPlaythrough(e.target.checked)}
                 />
-              ) : (
-                <TextField
-                  select
-                  label="Playthrough"
-                  value={selectedPlaythroughUid ?? ''}
-                  onChange={(e) =>
-                    setSelectedPlaythroughUid(e.target.value || null)
-                  }
-                  size="small"
-                  fullWidth
-                >
-                  <MenuItem value="">—</MenuItem>
-                  {playthroughs.map((p) => (
-                    <MenuItem key={p.playthroughUid} value={p.playthroughUid}>
-                      {playthroughLabel(p)}
-                    </MenuItem>
-                  ))}
-                </TextField>
-              )}
-            </Stack>
-          )}
-          <Box>
-            <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-              Game completion (instance)
-            </Typography>
-            <CompletionBar
-              completionState={instanceCompletionStateName}
-              playthroughState={instancePlaythroughState}
+              }
+              label="Connect to Playthrough"
             />
-          </Box>
+            {connectToPlaythrough && playthroughs.length > 0 && (
+              <>
+                {selectedPlaythroughUid ? (
+                  <SelectedItemChip
+                    label={
+                      (() => {
+                        const p = playthroughs.find(
+                          (x) => x.playthroughUid === selectedPlaythroughUid
+                        );
+                        return p ? playthroughLabel(p) : selectedPlaythroughUid;
+                      })()
+                    }
+                    coverImageUid={null}
+                    onClear={() => setSelectedPlaythroughUid(null)}
+                  />
+                ) : (
+                  <TextField
+                    select
+                    label="Playthrough"
+                    value={selectedPlaythroughUid ?? ''}
+                    onChange={(e) =>
+                      setSelectedPlaythroughUid(e.target.value || null)
+                    }
+                    size="small"
+                    fullWidth
+                  >
+                    <MenuItem value="">—</MenuItem>
+                    {playthroughs.map((p) => (
+                      <MenuItem key={p.playthroughUid} value={p.playthroughUid}>
+                        {playthroughLabel(p)}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              </>
+            )}
+          </Stack>
+          <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="flex-start">
+            <Box>
+              <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                Game completion (instance)
+              </Typography>
+              <CompletionBar
+                completionState={instanceCompletionStateName}
+                playthroughState={instancePlaythroughState}
+              />
+            </Box>
+            {backlog && (
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Backlog: since {backlog.addedDate}
+                  {backlog.removedDate ? ` until ${backlog.removedDate}` : ' (active)'}
+                </Typography>
+              </Box>
+            )}
+          </Stack>
           <TextField
             select
             label="DLC completion state"
@@ -418,12 +432,7 @@ export default function AddDLCForm() {
             size="small"
             fullWidth
           />
-          {backlog ? (
-            <Typography variant="body2" color="text.secondary">
-              Backlog: since {backlog.addedDate}
-              {backlog.removedDate ? ` until ${backlog.removedDate}` : ' (active)'}
-            </Typography>
-          ) : (
+          {!backlog && (
             <Stack spacing={2}>
               <FormControlLabel
                 control={
@@ -455,17 +464,16 @@ export default function AddDLCForm() {
               )}
             </Stack>
           )}
+          <Box sx={{ mt: 2 }}>
+            <Button
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={submitting || !step3Valid}
+            >
+              {submitting ? 'Saving…' : 'Save'}
+            </Button>
+          </Box>
         </Stack>
-      </StepSection>
-
-      <StepSection title="Step 4" locked={!step3Valid}>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={submitting || !step3Valid}
-        >
-          {submitting ? 'Saving…' : 'Save'}
-        </Button>
       </StepSection>
     </Box>
   );

@@ -1,4 +1,13 @@
-import { Box, Typography } from '@mui/material';
+import {
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import type { BacklogEntryDTO } from '../../../types/dto';
 
 interface Props {
@@ -20,45 +29,112 @@ export default function BacklogInfoBlock({ entries }: Props) {
   );
 
   return (
-    <Box>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        Backlog
-      </Typography>
-      <Typography variant="body2" gutterBottom>
-        {current ? 'In backlog' : 'Not in backlog'}
-      </Typography>
-      {current && (
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Days in backlog: {daysBetween(current.addedDate, current.removedDate)}
-          {current.reason ? ` · ${current.reason}` : ''}
-        </Typography>
-      )}
-      {sorted.length > 0 && (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 2,
+          alignItems: { xs: 'stretch', sm: 'center' },
+          flexDirection: { xs: 'column', sm: 'row' },
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+        }}
+      >
+        {/* Left: status + reason */}
         <Box
           sx={{
-            maxHeight: 200,
-            overflowY: 'auto',
-            border: 1,
-            borderColor: 'divider',
-            borderRadius: 1,
-            p: 1,
-            mt: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minWidth: { xs: '100%', sm: 240 },
+            flex: { xs: '1 1 auto', sm: '0 0 auto' },
           }}
         >
-          {sorted.map((e) => (
-            <Typography
-              key={e.uid}
-              variant="body2"
-              component="div"
-              sx={{ py: 0.5 }}
-            >
-              {e.addedDate}
-              {e.removedDate != null ? ` – ${e.removedDate}` : ' (current)'}
-              {e.reason ? ` · ${e.reason}` : ''}
+          {current ? (
+            <>
+              <Typography variant="body2">
+                Currently in Backlog since {daysBetween(current.addedDate, current.removedDate)} Days
+              </Typography>
+              {current.reason && (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  Reason: {current.reason}
+                </Typography>
+              )}
+            </>
+          ) : (
+            <Typography variant="body2" sx={{ opacity: 0.7 }}>
+              Not Part of Backlog
             </Typography>
-          ))}
+          )}
         </Box>
-      )}
+
+        {/* Right: table of all entries, max-height 100px, scroll, vertically centered */}
+        {sorted.length > 0 && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              minHeight: 0,
+              flex: { xs: '1 1 auto', sm: '1 1 340px' },
+              minWidth: { xs: '100%', sm: 340 },
+            }}
+          >
+            <TableContainer
+              sx={{
+                maxHeight: 100,
+                overflowY: 'auto',
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 1,
+                bgcolor: 'transparent',
+              }}
+            >
+              <Table size="small" stickyHeader>
+                <TableHead
+                  sx={{
+                    '& th': {
+                      py: 0.4,
+                      px: 0.75,
+                      fontSize: '0.7rem',
+                      lineHeight: 1.2,
+                      minHeight: 0,
+                      borderBottom: 1,
+                      borderColor: 'divider',
+                    },
+                  }}
+                >
+                  <TableRow sx={{ '& th': { bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100') } }}>
+                    <TableCell variant="head" align="center" sx={{ width: 170 }}>
+                      From – To
+                    </TableCell>
+                    <TableCell variant="head" sx={{ width: 56 }}>
+                      Days
+                    </TableCell>
+                    <TableCell variant="head">
+                      Reason
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sorted.map((e) => {
+                    const days = daysBetween(e.addedDate, e.removedDate);
+                    return (
+                      <TableRow key={e.uid}>
+                        <TableCell sx={{ py: 0.25, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                          {e.addedDate} – {e.removedDate ?? '-'}
+                        </TableCell>
+                        <TableCell sx={{ py: 0.25, fontSize: '0.75rem' }}>{days}</TableCell>
+                        <TableCell sx={{ py: 0.25, fontSize: '0.75rem' }}>
+                          {e.reason || '—'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }

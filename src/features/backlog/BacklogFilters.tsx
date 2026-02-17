@@ -11,7 +11,6 @@ import {
   SelectChangeEvent,
 } from '@mui/material';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import PlatformSelect from '../shared/PlatformSelect';
 import type { BacklogFilterState } from './types';
 
 interface Props {
@@ -23,7 +22,7 @@ export default function BacklogFilters({ value, onChange }: Props) {
   const { referenceData, isLoaded } = useReferenceData();
   if (!isLoaded || !referenceData) return null;
 
-  const { platforms, consoles, completionStates } = referenceData.data;
+  const { consoles, completionStates } = referenceData.data;
 
   const handleCompletionChange = (e: SelectChangeEvent<string[]>) => {
     const v = e.target.value;
@@ -67,20 +66,6 @@ export default function BacklogFilters({ value, onChange }: Props) {
           ))}
         </Select>
       </FormControl>
-
-      <PlatformSelect
-        value={value.platformUids}
-        onChange={(v) =>
-          onChange({
-            ...value,
-            platformUids: Array.isArray(v) ? v : v ? [v] : [],
-          })
-        }
-        label="Platforms"
-        multiple
-        size="small"
-        fullWidth={false}
-      />
 
       <FormControlLabel
         control={

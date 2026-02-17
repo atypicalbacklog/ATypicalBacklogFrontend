@@ -70,7 +70,7 @@ export default function GameForm({
       </Box>
       <TextField
         type="date"
-        label="First release date"
+        label="Release date"
         value={firstReleaseDate}
         onChange={(e) => setFirstReleaseDate(e.target.value)}
         InputLabelProps={{ shrink: true }}

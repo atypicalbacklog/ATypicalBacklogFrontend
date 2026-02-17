@@ -8,20 +8,17 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
-  Link,
   MenuItem,
   Select,
   Stack,
   Typography,
 } from '@mui/material';
-import NotesIcon from '@mui/icons-material/Notes';
-import { getImageUrl } from '../../services/imageApi';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import type { ReviewSearchResultDto, ReviewSearchPlaythroughDto } from '../../types/dto';
+import type { ReviewSearchResultDto } from '../../types/dto';
 import type { SimpleLookupDto } from '../../types/referenceData';
-import type { EditReviewLocationState } from './EditReviewPage';
 import { getTierColorByIndex } from '../../constants/tierColors';
+import TierEntryCard from './TierEntryCard';
 
 /** Single card tier (if all playthroughs share same tier). */
 function cardTierUid(card: ReviewSearchResultDto): string | null {
@@ -30,118 +27,6 @@ function cardTierUid(card: ReviewSearchResultDto): string | null {
   if (!first) return null;
   if (card.playthroughs.every((p) => p.tierUid === first)) return first;
   return null;
-}
-
-/** Preferred playthrough type order for opening edit: Solo > Coop > Multiplayer > Casual > other. */
-const EDIT_TYPE_ORDER = ['Solo', 'Coop', 'Multiplayer', 'Casual'];
-
-function pickReviewPlaythroughForEdit(
-  card: ReviewSearchResultDto,
-  playthroughTypeName: (uid: string | null) => string
-): ReviewSearchPlaythroughDto | undefined {
-  const withReview = card.playthroughs.filter((p) => p.reviewUid);
-  if (withReview.length === 0) return undefined;
-  const typeOrderIndex = (p: ReviewSearchPlaythroughDto) => {
-    const name = playthroughTypeName(p.playthroughTypeUid);
-    const i = EDIT_TYPE_ORDER.findIndex((t) => t.toLowerCase() === name.toLowerCase());
-    return i >= 0 ? i : EDIT_TYPE_ORDER.length;
-  };
-  withReview.sort((a, b) => typeOrderIndex(a) - typeOrderIndex(b));
-  return withReview[0];
-}
-
-interface TierCardProps {
-  card: ReviewSearchResultDto;
-  playthroughTypeNames: (uid: string | null) => string;
-  onDragStart: (card: ReviewSearchResultDto | null) => void;
-  onEdit?: (state: EditReviewLocationState) => void;
-  isDragging?: boolean;
-}
-
-function TierCard({ card, playthroughTypeNames, onDragStart, onEdit, isDragging }: TierCardProps) {
-  const imageUrl = getImageUrl(card.thumbnailImageUid, true);
-  const types = [...new Set(card.playthroughs.map((p) => p.playthroughTypeUid).filter(Boolean))];
-  const typeLabels = types.map((uid) => playthroughTypeNames(uid)).filter(Boolean).join(', ') || '—';
-  const preferredForEdit = pickReviewPlaythroughForEdit(card, playthroughTypeNames);
-  const hasTextReview = card.playthroughs.some((p) => p.hasTextReview);
-
-  return (
-    <Box
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('application/json', JSON.stringify({ card }));
-        e.dataTransfer.effectAllowed = 'move';
-        onDragStart(card);
-      }}
-      onDragEnd={() => onDragStart(null)}
-      sx={{
-        flexShrink: 0,
-        width: 140,
-        borderRadius: 1,
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
-        boxShadow: 1,
-        opacity: isDragging ? 0.5 : 1,
-        cursor: 'grab',
-        '&:active': { cursor: 'grabbing' },
-        position: 'relative',
-      }}
-    >
-      <Box
-        component="img"
-        src={imageUrl ?? undefined}
-        alt=""
-        sx={{
-          width: '100%',
-          height: 100,
-          objectFit: 'cover',
-          bgcolor: 'grey.300',
-        }}
-      />
-      <Box sx={{ p: 1 }} onClick={(e) => e.stopPropagation()}>
-        <Typography variant="body2" fontWeight="medium" noWrap title={card.displayName}>
-          {card.displayName}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" noWrap title={typeLabels}>
-          {typeLabels}
-        </Typography>
-        {preferredForEdit && onEdit && (
-          <Link
-            component="button"
-            variant="caption"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onEdit({ reviewUid: preferredForEdit.reviewUid!, from: 'tierlist' });
-            }}
-            sx={{ display: 'block', mt: 0.5 }}
-          >
-            Edit
-          </Link>
-        )}
-      </Box>
-      {hasTextReview && (
-        <Box
-          sx={{
-            position: 'absolute',
-            right: 4,
-            bottom: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'text.secondary',
-            bgcolor: 'background.paper',
-            borderRadius: '50%',
-            width: 20,
-            height: 20,
-            boxShadow: 1,
-          }}
-        >
-          <NotesIcon fontSize="small" />
-        </Box>
-      )}
-    </Box>
-  );
 }
 
 const DRAG_TYPE = 'application/json';
@@ -249,7 +134,7 @@ export default function ManageYearTierlistPage() {
   if (!isLoaded) return null;
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', px: 2, py: 2 }}>
+    <Box sx={{ px: 2, py: 2 }}>
       <Typography variant="h4" gutterBottom>
         Manage Year Tierlist
       </Typography>
@@ -333,7 +218,7 @@ export default function ManageYearTierlistPage() {
             }}
           >
             {unassignedCards.map((card, idx) => (
-              <TierCard
+              <TierEntryCard
                 key={`${card.displayName}-${card.playthroughs[0]?.playthroughUid ?? idx}`}
                 card={card}
                 playthroughTypeNames={playthroughTypeName}
@@ -404,7 +289,7 @@ export default function ManageYearTierlistPage() {
                     }}
                   >
                     {cards.map((card, idx) => (
-                      <TierCard
+                      <TierEntryCard
                         key={`${card.displayName}-${card.playthroughs[0]?.playthroughUid ?? idx}`}
                         card={card}
                         playthroughTypeNames={playthroughTypeName}

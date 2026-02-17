@@ -4,9 +4,12 @@ import {
   Box,
   Card,
   CardContent,
+  IconButton,
   Link as MuiLink,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import type { ReviewByUidDto } from '../../../types/dto';
 
 const PREVIEW_LENGTH = 120;
@@ -272,19 +275,22 @@ function ReviewCard({
             </Typography>
           </Box>
         )}
-        <Typography
-          component={Link}
-          to="/reviews/edit"
-          state={{
-            reviewUid: primary.reviewUid,
-            from: 'game-instance' as const,
-            gameInstanceUid,
-          }}
-          variant="body2"
-          sx={{ display: 'block', mt: 0.25 }}
-        >
-          Edit review
-        </Typography>
+        <Tooltip title="Edit review">
+          <IconButton
+            component={Link}
+            to="/reviews/edit"
+            state={{
+              reviewUid: primary.reviewUid,
+              from: 'game-instance' as const,
+              gameInstanceUid,
+            }}
+            size="small"
+            aria-label="Edit review"
+            sx={{ mt: 0.25 }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
       </CardContent>
     </Card>
   );

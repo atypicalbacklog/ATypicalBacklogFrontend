@@ -1,7 +1,7 @@
 import { http } from './httpClient';
 import type { GameOverviewRowDto } from '../features/library/types';
 
-export type GameOverviewQueryPayload = {
+export interface GameOverviewQueryPayload {
   searchText?: string | null;
   platformUids?: string[] | null;
   consoleUids?: string[] | null;
@@ -12,7 +12,7 @@ export type GameOverviewQueryPayload = {
   includeDlc?: boolean | null;
   onlyGamesWithDlc?: boolean | null;
   sortMode?: string;
-};
+}
 
 /** Game overview query (library, filters, sort). */
 export function queryGameOverview(payload: GameOverviewQueryPayload) {

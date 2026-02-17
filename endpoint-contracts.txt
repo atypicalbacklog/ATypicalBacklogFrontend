@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 24
+Version: 25
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -231,7 +231,31 @@ Response: 200 OK
 Base Path: /api/playthroughs/{playthroughUid}/sessions
 
 --------------------------------------------------------------------------------
-3.1 Start Play Session
+3.1 Get All Time Bookings for Playthrough
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/playthroughs/{playthroughUid}/sessions
+
+Path Parameters:
+- playthroughUid (string): Unique identifier of the playthrough
+
+Response: 200 OK
+Array of TimeBookingResponse:
+[
+  {
+    "uid": "string",
+    "creationDate": "2024-01-01T12:00:00Z",   // ISO-8601 Instant
+    "playthroughUid": "string",
+    "startTime": "2024-01-01T12:00:00Z" | null,   // ISO-8601 Instant
+    "endTime": "2024-01-01T13:00:00Z" | null      // ISO-8601 Instant; null if booking is still open
+  }
+]
+
+Notes:
+- Returns all time bookings for the given playthrough, ordered by creation date (ascending).
+
+--------------------------------------------------------------------------------
+3.2 Start Play Session
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/playthroughs/{playthroughUid}/sessions/start
@@ -246,7 +270,7 @@ Response: 200 OK
 }
 
 --------------------------------------------------------------------------------
-3.2 Stop Play Session
+3.3 Stop Play Session
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/playthroughs/{playthroughUid}/sessions/stop
@@ -263,7 +287,7 @@ Response: 200 OK
 }
 
 --------------------------------------------------------------------------------
-3.3 Create Retroactive Session (Time Booking After the Fact)
+3.4 Create Retroactive Session (Time Booking After the Fact)
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/playthroughs/{playthroughUid}/sessions/retroactive
@@ -1553,6 +1577,123 @@ Response: 200 OK
 (no body). Deletes the specified images (storage and DB records).
 
 ================================================================================
+21. YEARLY REVIEW ENDPOINTS
+================================================================================
+Base Path: /api/yearly-review
+
+--------------------------------------------------------------------------------
+21.1 Get Yearly Review (by year, create if missing)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/yearly-review?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year (e.g. 2025)
+
+Response: 200 OK
+YearlyReviewDto:
+{
+  "uid": "string",
+  "year": 0,
+  "valid": true | false,
+  "categories": [
+    {
+      "uid": "string",
+      "name": "string",
+      "order": 0,
+      "games": [
+        {
+          "uid": "string",
+          "gameUid": "string",
+          "gameInstanceUid": "string" | null,
+          "preferredImageUid": "string" | null,
+          "text": "string" | null,
+          "order": 0
+        }
+      ]
+    }
+  ]
+}
+
+Notes:
+- If no yearly review exists for the given year, one is created and returned.
+
+--------------------------------------------------------------------------------
+21.2 Upsert Yearly Review Category
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/yearly-review/category
+Content-Type: application/json
+
+Request Body:
+{
+  "uid": "string" | null,           // optional; when provided, update existing category
+  "yearlyReviewUid": "string",
+  "name": "string",
+  "order": 0
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+21.3 Upsert Yearly Review Game
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/yearly-review/game
+Content-Type: application/json
+
+Request Body:
+{
+  "uid": "string" | null,            // optional; when provided, update existing game entry
+  "categoryUid": "string",
+  "gameUid": "string",
+  "gameInstanceUid": "string" | null,
+  "preferredImageUid": "string" | null,
+  "text": "string" | null,
+  "order": 0
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+21.4 Invalidate Yearly Review Category (by UID)
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/yearly-review/category/{uid}/invalidate
+
+Path Parameters:
+- uid (string): Category UID to invalidate (soft delete: sets valid = false)
+
+Response: 200 OK
+Body: boolean
+- true: category was found and invalidated
+- false: no category with the given uid
+
+--------------------------------------------------------------------------------
+21.5 Invalidate Yearly Review Game (by UID)
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/yearly-review/game/{uid}/invalidate
+
+Path Parameters:
+- uid (string): Game UID to invalidate (soft delete: sets valid = false)
+
+Response: 200 OK
+Body: boolean
+- true: game was found and invalidated
+- false: no game with the given uid
+
+--------------------------------------------------------------------------------
+Yearly review valid semantics
+--------------------------------------------------------------------------------
+- YearlyReviewCategory and YearlyReviewGame have a boolean field "valid".
+- New categories and games are created with valid = true.
+- All fetches (e.g. GET yearly review) return only categories/games where valid = true.
+- Invalidate endpoints set valid = false; the entity is no longer returned in fetches.
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -1564,5 +1705,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-15  |  Document version: 24
+Generated: 2026-02-16  |  Document version: 25
 ================================================================================

@@ -18,6 +18,9 @@ export interface GameInstanceDTO {
 
   forFree: boolean;
   inPossession: boolean;
+
+  /** Optional IGDB game ID. */
+  externalIgdbId: string | null;
 }
 
 export interface BacklogEntryDTO {
@@ -62,6 +65,8 @@ export interface CreateGameInstanceRequest {
 
   forFree?: boolean | null;
   inPossession?: boolean | null;
+
+  externalIgdbId?: string | null;
 }
 
 export interface UpdateGameInstanceRequest {
@@ -77,6 +82,9 @@ export interface UpdateGameInstanceRequest {
 
   forFree?: boolean | null;
   inPossession?: boolean | null;
+
+  /** If null, existing value is kept. */
+  externalIgdbId?: string | null;
 }
 
 export interface TimeBookingStartDTO {

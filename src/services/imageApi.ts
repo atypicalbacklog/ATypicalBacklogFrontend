@@ -46,6 +46,19 @@ export const ImageApi = {
     http<void>(`${BASE}/${encodeURIComponent(uid)}`, {
       method: 'DELETE',
     }),
+
+  /**
+   * Upload a new image (17.5).
+   * multipart/form-data: file (required), ownerType, gameUid?, gameInstanceUid?, type, aspectHint, source.
+   */
+  upload: async (formData: FormData): Promise<void> => {
+    const res = await fetch(BASE, {
+      method: 'POST',
+      body: formData,
+      // Do not set Content-Type so browser sets multipart/form-data with boundary
+    });
+    if (!res.ok) throw new Error('HTTP error');
+  },
 };
 
 /**

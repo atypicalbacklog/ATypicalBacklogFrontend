@@ -13,23 +13,20 @@ export default function StepSection({
 }: Props) {
   return (
     <Box
-      sx={{
+      sx={(theme) => ({
         border: 1,
         borderColor: 'divider',
         borderRadius: 1,
         p: 2,
         mb: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        backdropFilter: 'blur(4px)',
+        bgcolor:
+          theme.palette.mode === 'dark'
+            ? theme.palette.grey[900]
+            : theme.palette.grey[100],
         opacity: locked ? 0.3 : 1,
         pointerEvents: locked ? 'none' : 'auto',
-      }}
+      })}
     >
-      {title && (
-        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-          {title}
-        </Typography>
-      )}
       {children}
     </Box>
   );

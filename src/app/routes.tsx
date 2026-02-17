@@ -10,6 +10,7 @@ import ActivePlaythroughsPage from '../features/playthroughs/ActivePlaythroughsP
 import AddPlaythroughPage from '../features/playthroughs/AddPlaythroughPage';
 import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPage';
 import ManageYearTierlistPage from '../features/reviews/ManageYearTierlistPage';
+import YearlyReviewPage from '../features/yearlyReview/YearlyReviewPage';
 import EditReviewPage from '../features/reviews/EditReviewPage';
 import AdminImportStagingPage from '../features/admin/AdminImportStagingPage';
 import EditStagedGamePage from '../features/admin/EditStagedGamePage';
@@ -28,6 +29,7 @@ export const appRoutes = [
   { path: '/playthroughs/new', element: <AddPlaythroughPage /> },
   { path: '/playthroughs/:uid', element: <PlaythroughDetailPage /> },
   { path: '/reviews/year-tierlist', element: <ManageYearTierlistPage /> },
+  { path: '/reviews/yearly', element: <YearlyReviewPage /> },
   { path: '/reviews/edit', element: <EditReviewPage /> },
   { path: '/admin/import/staging', element: <AdminImportStagingPage /> },
   { path: '/admin/import/staged-games/:uid', element: <EditStagedGamePage /> },

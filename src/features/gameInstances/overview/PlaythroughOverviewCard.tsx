@@ -4,10 +4,15 @@ import {
   Card,
   CardContent,
   Collapse,
+  IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { Link } from 'react-router-dom';
 import { formatPlaytime } from '../../library/formatPlaytime';
+import DateWithIcon from '../../shared/DateWithIcon';
+import PlaythroughTypeWithIcon from '../../shared/PlaythroughTypeWithIcon';
 
 interface Props {
   playthroughUid: string;
@@ -33,30 +38,37 @@ export default function PlaythroughOverviewCard({
   return (
     <Card variant="outlined" sx={{ minWidth: 200, flexShrink: 0 }}>
       <CardContent>
-        <Typography variant="body2" fontWeight="medium">
-          {typeName}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+          <PlaythroughTypeWithIcon typeName={typeName} size="small" />
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+            {stateName}
+          </Typography>
+        </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+          Input: {inputName}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {stateName}
-        </Typography>
-        <Typography variant="body2">Started: {startedAt}</Typography>
-        <Typography variant="body2">Input: {inputName}</Typography>
-        <Typography variant="body2">
-          Time: {formatPlaytime(totalSeconds)}
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mt: 0.5 }}>
+          <DateWithIcon date={startedAt} tooltip="Started" variant="body2" />
+          <Typography variant="body2" component="span">
+            {formatPlaytime(totalSeconds)}
+          </Typography>
+        </Box>
         {dlcName && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             DLC: {dlcName}
           </Typography>
         )}
-        <Typography
-          component={Link}
-          to={`/playthroughs/${playthroughUid}`}
-          variant="body2"
-          sx={{ display: 'block', mt: 1 }}
-        >
-          Edit
-        </Typography>
+        <Tooltip title="Edit Playthrough">
+          <IconButton
+            component={Link}
+            to={`/playthroughs/${playthroughUid}`}
+            size="small"
+            aria-label="Edit Playthrough"
+            sx={{ mt: 0.5 }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
         <Typography
           component="button"
           variant="caption"

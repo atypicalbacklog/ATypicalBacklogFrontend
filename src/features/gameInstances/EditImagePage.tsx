@@ -24,6 +24,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { ImageApi, getImageUrl, type ImageMetadataDto, type UpdateImageMetadataRequest } from '../../services/imageApi';
+import SmartImage from '../shared/SmartImage';
 
 const OWNER_TYPES: Array<'GAME' | 'GAME_INSTANCE' | 'DLC'> = ['GAME', 'GAME_INSTANCE', 'DLC'];
 const IMAGE_TYPES: Array<'COVER' | 'SCREENSHOT' | 'ARTWORK' | 'OTHER'> = ['COVER', 'SCREENSHOT', 'ARTWORK', 'OTHER'];
@@ -189,18 +190,20 @@ export default function EditImagePage() {
           Image
         </Typography>
         {previewImageUrl ? (
-          <Box
-            component="img"
-            src={previewImageUrl}
+          <SmartImage
+            imageUid={imageUid ?? null}
+            thumbnail
             alt=""
+            aspectRatio={1}
+            fit="contain"
             sx={{
-              maxWidth: 200,
-              maxHeight: 200,
-              objectFit: 'contain',
+              width: 200,
+              height: 200,
               borderRadius: 1,
               border: 1,
               borderColor: 'divider',
             }}
+            imgSx={{ borderRadius: 1 }}
           />
         ) : (
           <Typography variant="body2" color="text.secondary">

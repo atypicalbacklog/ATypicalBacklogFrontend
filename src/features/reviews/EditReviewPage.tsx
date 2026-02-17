@@ -14,11 +14,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { getImageUrl } from '../../services/imageApi';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import DateField from '../catalog/components/DateField';
 import type { ReviewByUidDto } from '../../types/dto';
+import SmartImage from '../shared/SmartImage';
 
 /** Pass reviewUid to open edit; page fetches displayName + image from GET /api/reviews/{uid}. */
 export interface EditReviewLocationState {
@@ -122,7 +122,6 @@ export default function EditReviewPage() {
     );
   }
 
-  const imageUrl = getImageUrl(review.coverImageUid, true);
   const playthroughTypes = referenceData?.data?.playthroughTypes ?? [];
   const playthroughStates = referenceData?.data?.playthroughStates ?? [];
   const typeName = (uid: string | null) =>
@@ -141,17 +140,14 @@ export default function EditReviewPage() {
     <Box sx={{ maxWidth: 720, mx: 'auto', px: 2, py: 3 }}>
       {/* Top: Game name & Image + playthrough Type/State */}
       <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ mb: 3 }}>
-        <Box
-          component="img"
-          src={imageUrl ?? undefined}
+        <SmartImage
+          imageUid={review.coverImageUid}
+          thumbnail
           alt=""
-          sx={{
-            width: 80,
-            height: 80,
-            objectFit: 'cover',
-            borderRadius: 1,
-            bgcolor: 'grey.300',
-          }}
+          aspectRatio={2 / 3}
+          fit="contain"
+          sx={{ width: 80, height: 80, borderRadius: 1 }}
+          imgSx={{ borderRadius: 1 }}
         />
         <Stack spacing={0.5}>
           <Typography variant="h5" component="h1">

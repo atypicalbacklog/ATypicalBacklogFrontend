@@ -113,7 +113,7 @@ export default function AddGameForm() {
         </Typography>
       )}
 
-      <StepSection title="Step 1">
+      <StepSection>
         <Stack spacing={2}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'flex-start' }}>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flex: '1 1 auto', minWidth: 200, order: 1 }}>
@@ -154,7 +154,7 @@ export default function AddGameForm() {
         </Stack>
       </StepSection>
 
-      <StepSection title="Step 2" locked={!step1Valid}>
+      <StepSection locked={!step1Valid}>
         <BacklogBlock
           addToBacklog={addToBacklog}
           onAddToBacklogChange={setAddToBacklog}
@@ -163,16 +163,15 @@ export default function AddGameForm() {
           reason={backlogReason}
           onReasonChange={setBacklogReason}
         />
-      </StepSection>
-
-      <StepSection title="Step 3" locked={!step1Valid}>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={submitting || !step1Valid}
-        >
-          {submitting ? 'Saving…' : 'Save'}
-        </Button>
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={submitting || !step1Valid}
+          >
+            {submitting ? 'Saving…' : 'Save'}
+          </Button>
+        </Box>
       </StepSection>
     </Box>
   );

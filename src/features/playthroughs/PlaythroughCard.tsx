@@ -10,10 +10,12 @@ import {
   Link,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { getImageUrl } from '../../services/imageApi';
+import PlaythroughTypeWithIcon from '../shared/PlaythroughTypeWithIcon';
+import SmartImage from '../shared/SmartImage';
 import TimeTrackingOverlay from './TimeTrackingOverlay';
 import PlaythroughTimeDisplay from './PlaythroughTimeDisplay';
 import type { ActivePlaythroughOverviewRow } from '../../types/dto';
@@ -57,8 +59,6 @@ export default function PlaythroughCard({
     }
   };
 
-  const thumbnailUrl = getImageUrl(row.coverImageUid, false);
-
   return (
     <Box
       sx={{
@@ -68,46 +68,46 @@ export default function PlaythroughCard({
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'background.paper',
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        backdropFilter: 'blur(4px)',
-        maxWidth: 280,
+        bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+        maxWidth: 250,
       }}
     >
-      {/* Top: Game name (centered, bordered) */}
-      <Box sx={{ p: 1.5, textAlign: 'center', ...headerBorder, mx: 1, mt: 1 }}>
-        <Typography variant="h6" fontWeight={600} noWrap title={row.displayName}>
-          {row.displayName}
-        </Typography>
-      </Box>
-      {/* Playthrough type (centered, bordered) */}
-      <Box sx={{ p: 1, textAlign: 'center', ...headerBorder, mx: 1, mt: 1 }}>
-        <Typography variant="subtitle2" color="text.secondary">
-          {playthroughTypeName}
-        </Typography>
-      </Box>
+      {/* Playthrough type (centered, bordered, bigger & bold) */}
+      <Tooltip title={row.displayName}>
+        <Box
+          sx={{
+            p: 0,
+            textAlign: 'center',
+            ...headerBorder,
+            mx: 1,
+            mt: 1,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <PlaythroughTypeWithIcon typeName={playthroughTypeName} size="header" />
+        </Box>
+      </Tooltip>
 
-      {/* Middle: Thumbnail + overlay (vertical aspect) */}
+      {/* Middle: Thumbnail + overlay (shorter vertical aspect) */}
       <Box
         sx={{
           position: 'relative',
-          aspectRatio: '3/4',
-          bgcolor: 'grey.300',
+          aspectRatio: '4/3',
           flexShrink: 0,
         }}
       >
-        {thumbnailUrl ? (
-          <Box
-            component="img"
-            src={thumbnailUrl}
-            alt=""
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        ) : null}
+        <SmartImage
+          imageUid={row.coverImageUid}
+          thumbnail={false}
+          alt=""
+          aspectRatio={4 / 5}
+          fit="contain"
+          sx={{ width: '100%', height: '100%' }}
+          showPlaceholder
+        />
         <TimeTrackingOverlay
           isTimeTrackingActive={row.isTimeTrackingActive}
           onClick={handleOverlayClick}
@@ -120,7 +120,8 @@ export default function PlaythroughCard({
         direction="row"
         alignItems="center"
         justifyContent="space-between"
-        sx={{ p: 1.5, pt: 1 }}
+        height={35}
+        sx={{ p: 1 }}
       >
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <Link

@@ -5,9 +5,13 @@ import {
   Box,
   Button,
   CircularProgress,
+  IconButton,
+  Paper,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { GameApi } from '../../services/gameApi';
 import { DlcApi } from '../../services/dlcApi';
@@ -28,8 +32,8 @@ import { totalDurationSeconds } from './overview/timeBookingUtils';
 import type { PlaythroughWithTime } from './overview/PlaythroughGallery';
 import GameInfoBlock from './overview/GameInfoBlock';
 import BacklogInfoBlock from './overview/BacklogInfoBlock';
-import InstanceSwitcher from './overview/InstanceSwitcher';
-import CoverImage from './overview/CoverImage';
+import InstanceTabs from './overview/InstanceTabs';
+import CoverWithTabs from './overview/CoverWithTabs';
 import InstanceDetailsCard from './overview/InstanceDetailsCard';
 import CurrentCompletionBlock from './overview/CurrentCompletionBlock';
 import DlcOverviewBlock from './overview/DlcOverviewBlock';
@@ -193,7 +197,7 @@ export default function GameInstanceOverviewPage() {
   };
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
       <Box display="flex" alignItems="center" gap={2} mb={2}>
         <Button component={Link} to="/" size="small">
           Back to Dashboard
@@ -206,129 +210,210 @@ export default function GameInstanceOverviewPage() {
         </Alert>
       )}
 
-      {/* Top header: Game info (left), Backlog info (right), Edit game link */}
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        justifyContent="space-between"
-        alignItems={{ xs: 'stretch', sm: 'flex-start' }}
-        sx={{ mb: 3, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}
+      {/* Top header: Game name + Edit left, Backlog panel right — same width as instance panel */}
+      <Paper
+        variant="outlined"
+        sx={{
+          mb: 2,
+          p: 2,
+          width: '100%',
+          maxWidth: 1200,
+          bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 2,
+          flexWrap: 'wrap',
+        }}
       >
-        {game ? (
-          <GameInfoBlock game={game} />
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No game linked
-          </Typography>
-        )}
-        <Box flex={1} maxWidth={400}>
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+          {game ? (
+            <GameInfoBlock game={game} />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No game linked
+            </Typography>
+          )}
+          {game && (
+            <Tooltip title="Edit Game">
+              <IconButton
+                component={Link}
+                to={`/games/${game.uid}`}
+                size="small"
+                aria-label="Edit Game"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 1.5,
+            minWidth: { xs: '100%', sm: 520 },
+            maxWidth: 620,
+            bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+          }}
+        >
           <BacklogInfoBlock entries={instance.backlogEntries ?? []} />
-        </Box>
-        {game && (
-          <Typography
-            component={Link}
-            to={`/games/${game.uid}`}
-            variant="body2"
-          >
-            ✎ Edit game
-          </Typography>
-        )}
-      </Stack>
+        </Paper>
+      </Paper>
 
-      {/* Instance switcher + Edit instance link */}
-      <Box sx={{ mb: 2 }} display="flex" alignItems="center" gap={2}>
-        {game && instances.length > 0 && (
-          <InstanceSwitcher
-            instances={instances}
-            currentUid={instance.uid}
-            currentVariantConsoleDisplay={{
-              variantName,
-              platformName,
-              platformConsoleName,
-              originalConsoleName,
-            }}
-          />
-        )}
-        <Typography
-          component={Link}
-          to={`/game-instances/${uid}/edit`}
-          variant="body2"
-        >
-          ✎ Edit instance
-        </Typography>
-      </Box>
-
-      {/* Area 1: Cover, instance details, completion, DLC */}
-      <Stack
-        direction={{ xs: 'column', md: 'row' }}
-        spacing={3}
-        sx={{ mb: 4 }}
+      {/* One panel: Instance tabs + Edit + per-instance content */}
+      <Paper
+        variant="outlined"
+        sx={{
+          mb: 2,
+          width: '100%',
+          maxWidth: 1200,
+          overflow: 'hidden',
+          bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+        }}
       >
-        <CoverImage game={game} instance={instance} />
-        <Stack spacing={2} flex={1}>
-          <InstanceDetailsCard
-            instance={instance}
-            variantName={variantName}
-            platformName={platformName}
-            platformConsoleName={platformConsoleName}
-            originalConsoleName={originalConsoleName}
-          />
-          <CurrentCompletionBlock
-            completions={instance.completions}
-            completionStateName={completionStateName}
-            playthroughState={instancePlaythroughState}
-          />
-          <DlcOverviewBlock
-            dlcs={dlcs}
-            completions={instance.completions}
-            completionStateName={completionStateName}
-          />
-        </Stack>
-      </Stack>
-
-      {/* Area 2: Playtime & playthrough gallery */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          Playthrough & playtime
-        </Typography>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={3}
-          sx={{ mb: 2 }}
-        >
-          <PlaytimeSummary
-            totalSeconds={totalPlaytimeSeconds}
-            sessionCount={sessionCount}
-            lastPlayedIso={lastPlayedIso}
-          />
-          <HowLongToBeatPlaceholder />
-        </Stack>
-        <PlaythroughGallery
-          items={playthroughsWithTime}
-          typeName={typeName}
-          stateName={stateName}
-          inputName={inputName}
-        />
-      </Box>
-
-      {/* Area 3: Reviews */}
-      <Box sx={{ mb: 4 }}>
-        <ReviewOverviewBlock
-          reviews={reviews}
-          gameInstanceUid={instance.uid}
-          typeName={(uid) => (uid ? typeName(uid) : '—')}
-          stateName={stateName}
-          tierName={tierName}
-          getTierColor={getTierColor}
-        />
-      </Box>
-
-      {/* Area 4: Image gallery (all images for this game) */}
-      {game?.uid && (
-        <Box>
-          <ImageGallery gameUid={game.uid} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, pt: 1, flexWrap: 'wrap' }}>
+          {instances.length > 0 ? (
+            <InstanceTabs
+              instances={instances}
+              currentUid={instance.uid}
+              getInstanceLabel={(inst) =>
+                inst.name || (inst.uid === instance.uid ? variantName : inst.uid)
+              }
+            />
+          ) : (
+            <Typography variant="body2" color="text.secondary" sx={{ py: 1, px: 0.5 }}>
+              {instance.name || instance.uid}
+            </Typography>
+          )}
+          <Tooltip title="Edit Instance">
+            <IconButton
+              component={Link}
+              to={`/game-instances/${uid}/edit`}
+              size="small"
+              aria-label="Edit Instance"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         </Box>
-      )}
+
+        <Box sx={{ p: 2 }}>
+          {/* Per-instance content: Left | Right */}
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="flex-start" sx={{ mb: 3 }}>
+            {/* Left area: Image left, Data right */}
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 2,
+                bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+                width: 'fit-content',
+                minWidth: { xs: '100%', md: 320 },
+              }}
+            >
+              <Stack direction="row" spacing={2} alignItems="stretch" sx={{ minHeight: 280 }}>
+                <CoverWithTabs instance={instance} game={game} instances={instances} />
+                <Stack
+                  direction="column"
+                  spacing={2}
+                  sx={{ minWidth: 0, flex: 1, justifyContent: 'space-between' }}
+                >
+                  <InstanceDetailsCard
+                    instance={instance}
+                    variantName={variantName}
+                    platformName={platformName}
+                    platformConsoleName={platformConsoleName}
+                    originalConsoleName={originalConsoleName}
+                    leftSection
+                  />
+                  <DlcOverviewBlock
+                    dlcs={dlcs}
+                    completions={instance.completions}
+                    completionStateName={completionStateName}
+                  />
+                </Stack>
+              </Stack>
+            </Paper>
+
+            {/* Right area: fixed width top and bottom */}
+            <Stack spacing={2} sx={{ width: 360, flexShrink: 0 }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  width: 360,
+                  bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+                }}
+              >
+                <Stack direction="row" spacing={3} alignItems="flex-start">
+                  <PlaytimeSummary
+                    totalSeconds={totalPlaytimeSeconds}
+                    sessionCount={sessionCount}
+                    lastPlayedIso={lastPlayedIso}
+                  />
+                  <HowLongToBeatPlaceholder />
+                </Stack>
+              </Paper>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  width: 360,
+                  bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+                }}
+              >
+                <Stack spacing={2}>
+                  <CurrentCompletionBlock
+                    completions={instance.completions}
+                    completionStateName={completionStateName}
+                    playthroughState={instancePlaythroughState}
+                  />
+                  <InstanceDetailsCard
+                    instance={instance}
+                    variantName={variantName}
+                    platformName={platformName}
+                    platformConsoleName={platformConsoleName}
+                    originalConsoleName={originalConsoleName}
+                    rightSection
+                  />
+                </Stack>
+              </Paper>
+            </Stack>
+          </Stack>
+
+          {/* Playthrough list */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Playthroughs
+            </Typography>
+            <PlaythroughGallery
+              items={playthroughsWithTime}
+              typeName={typeName}
+              stateName={stateName}
+              inputName={inputName}
+            />
+          </Box>
+
+          {/* Reviews */}
+          <Box sx={{ mb: 3 }}>
+            <ReviewOverviewBlock
+              reviews={reviews}
+              gameInstanceUid={instance.uid}
+              typeName={(uid) => (uid ? typeName(uid) : '—')}
+              stateName={stateName}
+              tierName={tierName}
+              getTierColor={getTierColor}
+            />
+          </Box>
+
+          {/* Image gallery */}
+          {game?.uid && (
+            <Box>
+              <ImageGallery gameUid={game.uid} gameInstanceUid={uid} />
+            </Box>
+          )}
+        </Box>
+      </Paper>
     </Box>
   );
 }

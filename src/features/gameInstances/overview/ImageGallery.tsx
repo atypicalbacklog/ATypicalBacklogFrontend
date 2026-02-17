@@ -1,38 +1,67 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
-  CardMedia,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
   Collapse,
+  TextField,
   Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import EditIcon from '@mui/icons-material/Edit';
 import { ImageApi, getImageUrl, type ImageMetadataDto } from '../../../services/imageApi';
+import SmartImage from '../../shared/SmartImage';
+
+const OWNER_TYPES: Array<'GAME' | 'GAME_INSTANCE' | 'DLC'> = ['GAME', 'GAME_INSTANCE', 'DLC'];
+const IMAGE_TYPES: Array<'COVER' | 'SCREENSHOT' | 'ARTWORK' | 'OTHER'> = ['COVER', 'SCREENSHOT', 'ARTWORK', 'OTHER'];
+const ASPECT_HINTS: Array<'VERTICAL' | 'HORIZONTAL' | 'SQUARE' | 'FREE'> = ['VERTICAL', 'HORIZONTAL', 'SQUARE', 'FREE'];
+const SOURCES: Array<'MANUAL' | 'AI' | 'IMPORT'> = ['MANUAL', 'AI', 'IMPORT'];
 
 interface Props {
   /** When set, lists all images for this game. */
   gameUid: string | null;
+  /** Optional: when on a game instance page, pass for pre-fill in add-image form. */
+  gameInstanceUid?: string | null;
 }
 
 function formatMetaValue(v: string | null | undefined): string {
   return v != null && v !== '' ? String(v) : '—';
 }
 
-export default function ImageGallery({ gameUid }: Props) {
+export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUidProp }: Props) {
   const [images, setImages] = useState<ImageMetadataDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [ownerType, setOwnerType] = useState<ImageMetadataDto['ownerType']>(
+    gameInstanceUidProp ? 'GAME_INSTANCE' : 'GAME'
+  );
+  const [formGameUid, setFormGameUid] = useState(gameUid ?? '');
+  const [formGameInstanceUid, setFormGameInstanceUid] = useState(gameInstanceUidProp ?? '');
+  const [type, setType] = useState<ImageMetadataDto['type']>('COVER');
+  const [aspectHint, setAspectHint] = useState<ImageMetadataDto['aspectHint']>('VERTICAL');
+  const [source, setSource] = useState<ImageMetadataDto['source']>('MANUAL');
 
-  useEffect(() => {
-    if (!gameUid) {
-      setImages([]);
-      return;
-    }
+  const loadImages = useCallback(() => {
+    if (!gameUid) return;
     setLoading(true);
     ImageApi.listByGame(gameUid)
       .then(setImages)
@@ -40,19 +69,73 @@ export default function ImageGallery({ gameUid }: Props) {
       .finally(() => setLoading(false));
   }, [gameUid]);
 
+  useEffect(() => {
+    if (!gameUid) {
+      setImages([]);
+      return;
+    }
+    loadImages();
+  }, [gameUid, loadImages]);
+
+  useEffect(() => {
+    if (addDialogOpen && gameUid) {
+      setFormGameUid(gameUid);
+      setFormGameInstanceUid(gameInstanceUidProp ?? '');
+      setOwnerType(gameInstanceUidProp ? 'GAME_INSTANCE' : 'GAME');
+      setFile(null);
+      setType('COVER');
+      setAspectHint('VERTICAL');
+      setSource('MANUAL');
+      setAddError(null);
+    }
+  }, [addDialogOpen, gameUid, gameInstanceUidProp]);
+
+  const handleAddSubmit = async () => {
+    if (!file || !gameUid) return;
+    setAddError(null);
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('ownerType', ownerType);
+      formData.append('type', type);
+      formData.append('aspectHint', aspectHint);
+      formData.append('source', source);
+      if (formGameUid.trim()) formData.append('gameUid', formGameUid.trim());
+      if (formGameInstanceUid.trim()) formData.append('gameInstanceUid', formGameInstanceUid.trim());
+      await ImageApi.upload(formData);
+      setAddDialogOpen(false);
+      loadImages();
+    } catch {
+      setAddError('Failed to upload image.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (!gameUid) return null;
 
   return (
     <Box>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        Image gallery
-      </Typography>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+        <Typography variant="subtitle2" color="text.secondary">
+          Image gallery
+        </Typography>
+        <Button
+          size="small"
+          startIcon={<AddIcon />}
+          onClick={() => setAddDialogOpen(true)}
+          variant="outlined"
+        >
+          Add picture
+        </Button>
+      </Stack>
       {loading ? (
         <Typography variant="body2" color="text.secondary">
           Loading…
         </Typography>
       ) : images.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" gutterBottom>
           No images for this game.
         </Typography>
       ) : (
@@ -95,16 +178,13 @@ export default function ImageGallery({ gameUid }: Props) {
                 }}
               >
                 <Box sx={{ position: 'relative', flexShrink: 0, width: 180, minWidth: 180 }}>
-                  <CardMedia
-                    component="img"
-                    height="280"
-                    image={thumbUrl ?? undefined}
+                  <SmartImage
+                    imageUid={im.uid}
+                    thumbnail
                     alt=""
-                    sx={{
-                      width: 180,
-                      objectFit: 'cover',
-                      bgcolor: 'action.hover',
-                    }}
+                    aspectRatio={2 / 3}
+                    fit="contain"
+                    sx={{ width: 180, height: 280 }}
                   />
                   <Box
                     sx={{
@@ -172,6 +252,111 @@ export default function ImageGallery({ gameUid }: Props) {
           })}
         </Box>
       )}
+
+      <Dialog open={addDialogOpen} onClose={() => !uploading && setAddDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add picture</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {addError && (
+              <Alert severity="error" onClose={() => setAddError(null)}>
+                {addError}
+              </Alert>
+            )}
+            <Button variant="outlined" component="label" fullWidth>
+              {file ? file.name : 'Choose image file'}
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+            </Button>
+            <FormControl size="small" fullWidth required>
+              <InputLabel>Owner type</InputLabel>
+              <Select
+                label="Owner type"
+                value={ownerType}
+                onChange={(e) => setOwnerType(e.target.value as ImageMetadataDto['ownerType'])}
+              >
+                {OWNER_TYPES.map((t) => (
+                  <MenuItem key={t} value={t}>{t}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Game UID"
+              value={formGameUid}
+              onChange={(e) => setFormGameUid(e.target.value)}
+              size="small"
+              fullWidth
+              required={ownerType === 'GAME'}
+              helperText={ownerType === 'GAME' ? 'Required when owner type is GAME.' : undefined}
+            />
+            <TextField
+              label="Game instance UID"
+              value={formGameInstanceUid}
+              onChange={(e) => setFormGameInstanceUid(e.target.value)}
+              size="small"
+              fullWidth
+              required={ownerType === 'GAME_INSTANCE'}
+              helperText={ownerType === 'GAME_INSTANCE' ? 'Required when owner type is GAME_INSTANCE.' : undefined}
+            />
+            <FormControl size="small" fullWidth required>
+              <InputLabel>Type</InputLabel>
+              <Select
+                label="Type"
+                value={type}
+                onChange={(e) => setType(e.target.value as ImageMetadataDto['type'])}
+              >
+                {IMAGE_TYPES.map((t) => (
+                  <MenuItem key={t} value={t}>{t}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" fullWidth required>
+              <InputLabel>Aspect hint</InputLabel>
+              <Select
+                label="Aspect hint"
+                value={aspectHint}
+                onChange={(e) => setAspectHint(e.target.value as ImageMetadataDto['aspectHint'])}
+              >
+                {ASPECT_HINTS.map((a) => (
+                  <MenuItem key={a} value={a}>{a}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" fullWidth required>
+              <InputLabel>Source</InputLabel>
+              <Select
+                label="Source"
+                value={source}
+                onChange={(e) => setSource(e.target.value as ImageMetadataDto['source'])}
+              >
+                {SOURCES.map((s) => (
+                  <MenuItem key={s} value={s}>{s}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddDialogOpen(false)} disabled={uploading}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAddSubmit}
+            disabled={
+              uploading ||
+              !file ||
+              (ownerType === 'GAME' && !formGameUid.trim()) ||
+              (ownerType === 'GAME_INSTANCE' && !formGameInstanceUid.trim())
+            }
+          >
+            {uploading ? 'Uploading…' : 'Upload'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
