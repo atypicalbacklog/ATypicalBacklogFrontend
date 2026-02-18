@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 25
+Version: 26
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -1747,6 +1747,153 @@ Response: 404 Not Found
 When no HLTB estimate exists for the given game instance.
 
 ================================================================================
+23. STATISTICS ENDPOINTS
+================================================================================
+Base Path: /api/stats
+
+--------------------------------------------------------------------------------
+23.1 Yearly Activity
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/yearly-activity
+
+Response: 200 OK
+Array of YearlyActivityDto:
+[
+  {
+    "year": 0,
+    "totalSeconds": 0,
+    "activeDays": 0,
+    "bookingCount": 0,
+    "distinctGames": 0,
+    "completionCount": 0
+  }
+]
+
+--------------------------------------------------------------------------------
+23.2 Console Year Activity
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/console-year-activity?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of ConsoleYearActivityDto:
+[
+  { "year": 0, "consoleUid": "string", "totalSeconds": 0, "distinctGames": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.3 Variant Year Activity
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/variant-year-activity?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of VariantYearActivityDto:
+[
+  { "year": 0, "variantUid": "string", "totalSeconds": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.4 Monthly Playtime
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/monthly-playtime?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of MonthlyPlaytimeDto:
+[
+  { "year": 0, "month": 0, "totalSeconds": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.5 Weekly Playtime
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/weekly-playtime?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of WeeklyPlaytimeDto:
+[
+  { "year": 0, "week": 0, "totalSeconds": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.6 Weekday Playtime
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/weekday-playtime?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of WeekdayPlaytimeDto:
+[
+  { "year": 0, "weekday": 0, "totalSeconds": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.7 Console Input Style Playtime
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/console-inputstyle-playtime?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of ConsoleInputStyleDto:
+[
+  { "year": 0, "consoleUid": "string", "inputUid": "string", "totalSeconds": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.8 Game Playtime Ranking
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/game-playtime-ranking?fromYear={fromYear}&toYear={toYear}
+
+Query Parameters:
+- fromYear (int, optional): Filter from year (inclusive)
+- toYear (int, optional): Filter to year (inclusive)
+
+Response: 200 OK
+Array of GamePlaytimeRankingDto:
+[
+  { "gameUid": "string", "totalSeconds": 0 }
+]
+
+--------------------------------------------------------------------------------
+23.9 Booking Duration Distribution
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/booking-duration-distribution?gameUid={gameUid}&fromYear={fromYear}&toYear={toYear}
+
+Query Parameters:
+- gameUid (string, required): Game UID to aggregate by
+- fromYear (int, optional): Filter from year (inclusive)
+- toYear (int, optional): Filter to year (inclusive)
+
+Response: 200 OK
+Array of BookingDurationDistributionDto:
+[
+  { "durationMinutes": 0, "bookingCount": 0 }
+]
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -1758,5 +1905,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-16  |  Document version: 25
+Generated: 2026-02-19  |  Document version: 26
 ================================================================================

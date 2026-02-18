@@ -15,6 +15,7 @@ import EditReviewPage from '../features/reviews/EditReviewPage';
 import AdminImportStagingPage from '../features/admin/AdminImportStagingPage';
 import EditStagedGamePage from '../features/admin/EditStagedGamePage';
 import EditStagedPlaythroughGroupPage from '../features/admin/EditStagedPlaythroughGroupPage';
+import StatisticsDashboardPage from '../features/statistics/StatisticsDashboardPage';
 
 export const appRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -31,6 +32,7 @@ export const appRoutes = [
   { path: '/reviews/year-tierlist', element: <ManageYearTierlistPage /> },
   { path: '/reviews/yearly', element: <YearlyReviewPage /> },
   { path: '/reviews/edit', element: <EditReviewPage /> },
+  { path: '/statistics', element: <StatisticsDashboardPage /> },
   { path: '/admin/import/staging', element: <AdminImportStagingPage /> },
   { path: '/admin/import/staged-games/:uid', element: <EditStagedGamePage /> },
   { path: '/admin/import/staged-playthrough-groups/:uid', element: <EditStagedPlaythroughGroupPage /> },

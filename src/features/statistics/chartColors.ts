@@ -1,0 +1,133 @@
+export const COLOR_BLUE = '#1976D2';
+export const COLOR_RED = '#D32F2F';
+export const COLOR_YELLOW = '#FBC02D';
+export const COLOR_GREEN = '#2E7D32';
+export const COLOR_CYAN = '#00ACC1';
+export const COLOR_PINK = '#D81B60';
+export const COLOR_GREY = '#9E9E9E';
+export const COLOR_ORANGE = '#F57C00';
+
+/** Format decimal hours as "Xh:XXm" (rounded to nearest minute). */
+export function formatPlaytimeHours(hours: number): string {
+  const totalMinutes = Math.round(hours * 60);
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${h}h:${String(m).padStart(2, '0')}m`;
+}
+
+/** Minimum bar dimension (px) to show a label; avoids cramped/overlapping labels on small segments. */
+export const MIN_BAR_LABEL_PX = 18;
+
+/** Minimum pie slice angle (degrees) to show an arc label; hides labels on very small slices. */
+export const MIN_PIE_ARC_LABEL_ANGLE = 8;
+
+/**
+ * Returns a text color (#000000 or #ffffff) that contrasts with the given background color.
+ * Uses relative luminance (sRGB) so labels stay readable on any bar color.
+ */
+export function getContrastTextColor(backgroundColor: string): string {
+  const hex = backgroundColor.replace(/^#/, '');
+  let r: number, g: number, b: number;
+  if (hex.length === 3) {
+    r = parseInt(hex[0] + hex[0], 16) / 255;
+    g = parseInt(hex[1] + hex[1], 16) / 255;
+    b = parseInt(hex[2] + hex[2], 16) / 255;
+  } else if (hex.length === 6) {
+    r = parseInt(hex.slice(0, 2), 16) / 255;
+    g = parseInt(hex.slice(2, 4), 16) / 255;
+    b = parseInt(hex.slice(4, 6), 16) / 255;
+  } else {
+    return '#000000';
+  }
+  /*
+   * sRGB → linear light (WCAG/CIE). sRGB has a gamma curve: for dark values (c ≤ 0.04045)
+   * we use the linear segment (c / 12.92); for brighter values we use ((c + 0.055) / 1.055)^2.4.
+   * Relative luminance L uses coefficients 0.2126 (R), 0.7152 (G), 0.0722 (B) from ITU-R BT.709.
+   * L > 0.5 → use black text on this background; otherwise white.
+   */
+  const toLinear = (c: number) =>
+    c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  return L > 0.5 ? '#000000' : '#ffffff';
+}
+
+/** Use with BarChart slotProps so bar labels use black or white text depending on bar color. */
+export const contrastBarLabelSlotProps = {
+  barLabel: (ownerState: { color?: string }) => ({
+    style: { fill: getContrastTextColor(ownerState?.color ?? '#000000') },
+  }),
+};
+
+/**
+ * Weekday colors (0 = Monday … 6 = Sunday).
+ * Monday Blue, Tuesday Red, Wednesday Yellow, Thursday Green, Friday Orange, Saturday Cyan, Sunday #7baaf7
+ */
+export const WEEKDAY_COLORS: readonly string[] = [
+  COLOR_BLUE,   // Monday
+  COLOR_RED,    // Tuesday
+  COLOR_YELLOW, // Wednesday
+  COLOR_GREEN,  // Thursday
+  COLOR_ORANGE, // Friday
+  COLOR_CYAN,   // Saturday
+  '#7baaf7',    // Sunday
+];
+
+export function getWeekdayColor(weekdayIndex: number): string {
+  if (weekdayIndex >= 0 && weekdayIndex < WEEKDAY_COLORS.length) return WEEKDAY_COLORS[weekdayIndex];
+  return COLOR_GREY;
+}
+
+/**
+ * Year colors (repeat/rotate after 2022):
+ * 2017 blue, 2018 red, 2019 yellow, 2020 green, 2021 cyan, 2022 pink, 2023 blue, ...
+ */
+const YEAR_COLORS = [COLOR_BLUE, COLOR_RED, COLOR_YELLOW, COLOR_GREEN, COLOR_CYAN, COLOR_PINK];
+
+export function getYearColor(year: number): string {
+  if (!Number.isFinite(year)) return COLOR_GREY;
+  if (year <= 2017) return COLOR_BLUE;
+  const idx = (year - 2017) % YEAR_COLORS.length;
+  return YEAR_COLORS[idx];
+}
+
+export function yearOrdinalColorMap(xAxisValues: string[]) {
+  return {
+    type: 'ordinal' as const,
+    values: xAxisValues,
+    colors: xAxisValues.map((v) => getYearColor(Number(v))),
+    unknownColor: COLOR_GREY,
+  };
+}
+
+function normalizeKey(s: string) {
+  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+export function getVariantColor(variantName: string): string {
+  const key = normalizeKey(variantName);
+  if (key === 'consoleexclusive') return COLOR_GREEN;
+  if (key === 'multiplatform') return COLOR_YELLOW;
+  if (key === 'port') return COLOR_RED;
+  if (key === 'original') return COLOR_BLUE;
+  return COLOR_GREY;
+}
+
+/** Palette for console segments (e.g. in stacked % chart); cycles for many consoles. */
+const CONSOLE_PALETTE = [
+  COLOR_BLUE,
+  COLOR_RED,
+  COLOR_YELLOW,
+  COLOR_GREEN,
+  COLOR_CYAN,
+  COLOR_PINK,
+  COLOR_ORANGE,
+  '#7baaf7',
+  '#8D6E63',
+  '#5E35B1',
+];
+
+export function getConsoleColorByIndex(index: number): string {
+  if (index >= 0 && index < CONSOLE_PALETTE.length) return CONSOLE_PALETTE[index];
+  return CONSOLE_PALETTE[index % CONSOLE_PALETTE.length] ?? COLOR_GREY;
+}
+

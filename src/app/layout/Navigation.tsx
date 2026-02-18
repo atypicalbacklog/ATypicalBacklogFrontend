@@ -35,6 +35,9 @@ export default function Navigation() {
         <ListItemButton component={Link} to="/reviews/yearly">
           <ListItemText primary="Yearly review" />
         </ListItemButton>
+        <ListItemButton component={Link} to="/statistics">
+          <ListItemText primary="Statistics" />
+        </ListItemButton>
       </List>
     </Box>
   );
