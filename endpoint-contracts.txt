@@ -1125,10 +1125,11 @@ Path: /api/images
 Content-Type: multipart/form-data
 
 Request (form fields):
-- file (file, required): Image file
+- file (file, required): Image file (max 10 MB)
 - ownerType (string, required): GAME | GAME_INSTANCE | DLC
 - gameUid (string, optional): Required when ownerType is GAME; optional for GAME_INSTANCE/DLC
 - gameInstanceUid (string, optional): Required when ownerType is GAME_INSTANCE; optional for DLC
+- dlcUid (string, optional): Required when ownerType is DLC; optional otherwise
 - type (string, required): COVER | SCREENSHOT | ARTWORK | OTHER
 - aspectHint (string, required): VERTICAL | HORIZONTAL | SQUARE | FREE
 - source (string, required): MANUAL | AI | IMPORT
@@ -1692,6 +1693,58 @@ Yearly review valid semantics
 - New categories and games are created with valid = true.
 - All fetches (e.g. GET yearly review) return only categories/games where valid = true.
 - Invalidate endpoints set valid = false; the entity is no longer returned in fetches.
+
+================================================================================
+22. HLTB ESTIMATE ENDPOINTS
+================================================================================
+Base Path: /api/hltb-estimates
+
+--------------------------------------------------------------------------------
+22.1 Upsert HLTB Estimate (insert or update)
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/hltb-estimates
+Content-Type: application/json
+
+Request Body:
+{
+  "uid": "string" | null,              // optional; when provided and record exists, update; else insert (new uid generated if null)
+  "gameInstanceUid": "string",
+  "mainHours": 0.0,                    // float, default 0
+  "extraHours": 0.0,                   // float, default 0
+  "completeHours": 0.0,                // float, default 0
+  "externalId": "string" | null        // optional, max 64 chars
+}
+
+Response: 200 OK
+HltbEstimateResponse:
+{
+  "uid": "string",
+  "gameInstanceUid": "string",
+  "mainHours": 0.0,
+  "extraHours": 0.0,
+  "completeHours": 0.0,
+  "externalId": "string" | null,
+  "lastUpdated": "2024-01-15T12:00:00Z"   // ISO-8601 Instant; set/updated on every save
+}
+
+Notes:
+- last_updated is set to current time on every insert and update (not accepted in request).
+
+--------------------------------------------------------------------------------
+22.2 Get HLTB Estimate by Game Instance UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/hltb-estimates/game-instance/{gameInstanceUid}
+
+Path Parameters:
+- gameInstanceUid (string): Unique identifier of the game instance
+
+Response: 200 OK
+HltbEstimateResponse (same shape as 22.1).
+
+Response: 404 Not Found
+When no HLTB estimate exists for the given game instance.
 
 ================================================================================
 NOTES

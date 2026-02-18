@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Alert,
   Box,
   CircularProgress,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
@@ -14,6 +16,7 @@ import {
   Grid,
   Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import {
   fetchActivePlaythroughs,
   searchPlaythroughHistory,
@@ -182,21 +185,29 @@ export default function ActivePlaythroughsPage() {
       <Typography variant="h4" gutterBottom>
         Active Playthroughs
       </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
-        What am I actively playing right now?
-      </Typography>
 
       {/* Search old playthroughs (history) at top */}
       <Box sx={{ mt: 2 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showHistorySearch}
-              onChange={(e) => handleToggleHistorySearch(e.target.checked)}
-            />
-          }
-          label="Search old playthroughs"
-        />
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showHistorySearch}
+                onChange={(e) => handleToggleHistorySearch(e.target.checked)}
+              />
+            }
+            label="Search old playthroughs"
+          />
+          <IconButton
+            component={Link}
+            to="/playthroughs/new"
+            size="small"
+            sx={{ border: 1, borderColor: 'divider' }}
+            aria-label="Add playthrough"
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </Stack>
         {showHistorySearch && (
           <Box sx={{ mt: 1 }}>
             {historyError && (

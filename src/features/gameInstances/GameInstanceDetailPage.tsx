@@ -308,8 +308,8 @@ export default function GameInstanceDetailPage() {
     <Box>
       <Box display="flex" alignItems="center" gap={2} mb={2}>
         <Typography variant="h4">Game Instance</Typography>
-        <Button component={Link} to="/" size="small">
-          Back to Dashboard
+        <Button component={Link} to={uid ? `/game-instances/${uid}` : '/'} size="small">
+          Back to detail view
         </Button>
       </Box>
 

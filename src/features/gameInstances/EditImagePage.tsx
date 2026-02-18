@@ -161,7 +161,7 @@ export default function EditImagePage() {
   const previewImageUrl = getImageUrl(imageUid, true);
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 480 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
         <Button component={Link} to="/" size="small">
           Back to Dashboard
@@ -185,7 +185,15 @@ export default function EditImagePage() {
       )}
 
       {/* Image preview */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          bgcolor: (theme) => theme.palette.background.paper,
+          opacity: 1,
+        }}
+      >
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
           Image
         </Typography>
@@ -218,7 +226,15 @@ export default function EditImagePage() {
       </Paper>
 
       {/* Image metadata form */}
-      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          mb: 3,
+          bgcolor: (theme) => theme.palette.background.paper,
+          opacity: 1,
+        }}
+      >
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
           Image metadata
         </Typography>
@@ -301,7 +317,14 @@ export default function EditImagePage() {
       </Paper>
 
       {/* Delete image */}
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2,
+          bgcolor: (theme) => theme.palette.background.paper,
+          opacity: 1,
+        }}
+      >
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
           Delete this image
         </Typography>
@@ -318,7 +341,16 @@ export default function EditImagePage() {
         </Button>
       </Paper>
 
-      <Dialog open={deleteConfirmOpen} onClose={() => !deleting && setDeleteConfirmOpen(false)}>
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !deleting && setDeleteConfirmOpen(false)}
+        PaperProps={{
+          sx: {
+            backgroundColor: (theme) => theme.palette.background.paper,
+            opacity: 1,
+          },
+        }}
+      >
         <DialogTitle>Delete image?</DialogTitle>
         <DialogContent>
           <DialogContentText>

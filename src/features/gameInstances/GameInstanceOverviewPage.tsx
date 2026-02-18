@@ -18,6 +18,7 @@ import { DlcApi } from '../../services/dlcApi';
 import { PlaythroughApi } from '../../services/playthroughApi';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { getTimeBookingsByPlaythrough } from '../../services/timeBookingApi';
+import { HltbApi, type HltbEstimateDto } from '../../services/hltbApi';
 import { getTierColorByIndex } from '../../constants/tierColors';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type {
@@ -35,10 +36,10 @@ import BacklogInfoBlock from './overview/BacklogInfoBlock';
 import InstanceTabs from './overview/InstanceTabs';
 import CoverWithTabs from './overview/CoverWithTabs';
 import InstanceDetailsCard from './overview/InstanceDetailsCard';
-import CurrentCompletionBlock from './overview/CurrentCompletionBlock';
+import InstanceDetailBottomBlock from './overview/InstanceDetailBottomBlock';
 import DlcOverviewBlock from './overview/DlcOverviewBlock';
 import PlaytimeSummary from './overview/PlaytimeSummary';
-import HowLongToBeatPlaceholder from './overview/HowLongToBeatPlaceholder';
+import HowLongToBeatBlock from './overview/HowLongToBeatBlock';
 import PlaythroughGallery from './overview/PlaythroughGallery';
 import ReviewOverviewBlock from './overview/ReviewOverviewBlock';
 import ImageGallery from './overview/ImageGallery';
@@ -60,6 +61,7 @@ export default function GameInstanceOverviewPage() {
   const [sessionCount, setSessionCount] = useState(0);
   const [lastPlayedIso, setLastPlayedIso] = useState<string | null>(null);
   const [reviews, setReviews] = useState<ReviewByUidDto[]>([]);
+  const [hltbEstimate, setHltbEstimate] = useState<HltbEstimateDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,6 +137,10 @@ export default function GameInstanceOverviewPage() {
     ReviewsApi.getByGameInstance(instanceUid)
       .then(setReviews)
       .catch(() => setReviews([]));
+
+    HltbApi.getByGameInstance(instanceUid)
+      .then(setHltbEstimate)
+      .catch(() => setHltbEstimate(null));
   }, []);
 
   useEffect(() => {
@@ -307,8 +313,9 @@ export default function GameInstanceOverviewPage() {
               sx={{
                 p: 2,
                 bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
-                width: 'fit-content',
-                minWidth: { xs: '100%', md: 320 },
+                width: 650,
+                maxWidth: '100%',
+                boxSizing: 'border-box',
               }}
             >
               <Stack direction="row" spacing={2} alignItems="stretch" sx={{ minHeight: 280 }}>
@@ -336,47 +343,64 @@ export default function GameInstanceOverviewPage() {
             </Paper>
 
             {/* Right area: fixed width top and bottom */}
-            <Stack spacing={2} sx={{ width: 360, flexShrink: 0 }}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  width: 360,
-                  bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
-                }}
-              >
-                <Stack direction="row" spacing={3} alignItems="flex-start">
+            <Stack spacing={2} sx={{ flexShrink: 0 }}>
+              <Stack direction="row" spacing={2}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    width: 250,
+                    height: 180,
+                    boxSizing: 'border-box',
+                    bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+                  }}
+                >
                   <PlaytimeSummary
                     totalSeconds={totalPlaytimeSeconds}
-                    sessionCount={sessionCount}
-                    lastPlayedIso={lastPlayedIso}
-                  />
-                  <HowLongToBeatPlaceholder />
-                </Stack>
-              </Paper>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  width: 360,
-                  bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
-                }}
-              >
-                <Stack spacing={2}>
-                  <CurrentCompletionBlock
                     completions={instance.completions}
                     completionStateName={completionStateName}
                     playthroughState={instancePlaythroughState}
                   />
-                  <InstanceDetailsCard
-                    instance={instance}
-                    variantName={variantName}
-                    platformName={platformName}
-                    platformConsoleName={platformConsoleName}
-                    originalConsoleName={originalConsoleName}
-                    rightSection
+                </Paper>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
+                    width: 250,
+                    height: 180,
+                    boxSizing: 'border-box',
+                    bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+                  }}
+                >
+                  <HowLongToBeatBlock
+                    gameInstanceUid={instance.uid}
+                    gameName={game?.name ?? ''}
+                    instanceName={instance.name}
+                    estimate={hltbEstimate}
+                    onSaved={() =>
+                      HltbApi.getByGameInstance(instance.uid)
+                        .then(setHltbEstimate)
+                        .catch(() => setHltbEstimate(null))
+                    }
                   />
-                </Stack>
+                </Paper>
+              </Stack>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  width: 500,
+                  boxSizing: 'border-box',
+                  bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
+                }}
+              >
+                <InstanceDetailBottomBlock
+                  sessionCount={sessionCount}
+                  totalSeconds={totalPlaytimeSeconds}
+                  lastPlayedIso={lastPlayedIso}
+                  receivedDate={instance.receivedDate}
+                  completions={instance.completions}
+                />
               </Paper>
             </Stack>
           </Stack>

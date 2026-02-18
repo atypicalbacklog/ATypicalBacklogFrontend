@@ -6,11 +6,13 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
   IconButton,
   InputLabel,
   MenuItem,
@@ -56,9 +58,11 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
   );
   const [formGameUid, setFormGameUid] = useState(gameUid ?? '');
   const [formGameInstanceUid, setFormGameInstanceUid] = useState(gameInstanceUidProp ?? '');
+  const [formDlcUid, setFormDlcUid] = useState('');
   const [type, setType] = useState<ImageMetadataDto['type']>('COVER');
   const [aspectHint, setAspectHint] = useState<ImageMetadataDto['aspectHint']>('VERTICAL');
   const [source, setSource] = useState<ImageMetadataDto['source']>('MANUAL');
+  const [primaryImage, setPrimaryImage] = useState(false);
 
   const loadImages = useCallback(() => {
     if (!gameUid) return;
@@ -81,11 +85,13 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
     if (addDialogOpen && gameUid) {
       setFormGameUid(gameUid);
       setFormGameInstanceUid(gameInstanceUidProp ?? '');
+      setFormDlcUid('');
       setOwnerType(gameInstanceUidProp ? 'GAME_INSTANCE' : 'GAME');
       setFile(null);
       setType('COVER');
       setAspectHint('VERTICAL');
       setSource('MANUAL');
+      setPrimaryImage(false);
       setAddError(null);
     }
   }, [addDialogOpen, gameUid, gameInstanceUidProp]);
@@ -103,6 +109,8 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
       formData.append('source', source);
       if (formGameUid.trim()) formData.append('gameUid', formGameUid.trim());
       if (formGameInstanceUid.trim()) formData.append('gameInstanceUid', formGameInstanceUid.trim());
+      if (formDlcUid.trim()) formData.append('dlcUid', formDlcUid.trim());
+      formData.append('primaryImage', String(primaryImage));
       await ImageApi.upload(formData);
       setAddDialogOpen(false);
       loadImages();
@@ -121,14 +129,14 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
         <Typography variant="subtitle2" color="text.secondary">
           Image gallery
         </Typography>
-        <Button
+        <IconButton
           size="small"
-          startIcon={<AddIcon />}
           onClick={() => setAddDialogOpen(true)}
-          variant="outlined"
+          sx={{ border: 1, borderColor: 'divider' }}
+          aria-label="Add picture"
         >
-          Add picture
-        </Button>
+          <AddIcon fontSize="small" />
+        </IconButton>
       </Stack>
       {loading ? (
         <Typography variant="body2" color="text.secondary">
@@ -253,7 +261,18 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
         </Box>
       )}
 
-      <Dialog open={addDialogOpen} onClose={() => !uploading && setAddDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={addDialogOpen}
+        onClose={() => !uploading && setAddDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: (theme) => theme.palette.background.paper,
+            opacity: 1,
+          },
+        }}
+      >
         <DialogTitle>Add picture</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
@@ -301,6 +320,15 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
               required={ownerType === 'GAME_INSTANCE'}
               helperText={ownerType === 'GAME_INSTANCE' ? 'Required when owner type is GAME_INSTANCE.' : undefined}
             />
+            <TextField
+              label="DLC UID"
+              value={formDlcUid}
+              onChange={(e) => setFormDlcUid(e.target.value)}
+              size="small"
+              fullWidth
+              required={ownerType === 'DLC'}
+              helperText={ownerType === 'DLC' ? 'Required when owner type is DLC.' : undefined}
+            />
             <FormControl size="small" fullWidth required>
               <InputLabel>Type</InputLabel>
               <Select
@@ -337,6 +365,15 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
                 ))}
               </Select>
             </FormControl>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={primaryImage}
+                  onChange={(e) => setPrimaryImage(e.target.checked)}
+                />
+              }
+              label="Primary image"
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -350,7 +387,8 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
               uploading ||
               !file ||
               (ownerType === 'GAME' && !formGameUid.trim()) ||
-              (ownerType === 'GAME_INSTANCE' && !formGameInstanceUid.trim())
+              (ownerType === 'GAME_INSTANCE' && !formGameInstanceUid.trim()) ||
+              (ownerType === 'DLC' && !formDlcUid.trim())
             }
           >
             {uploading ? 'Uploading…' : 'Upload'}

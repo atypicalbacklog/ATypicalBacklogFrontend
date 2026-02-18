@@ -5,7 +5,7 @@ export const theme = createTheme({
     mode: 'dark',
     background: {
       default: '#2a2a2a',
-      paper: 'rgba(255, 255, 255, 0.05)',
+      paper: 'rgba(50, 50, 50, 1)',
     },
     text: {
       primary: 'rgba(255, 255, 255, 0.87)',
@@ -16,8 +16,16 @@ export const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(255, 255, 255, 0.12)',
-          backdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(50, 50, 50, 1)',
+          backdropFilter: 'none',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(50, 50, 50, 1)',
+          backdropFilter: 'none',
         },
       },
     },
