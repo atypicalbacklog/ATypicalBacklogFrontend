@@ -1,6 +1,6 @@
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import { GameOverviewRowDto } from './types';
-import LibraryListItem from './LibraryListItem';
+import LibraryListItem, { LIBRARY_CARD_WIDTH } from './LibraryListItem';
 
 type Props = {
   items: GameOverviewRowDto[];
@@ -31,13 +31,20 @@ export default function LibraryList({
   }
 
   return (
-    <Stack spacing={1}>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(auto-fill, minmax(${LIBRARY_CARD_WIDTH}px, ${LIBRARY_CARD_WIDTH}px))`,
+        gap: 2,
+        justifyContent: 'start',
+      }}
+    >
       {items.map((item) => (
         <LibraryListItem
           key={item.gameInstanceUid ?? `game-${item.gameUid}`}
           item={item}
         />
       ))}
-    </Stack>
+    </Box>
   );
 }

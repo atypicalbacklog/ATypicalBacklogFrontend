@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 26
+Version: 29
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -173,7 +173,7 @@ Response: 200 OK  (GameInstanceDetailResponse)
     { "uid": "string", "addedDate": "YYYY-MM-DD", "removedDate": "YYYY-MM-DD" | null, "reason": "string" }
   ],
   "completions": [
-    { "uid": "string", "gameInstanceUid": "string", "dlcUid": "string" | null, "completionStateUid": "string", "info": "string" | null }
+    { "uid": "string", "gameInstanceUid": "string", "dlcUid": "string" | null, "completionStateUid": "string", "info": "string" | null, "finishedDate": "YYYY-MM-DD" | null, "completedDate": "YYYY-MM-DD" | null }
   ]
 }
 
@@ -570,11 +570,13 @@ Request Body:
   "gameInstanceUid": "string",
   "completionStateUid": "string",
   "dlcUid": "string",
-  "info": "string"
+  "info": "string",
+  "finishedDate": "YYYY-MM-DD" | null,   // optional; LocalDate on game_completion
+  "completedDate": "YYYY-MM-DD" | null    // optional; LocalDate on game_completion
 }
 
 Response: 200 OK
-(no body)
+(no body). Creates or updates the game completion; finishedDate and completedDate are updated when set.
 
 ================================================================================
 9. BACKLOG ENDPOINTS
@@ -854,12 +856,15 @@ Request Body:
   "playthroughUid": "string" | null,
 
   "completionStateUid": "string" | null, // optional; when omitted, uses "None" state
-  "info": "string" | null                 // optional; info text for game_completion
+  "info": "string" | null,                // optional; info text for game_completion
+  "finishedDate": "YYYY-MM-DD" | null,   // optional; on game_completion
+  "completedDate": "YYYY-MM-DD" | null   // optional; on game_completion
 }
 
 Notes:
 - On create, a game_completion is always created with: game_instance from DLC,
-  dlc_uid = new DLC, completion_state = completionStateUid or "None", info = info
+  dlc_uid = new DLC, completion_state = completionStateUid or "None", info = info,
+  finished_date = finishedDate, completed_date = completedDate.
 
 Response: 200 OK
 {
@@ -869,7 +874,9 @@ Response: 200 OK
   "receivedDate": "YYYY-MM-DD" | null,
   "releaseDate": "YYYY-MM-DD" | null,
   "playthroughUid": "string" | null,
-  "completionStateUid": "string" | null
+  "completionStateUid": "string" | null,
+  "finishedDate": "YYYY-MM-DD" | null,
+  "completedDate": "YYYY-MM-DD" | null
 }
 
 --------------------------------------------------------------------------------
@@ -890,7 +897,9 @@ Request Body:
 
   "completionStateUid": "string" | null,  // optional; updates DLC's game_completion
   "playthroughUid": "string" | null,      // optional; links DLC to playthrough
-  "removePreviousPlaythrough": true | false | null  // optional, default false; if true and no playthroughUid given, sets playthroughUid to null
+  "removePreviousPlaythrough": true | false | null,  // optional, default false; if true and no playthroughUid given, sets playthroughUid to null
+  "finishedDate": "YYYY-MM-DD" | null,    // optional; updates DLC's game_completion
+  "completedDate": "YYYY-MM-DD" | null    // optional; updates DLC's game_completion
 }
 
 Response: 200 OK
@@ -901,7 +910,9 @@ Response: 200 OK
   "receivedDate": "YYYY-MM-DD" | null,
   "releaseDate": "YYYY-MM-DD" | null,
   "playthroughUid": "string" | null,
-  "completionStateUid": "string" | null
+  "completionStateUid": "string" | null,
+  "finishedDate": "YYYY-MM-DD" | null,
+  "completedDate": "YYYY-MM-DD" | null
 }
 
 --------------------------------------------------------------------------------
@@ -924,7 +935,9 @@ Array of DlcResponse:
     "releaseDate": "YYYY-MM-DD" | null,
     "playthroughUid": "string" | null,
     "completionStateUid": "string" | null,
-    "coverImageUid": "string" | null     // DLC cover image UID when one exists (owner_type DLC, type COVER)
+    "coverImageUid": "string" | null,    // DLC cover image UID when one exists (owner_type DLC, type COVER)
+    "finishedDate": "YYYY-MM-DD" | null,
+    "completedDate": "YYYY-MM-DD" | null
   }
 ]
 
@@ -1323,6 +1336,7 @@ Request Body (UpdateStagedGameRequest; all fields optional, only non-null applie
   "backlogStartDate": "YYYY-MM-DD" | null,
   "backlogEndDate": "YYYY-MM-DD" | null,
   "backlogReason": "string" | null,
+  "proposedFinishedDate": "YYYY-MM-DD" | null,
   "resolutionStatus": "UPDATED" | "CURATED" | "FINALIZED" | null   // intention for resolution
 }
 
@@ -1343,6 +1357,7 @@ StagedGame entity (full entity as persisted):
   "backlogStartDate": "YYYY-MM-DD" | null,
   "backlogEndDate": "YYYY-MM-DD" | null,
   "backlogReason": "string" | null,
+  "proposedFinishedDate": "YYYY-MM-DD" | null,
   "matchedGameInstanceUid": "string" | null,
   "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
 }
@@ -1406,6 +1421,7 @@ StagedGameDetailDto:
   "backlogStartDate": "YYYY-MM-DD" | null,
   "backlogEndDate": "YYYY-MM-DD" | null,
   "backlogReason": "string" | null,
+  "proposedFinishedDate": "YYYY-MM-DD" | null,
   "matchedGameInstanceUid": "string" | null,
   "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED",
   "playthroughGroups": [
@@ -1449,6 +1465,7 @@ Array of StagedGameDetailDto (same shape as 19.3), ordered by proposedName. Empt
     "backlogStartDate": "YYYY-MM-DD" | null,
     "backlogEndDate": "YYYY-MM-DD" | null,
     "backlogReason": "string" | null,
+    "proposedFinishedDate": "YYYY-MM-DD" | null,
     "matchedGameInstanceUid": "string" | null,
     "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED",
     "playthroughGroups": [ ... ]
@@ -1578,12 +1595,30 @@ Response: 200 OK
 (no body). Deletes the specified images (storage and DB records).
 
 ================================================================================
-21. YEARLY REVIEW ENDPOINTS
+21. ADMIN SYNC ENDPOINTS
+================================================================================
+Base Path: /api/admin/sync
+
+--------------------------------------------------------------------------------
+21.1 Sync time bookings to Google Calendar
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/admin/sync/calendar
+
+Triggers a one-off sync of unsynced time bookings (start time, end time set, last_sync_date null) to the linked Google Calendar. When calendar is not configured, returns 0.
+
+Response: 200 OK
+{
+  "synced": 0
+}
+
+================================================================================
+22. YEARLY REVIEW ENDPOINTS
 ================================================================================
 Base Path: /api/yearly-review
 
 --------------------------------------------------------------------------------
-21.1 Get Yearly Review (by year, create if missing)
+22.1 Get Yearly Review (by year, create if missing)
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/yearly-review?year={year}
@@ -1620,7 +1655,29 @@ Notes:
 - If no yearly review exists for the given year, one is created and returned.
 
 --------------------------------------------------------------------------------
-21.2 Upsert Yearly Review Category
+22.2 Update Yearly Review (intro/outro text)
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/yearly-review/{uid}
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Yearly review UID to update
+
+Request Body:
+{
+  "introText": "string" | null,   // optional; null leaves existing value unchanged
+  "outroText": "string" | null    // optional; null leaves existing value unchanged
+}
+
+Response: 204 No Content
+- When the review was found and updated.
+
+Response: 404 Not Found
+- When no yearly review exists with the given uid.
+
+--------------------------------------------------------------------------------
+22.3 Upsert Yearly Review Category
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/yearly-review/category
@@ -1638,7 +1695,7 @@ Response: 200 OK
 (no body)
 
 --------------------------------------------------------------------------------
-21.3 Upsert Yearly Review Game
+22.4 Upsert Yearly Review Game
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/yearly-review/game
@@ -1659,7 +1716,7 @@ Response: 200 OK
 (no body)
 
 --------------------------------------------------------------------------------
-21.4 Invalidate Yearly Review Category (by UID)
+22.5 Invalidate Yearly Review Category (by UID)
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/yearly-review/category/{uid}/invalidate
@@ -1673,7 +1730,7 @@ Body: boolean
 - false: no category with the given uid
 
 --------------------------------------------------------------------------------
-21.5 Invalidate Yearly Review Game (by UID)
+22.6 Invalidate Yearly Review Game (by UID)
 --------------------------------------------------------------------------------
 Method: POST
 Path: /api/yearly-review/game/{uid}/invalidate
@@ -1695,12 +1752,12 @@ Yearly review valid semantics
 - Invalidate endpoints set valid = false; the entity is no longer returned in fetches.
 
 ================================================================================
-22. HLTB ESTIMATE ENDPOINTS
+23. HLTB ESTIMATE ENDPOINTS
 ================================================================================
 Base Path: /api/hltb-estimates
 
 --------------------------------------------------------------------------------
-22.1 Upsert HLTB Estimate (insert or update)
+23.1 Upsert HLTB Estimate (insert or update)
 --------------------------------------------------------------------------------
 Method: PUT
 Path: /api/hltb-estimates
@@ -1732,7 +1789,7 @@ Notes:
 - last_updated is set to current time on every insert and update (not accepted in request).
 
 --------------------------------------------------------------------------------
-22.2 Get HLTB Estimate by Game Instance UID
+23.2 Get HLTB Estimate by Game Instance UID
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/hltb-estimates/game-instance/{gameInstanceUid}
@@ -1747,12 +1804,12 @@ Response: 404 Not Found
 When no HLTB estimate exists for the given game instance.
 
 ================================================================================
-23. STATISTICS ENDPOINTS
+24. STATISTICS ENDPOINTS
 ================================================================================
 Base Path: /api/stats
 
 --------------------------------------------------------------------------------
-23.1 Yearly Activity
+24.1 Yearly Activity
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/yearly-activity
@@ -1771,7 +1828,7 @@ Array of YearlyActivityDto:
 ]
 
 --------------------------------------------------------------------------------
-23.2 Console Year Activity
+24.2 Console Year Activity
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/console-year-activity?year={year}
@@ -1782,11 +1839,11 @@ Query Parameters:
 Response: 200 OK
 Array of ConsoleYearActivityDto:
 [
-  { "year": 0, "consoleUid": "string", "totalSeconds": 0, "distinctGames": 0 }
+  { "year": 0, "consoleUid": "string", "totalSeconds": 0, "distinctGames": 0, "bookingCount": 0 }
 ]
 
 --------------------------------------------------------------------------------
-23.3 Variant Year Activity
+24.3 Variant Year Activity
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/variant-year-activity?year={year}
@@ -1801,7 +1858,7 @@ Array of VariantYearActivityDto:
 ]
 
 --------------------------------------------------------------------------------
-23.4 Monthly Playtime
+24.4 Monthly Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/monthly-playtime?year={year}
@@ -1816,7 +1873,7 @@ Array of MonthlyPlaytimeDto:
 ]
 
 --------------------------------------------------------------------------------
-23.5 Weekly Playtime
+24.5 Weekly Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/weekly-playtime?year={year}
@@ -1831,7 +1888,7 @@ Array of WeeklyPlaytimeDto:
 ]
 
 --------------------------------------------------------------------------------
-23.6 Weekday Playtime
+24.6 Weekday Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/weekday-playtime?year={year}
@@ -1846,7 +1903,7 @@ Array of WeekdayPlaytimeDto:
 ]
 
 --------------------------------------------------------------------------------
-23.7 Console Input Style Playtime
+24.7 Console Input Style Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/console-inputstyle-playtime?year={year}
@@ -1861,7 +1918,7 @@ Array of ConsoleInputStyleDto:
 ]
 
 --------------------------------------------------------------------------------
-23.8 Game Playtime Ranking
+24.8 Game Playtime Ranking
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/game-playtime-ranking?fromYear={fromYear}&toYear={toYear}
@@ -1877,7 +1934,7 @@ Array of GamePlaytimeRankingDto:
 ]
 
 --------------------------------------------------------------------------------
-23.9 Booking Duration Distribution
+24.9 Booking Duration Distribution
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/booking-duration-distribution?gameUid={gameUid}&fromYear={fromYear}&toYear={toYear}
@@ -1893,6 +1950,60 @@ Array of BookingDurationDistributionDto:
   { "durationMinutes": 0, "bookingCount": 0 }
 ]
 
+--------------------------------------------------------------------------------
+24.10 Backlog Completion Game Overview
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/backlog-completion-game-overview?year={year}
+
+Query Parameters:
+- year (int, required): Filter rows where any of received_date, added_to_backlog, finished_date, completed_date, removed_from_backlog falls in this year
+
+Response: 200 OK
+Array of BacklogCompletionGameOverviewDto (from view backlog_completion_game_overview + cover_image_uid):
+[
+  {
+    "gameInstanceUid": "string",
+    "gameName": "string",
+    "platform": "string",
+    "forFree": true | false,
+    "receivedDate": "YYYY-MM-DD" | null,
+    "releaseDate": "YYYY-MM-DD" | null,
+    "addedToBacklog": "YYYY-MM-DD" | null,
+    "finishedDate": "YYYY-MM-DD" | null,
+    "completedDate": "YYYY-MM-DD" | null,
+    "removedFromBacklog": "YYYY-MM-DD" | null,
+    "gameUid": "string",
+    "backlogUid": "string" | null,
+    "platformUid": "string" | null,
+    "gameCompletionUid": "string" | null,
+    "coverImageUid": "string" | null
+  }
+]
+
+--------------------------------------------------------------------------------
+24.11 Game Played Per Year
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/game-played-per-year?year={year}
+
+Query Parameters:
+- year (int, required): Filter rows from vw_game_played_per_year for this year
+
+Response: 200 OK
+Array of GamePlayedPerYearDto (view data + cover_image_uid):
+[
+  {
+    "year": 0,
+    "gameInstanceUid": "string",
+    "gameName": "string",
+    "bookingCount": 0,
+    "playthroughCount": 0,
+    "totalPlaytimeSeconds": 0,
+    "coverImageUid": "string" | null
+  }
+]
+
 ================================================================================
 NOTES
 ================================================================================
@@ -1905,5 +2016,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-19  |  Document version: 26
+Generated: 2026-02-22  |  Document version: 29
 ================================================================================

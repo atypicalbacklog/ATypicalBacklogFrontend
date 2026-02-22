@@ -57,6 +57,7 @@ export default function EditStagedGamePage() {
   const [proposedVariantUid, setProposedVariantUid] = useState<string>('');
   const [proposedPlatformUid, setProposedPlatformUid] = useState<string>('');
   const [proposedCompletionStateUid, setProposedCompletionStateUid] = useState<string>('');
+  const [finishedDate, setFinishedDate] = useState('');
   const [backlogStartDate, setBacklogStartDate] = useState('');
   const [backlogEndDate, setBacklogEndDate] = useState('');
   const [backlogReason, setBacklogReason] = useState('');
@@ -103,6 +104,7 @@ export default function EditStagedGamePage() {
         setProposedVariantUid(d.proposedVariantUid ?? '');
         setProposedPlatformUid(d.proposedPlatformUid ?? '');
         setProposedCompletionStateUid(d.proposedCompletionStateUid ?? '');
+        setFinishedDate(d.proposedFinishedDate ?? '');
         setBacklogStartDate(d.backlogStartDate ?? '');
         setBacklogEndDate(d.backlogEndDate ?? '');
         setBacklogReason(d.backlogReason ?? '');
@@ -368,6 +370,7 @@ export default function EditStagedGamePage() {
       proposedPlatformUid: proposedPlatformUid || null,
       matchedOriginalConsoleUid: matchedOriginalConsoleUid || null,
       proposedCompletionStateUid: proposedCompletionStateUid || null,
+      proposedFinishedDate: finishedDate || null,
       backlogStartDate: backlogStartDate || null,
       backlogEndDate: backlogEndDate || null,
       backlogReason: backlogReason || null,
@@ -698,6 +701,7 @@ export default function EditStagedGamePage() {
             ))}
           </Select>
         </FormControl>
+        <DateField label="Finished date" value={finishedDate} onChange={setFinishedDate} />
 
         <Stack spacing={2}>
           <Typography variant="subtitle2" color="text.secondary">

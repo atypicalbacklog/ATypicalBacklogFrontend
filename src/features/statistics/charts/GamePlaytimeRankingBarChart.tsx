@@ -23,10 +23,19 @@ export default function GamePlaytimeRankingBarChart({
       </Card>
     );
   }
+  const maxLabelChars = 28;
+  const maxLabelCharsFirstLine = 22;
+
+  function formatAxisLabel(name: string): string {
+    if (name.length <= maxLabelChars) return name;
+    const firstLineEnd = name.lastIndexOf(' ', maxLabelCharsFirstLine + 1);
+    const breakAt =
+      firstLineEnd > 0 ? firstLineEnd : Math.min(maxLabelCharsFirstLine, name.length);
+    return `${name.slice(0, breakAt).trim()}\n${name.slice(breakAt).trim()}`;
+  }
+
   const slice = data.slice(0, maxBars);
-  const yAxisData = slice.map((d) =>
-    d.gameName.length > 24 ? d.gameName.slice(0, 21) + '…' : d.gameName
-  );
+  const yAxisData = slice.map((d) => formatAxisLabel(d.gameName));
   const seriesData = slice.map((d) => Math.round(d.totalHours * 10) / 10);
   return (
     <Card variant="outlined">
@@ -37,16 +46,36 @@ export default function GamePlaytimeRankingBarChart({
         <Box sx={{ width: '100%' }}>
           <BarChart
             layout="horizontal"
-            yAxis={[{ scaleType: 'band', data: yAxisData }]}
-            series={[{ data: seriesData, label: 'Hours' }]}
-            barLabel={(item, context) => {
-              if (item.value == null || item.value <= 0) return null;
-              if (context.bar.width < MIN_BAR_LABEL_PX) return null;
-              return formatPlaytimeHours(item.value);
-            }}
+            xAxis={[
+              {
+                label: '',
+                tickLabelInterval: () => false,
+                disableTicks: true,
+              }
+            ]}
+            yAxis={[
+              {
+                scaleType: 'band',
+                data: yAxisData,
+                width: 250,
+                tickLabelStyle: { whiteSpace: 'pre-line', lineHeight: 1.2 },
+              },
+            ]}
+            series={[
+              {
+                data: seriesData,
+                label: 'Hours',
+                barLabel: (item, context) => {
+                  if (item.value == null || item.value <= 0) return null;
+                  if (context.bar.width < MIN_BAR_LABEL_PX) return null;
+                  return formatPlaytimeHours(item.value);
+                },
+              },
+            ]}
             height={height}
-            margin={{ top: 20, right: 20, bottom: 20, left: 120 }}
-            slotProps={{ ...contrastBarLabelSlotProps, legend: { hidden: true } }}
+            margin={{ top: 20, right: 20, bottom: 20, left: -100 }}
+            hideLegend
+            slotProps={contrastBarLabelSlotProps}
           />
         </Box>
       </CardContent>

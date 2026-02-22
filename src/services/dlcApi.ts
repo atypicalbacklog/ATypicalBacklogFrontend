@@ -11,6 +11,10 @@ export interface CreateDlcRequest {
   completionStateUid?: string | null;
   /** Optional; info text for game_completion. */
   info?: string | null;
+  /** When state is completed. */
+  completedDate?: string | null;
+  /** When state is finished/finishedplus. */
+  finishedDate?: string | null;
 }
 
 /** Response from create DLC and from get-by-game-instance. */
@@ -23,6 +27,8 @@ export interface DlcDto {
   playthroughUid: string | null;
   completionStateUid?: string | null;
   coverImageUid?: string | null;
+  finishedDate?: string | null;
+  completedDate?: string | null;
 }
 
 /** Request for PUT /api/dlcs/{uid}. */
@@ -31,6 +37,8 @@ export interface UpdateDlcRequest {
   receivedDate?: string | null;
   releaseDate?: string | null;
   completionStateUid?: string | null;
+  finishedDate?: string | null;
+  completedDate?: string | null;
   /** Link DLC to this playthrough. */
   playthroughUid?: string | null;
   /** If true and no playthroughUid given, sets playthroughUid to null (unlink). */

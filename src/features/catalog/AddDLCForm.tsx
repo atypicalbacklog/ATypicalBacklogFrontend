@@ -59,6 +59,7 @@ export default function AddDLCForm() {
   const [playthroughs, setPlaythroughs] = useState<PlaythroughQueryResultDto[]>([]);
   const [selectedPlaythroughUid, setSelectedPlaythroughUid] = useState<string | null>(null);
   const [dlcCompletionStateUid, setDlcCompletionStateUid] = useState('');
+  const [dlcCompletionDateValue, setDlcCompletionDateValue] = useState(today());
   const [dlcCompletionInfo, setDlcCompletionInfo] = useState('');
   const [putBackInBacklog, setPutBackInBacklog] = useState(false);
   const [backlogAddedDate, setBacklogAddedDate] = useState(today());
@@ -69,6 +70,13 @@ export default function AddDLCForm() {
   const [pendingDlcCoverImport, setPendingDlcCoverImport] = useState<number | null>(null);
 
   const completionStates = referenceData?.data.completionStates ?? [];
+  const selectedDlcCompletionStateName = dlcCompletionStateUid
+    ? completionStates.find((c) => c.uid === dlcCompletionStateUid)?.name ?? ''
+    : '';
+  const dlcStateNormalized = selectedDlcCompletionStateName.trim().toLowerCase();
+  const isDlcCompletedState = dlcStateNormalized === 'completed';
+  const isDlcFinishedState = dlcStateNormalized === 'finished' || dlcStateNormalized === 'finished+';
+  const showDlcCompletionDateField = isDlcCompletedState || isDlcFinishedState;
   const playthroughTypes = referenceData?.data.playthroughTypes ?? [];
   const playthroughStates = referenceData?.data.playthroughStates ?? [];
   const playthroughTypeName = (uid: string) =>
@@ -141,6 +149,12 @@ export default function AddDLCForm() {
     setError(null);
     setSuccessMessage(null);
     try {
+      const dlcDates =
+        showDlcCompletionDateField && dlcCompletionDateValue
+          ? isDlcCompletedState
+            ? { completedDate: dlcCompletionDateValue }
+            : { finishedDate: dlcCompletionDateValue }
+          : {};
       const created = await DlcApi.create({
         gameInstanceUid: selectedInstance.gameInstanceUid,
         name: dlcName.trim() || (selectedInstance ? displayName(selectedInstance) : '') || 'DLC',
@@ -149,6 +163,7 @@ export default function AddDLCForm() {
         playthroughUid: selectedPlaythroughUid ?? null,
         completionStateUid: dlcCompletionStateUid || null,
         info: dlcCompletionInfo || null,
+        ...dlcDates,
       });
       if (pendingDlcCoverImport != null) {
         try {
@@ -176,6 +191,7 @@ export default function AddDLCForm() {
       setConnectToPlaythrough(false);
       setSelectedPlaythroughUid(null);
       setDlcCompletionStateUid('');
+      setDlcCompletionDateValue(today());
       setDlcCompletionInfo('');
       setPutBackInBacklog(false);
       setBacklogAddedDate(today());
@@ -193,7 +209,10 @@ export default function AddDLCForm() {
     releaseDate,
     selectedPlaythroughUid,
     dlcCompletionStateUid,
+    dlcCompletionDateValue,
     dlcCompletionInfo,
+    showDlcCompletionDateField,
+    isDlcCompletedState,
     putBackInBacklog,
     backlogAddedDate,
     backlogReason,
@@ -423,6 +442,13 @@ export default function AddDLCForm() {
               </MenuItem>
             ))}
           </TextField>
+          {showDlcCompletionDateField && (
+            <DateField
+              label={isDlcCompletedState ? 'Completed date' : 'Finished date'}
+              value={dlcCompletionDateValue}
+              onChange={setDlcCompletionDateValue}
+            />
+          )}
           <TextField
             label="DLC completion info"
             value={dlcCompletionInfo}

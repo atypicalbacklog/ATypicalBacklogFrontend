@@ -36,6 +36,8 @@ export interface GameCompletionDTO {
   dlcUid: string | null;
   completionStateUid: string;
   info: string | null;
+  finishedDate?: string | null;
+  completedDate?: string | null;
 }
 
 /** Summary of a game instance (e.g. for instance switcher by game). */

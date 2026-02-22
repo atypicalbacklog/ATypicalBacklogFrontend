@@ -126,6 +126,7 @@ export default function GameInstanceOverviewPage() {
           playthrough: p,
           totalSeconds: sec,
           dlcName: byPlaythrough.get(p.playthroughUid)?.name ?? null,
+          sessions: bookings,
         };
       });
 

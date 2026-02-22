@@ -49,7 +49,7 @@ export default function WeeklyPlaytimeLineChart({ data, height = 320 }: Props) {
             series={series}
             height={height}
             margin={{ top: 20, right: 20, bottom: 60, left: 50 }}
-            slotProps={{ legend: { hidden: true } }}
+            hideLegend
           />
         </Box>
       </CardContent>

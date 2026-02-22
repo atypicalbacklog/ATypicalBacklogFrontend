@@ -102,7 +102,7 @@ export default function CompletionBar({ completionState, playthroughState }: Com
             fontWeight: 700,
             fontFamily: 'sans-serif',
             textTransform: 'uppercase',
-            color: key === 'completed' ? 'rgba(0,0,0,0.35)' : '#666',
+            color: key === 'completed' ? 'rgba(0,0,0,0.55)' : '#666',
             textShadow: '0 0 1px #fff',
             pointerEvents: 'none',
           }}

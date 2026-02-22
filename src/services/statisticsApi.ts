@@ -70,6 +70,36 @@ export interface BookingDurationBucketDto {
   bookingCount: number;
 }
 
+/** Backend DTO: GET /api/stats/game-played-per-year (array element) */
+export interface GamePlayedPerYearDto {
+  year: number;
+  gameInstanceUid: string;
+  gameName: string;
+  bookingCount: number;
+  playthroughCount: number;
+  totalPlaytimeSeconds: number;
+  coverImageUid: string | null;
+}
+
+/** Backend DTO: GET /api/stats/backlog-completion-game-overview (array element) */
+export interface BacklogCompletionGameOverviewDto {
+  gameInstanceUid: string;
+  gameName: string;
+  platform: string;
+  forFree: boolean;
+  receivedDate: string | null;
+  releaseDate: string | null;
+  addedToBacklog: string | null;
+  finishedDate: string | null;
+  completedDate: string | null;
+  removedFromBacklog: string | null;
+  gameUid: string;
+  backlogUid: string | null;
+  platformUid: string | null;
+  gameCompletionUid: string | null;
+  coverImageUid: string | null;
+}
+
 function queryString(params: Record<string, number | string | undefined>): string {
   const search = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -159,6 +189,26 @@ export function fetchBookingDurationDistribution(
 ): Promise<BookingDurationBucketDto[]> {
   return http<BookingDurationBucketDto[]>(
     `${BASE}/booking-duration-distribution${queryString(params)}`,
+    { signal }
+  );
+}
+
+export function fetchBacklogCompletionGameOverview(
+  year: number,
+  signal?: AbortSignal
+): Promise<BacklogCompletionGameOverviewDto[]> {
+  return http<BacklogCompletionGameOverviewDto[]>(
+    `${BASE}/backlog-completion-game-overview${queryString({ year })}`,
+    { signal }
+  );
+}
+
+export function fetchGamePlayedPerYear(
+  year: number,
+  signal?: AbortSignal
+): Promise<GamePlayedPerYearDto[]> {
+  return http<GamePlayedPerYearDto[]>(
+    `${BASE}/game-played-per-year${queryString({ year })}`,
     { signal }
   );
 }

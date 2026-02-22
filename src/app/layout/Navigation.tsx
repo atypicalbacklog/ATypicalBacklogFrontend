@@ -38,6 +38,9 @@ export default function Navigation() {
         <ListItemButton component={Link} to="/statistics">
           <ListItemText primary="Statistics" />
         </ListItemButton>
+        <ListItemButton component={Link} to="/backlog-completion-overview">
+          <ListItemText primary="Backlog completion overview" />
+        </ListItemButton>
       </List>
     </Box>
   );

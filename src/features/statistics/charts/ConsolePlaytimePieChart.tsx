@@ -71,8 +71,7 @@ export default function ConsolePlaytimePieChart({ data, year, height = 320 }: Pr
             slots={{ pieArcLabel: ContrastPieArcLabel }}
             slotProps={{
               legend: {
-                direction: 'column',
-                position: { vertical: 'middle', horizontal: 'right' },
+                position: { vertical: 'middle' },
               },
             }}
           />

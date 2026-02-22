@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { http } from '../../services/httpClient';
 import { GameOverviewRowDto, LibraryFilterState } from './types';
 
-/** Map UI filter state to API request body (empty arrays → null for "no filter"). */
+/** Map UI filter state to API request body (empty arrays → null for "no filter"). If platform is set, console filter is ignored. */
 function toQueryRequestBody(f: LibraryFilterState) {
+  const platformSet = f.platformUids.length > 0;
   return {
     searchText: f.searchText || null,
-    platformUids: f.platformUids.length ? f.platformUids : null,
-    consoleUids: f.consoleUids.length ? f.consoleUids : null,
+    platformUids: platformSet ? f.platformUids : null,
+    consoleUids: platformSet ? null : (f.consoleUids.length ? f.consoleUids : null),
     inBacklog: f.inBacklog,
     hasActivePlaythrough: f.hasActivePlaythrough,
     completionStateUids: f.completionStateUids.length

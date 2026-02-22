@@ -8,7 +8,8 @@ export const GameCompletionApi = {
     gameInstanceUid: string,
     completionStateUid: string,
     info: string,
-    dlcUid?: string | null
+    dlcUid?: string | null,
+    dates?: { finishedDate?: string | null; completedDate?: string | null }
   ) =>
     http<void>(BASE, {
       method: 'POST',
@@ -17,6 +18,8 @@ export const GameCompletionApi = {
         completionStateUid,
         dlcUid: dlcUid ?? null,
         info,
+        ...(dates?.finishedDate != null && { finishedDate: dates.finishedDate }),
+        ...(dates?.completedDate != null && { completedDate: dates.completedDate }),
       }),
     }),
 };

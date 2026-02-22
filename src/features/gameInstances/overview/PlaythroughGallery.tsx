@@ -1,5 +1,5 @@
 import { Box, Typography } from '@mui/material';
-import type { PlaythroughQueryResultDto } from '../../../types/dto';
+import type { PlaythroughQueryResultDto, TimeBookingQueryDto } from '../../../types/dto';
 import type { DlcDto } from '../../../services/dlcApi';
 import PlaythroughOverviewCard from './PlaythroughOverviewCard';
 
@@ -7,6 +7,8 @@ export interface PlaythroughWithTime {
   playthrough: PlaythroughQueryResultDto;
   totalSeconds: number;
   dlcName: string | null;
+  /** Time booking sessions for this playthrough (from api/playthroughs/{uid}/sessions or query/time-bookings). */
+  sessions: TimeBookingQueryDto[];
 }
 
 interface Props {
@@ -39,7 +41,7 @@ export default function PlaythroughGallery({
         pb: 1,
       }}
     >
-      {items.map(({ playthrough, totalSeconds, dlcName }) => (
+      {items.map(({ playthrough, totalSeconds, dlcName, sessions }) => (
         <PlaythroughOverviewCard
           key={playthrough.playthroughUid}
           playthroughUid={playthrough.playthroughUid}
@@ -49,6 +51,7 @@ export default function PlaythroughGallery({
           inputName={inputName(playthrough.inputUid ?? '')}
           totalSeconds={totalSeconds}
           dlcName={dlcName}
+          sessions={sessions}
         />
       ))}
     </Box>

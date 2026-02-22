@@ -14,7 +14,6 @@ import { useVariantYearActivity } from './hooks/useVariantYearActivity';
 import { useMonthlyPlaytime } from './hooks/useMonthlyPlaytime';
 import { useWeeklyPlaytime } from './hooks/useWeeklyPlaytime';
 import { useWeekdayPlaytime } from './hooks/useWeekdayPlaytime';
-import { useGamePlaytimeRanking } from './hooks/useGamePlaytimeRanking';
 import YearlyPlaytimeBarChart from './charts/YearlyPlaytimeBarChart';
 import YearlyBookingDaysBarChart from './charts/YearlyBookingDaysBarChart';
 import YearlyBookingCountBarChart from './charts/YearlyBookingCountBarChart';
@@ -24,12 +23,10 @@ import ConsoleYearPlaytimeBarChart from './charts/ConsoleYearPlaytimeBarChart';
 import ConsoleYearGamesBarChart from './charts/ConsoleYearGamesBarChart';
 import ConsoleYearBookingsBarChart from './charts/ConsoleYearBookingsBarChart';
 import ConsolePlaytimeStackedBarChart from './charts/ConsolePlaytimeStackedBarChart';
-import ConsolePlaytimePieChart from './charts/ConsolePlaytimePieChart';
 import VariantPlaytimeStackedBarChart from './charts/VariantPlaytimeStackedBarChart';
 import MonthlyPlaytimeBarChart from './charts/MonthlyPlaytimeBarChart';
 import WeeklyPlaytimeLineChart from './charts/WeeklyPlaytimeLineChart';
 import WeekdayPlaytimeStackedBarChart from './charts/WeekdayPlaytimeStackedBarChart';
-import GamePlaytimeRankingBarChart from './charts/GamePlaytimeRankingBarChart';
 
 function ChartCard({
   loading,
@@ -85,12 +82,6 @@ function StatisticsDashboardContent() {
   const { data: weeklyData, isLoading: weeklyLoading, error: weeklyError } = useWeeklyPlaytime();
   const { data: weekdayData, isLoading: weekdayLoading, error: weekdayError } =
     useWeekdayPlaytime();
-  const {
-    data: gameRankingData,
-    isLoading: gameRankingLoading,
-    error: gameRankingError,
-  } = useGamePlaytimeRanking();
-
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -144,14 +135,9 @@ function StatisticsDashboardContent() {
               By console
             </Typography>
           </Grid>
-          <Grid item xs={12} lg={8}>
+          <Grid item xs={12} lg={6}>
             <ChartCard loading={consoleYearLoading} error={consoleYearError}>
               <ConsoleYearPlaytimeBarChart data={consoleYearData} />
-            </ChartCard>
-          </Grid>
-          <Grid item xs={12} lg={4}>
-            <ChartCard loading={consoleYearLoading} error={consoleYearError}>
-              <ConsolePlaytimePieChart data={consoleYearData} year={toYear} />
             </ChartCard>
           </Grid>
           <Grid item xs={12} lg={6}>
@@ -208,18 +194,6 @@ function StatisticsDashboardContent() {
           <Grid item xs={12}>
             <ChartCard loading={weekdayLoading} error={weekdayError}>
               <WeekdayPlaytimeStackedBarChart data={weekdayData} />
-            </ChartCard>
-          </Grid>
-
-          {/* Game ranking */}
-          <Grid item xs={12}>
-            <Typography variant="h6" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-              Top games by playtime
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <ChartCard loading={gameRankingLoading} error={gameRankingError}>
-              <GamePlaytimeRankingBarChart data={gameRankingData} maxBars={15} />
             </ChartCard>
           </Grid>
         </Grid>

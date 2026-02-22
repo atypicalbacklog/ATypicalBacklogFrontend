@@ -37,7 +37,8 @@ export default function YearlyCompletionsBarChart({ data, height = 320 }: Props)
             }}
             height={height}
             margin={{ top: 20, right: 20, bottom: 40, left: 50 }}
-            slotProps={{ ...contrastBarLabelSlotProps, legend: { hidden: true } }}
+            hideLegend
+            slotProps={contrastBarLabelSlotProps}
           />
         </Box>
       </CardContent>

@@ -51,6 +51,8 @@ export interface StagedGameDetailDto {
   matchedExternalIgdbId: string | null;
   matchedOriginalConsoleUid: string | null;
   proposedCompletionStateUid: string | null;
+  /** When completion is finished/completed. */
+  proposedFinishedDate?: string | null;
   backlogStartDate: string | null;
   backlogEndDate: string | null;
   backlogReason: string | null;
@@ -71,6 +73,7 @@ export interface UpdateStagedGameRequest {
   matchedExternalIgdbId?: string | null;
   matchedOriginalConsoleUid?: string | null;
   proposedCompletionStateUid?: string | null;
+  proposedFinishedDate?: string | null;
   backlogStartDate?: string | null;
   backlogEndDate?: string | null;
   backlogReason?: string | null;

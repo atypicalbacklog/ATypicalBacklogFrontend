@@ -37,7 +37,8 @@ export default function YearlyDistinctGamesBarChart({ data, height = 320 }: Prop
             }}
             height={height}
             margin={{ top: 20, right: 20, bottom: 40, left: 50 }}
-            slotProps={{ ...contrastBarLabelSlotProps, legend: { hidden: true } }}
+            hideLegend
+            slotProps={contrastBarLabelSlotProps}
           />
         </Box>
       </CardContent>

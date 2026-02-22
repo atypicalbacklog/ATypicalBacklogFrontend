@@ -51,6 +51,7 @@ export default function AddInstanceForm() {
   const [forFree, setForFree] = useState(false);
   const [inPossession, setInPossession] = useState(true);
   const [completionStateUid, setCompletionStateUid] = useState('');
+  const [completionDateValue, setCompletionDateValue] = useState(today());
   const [completionInfo, setCompletionInfo] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +69,14 @@ export default function AddInstanceForm() {
     (a, b) => (a.order ?? 999) - (b.order ?? 999)
   );
   const completionStates = referenceData?.data.completionStates ?? [];
+  const selectedCompletionStateName = completionStateUid
+    ? completionStates.find((c) => c.uid === completionStateUid)?.name ?? ''
+    : '';
+  const completionStateNormalized = selectedCompletionStateName.trim().toLowerCase();
+  const isCompletedState = completionStateNormalized === 'completed';
+  const isFinishedState =
+    completionStateNormalized === 'finished' || completionStateNormalized === 'finished+';
+  const showCompletionDateField = isCompletedState || isFinishedState;
 
   const gameResolved = selectedGame != null || (addNewGame && newGameName.trim() && newGameReleaseDate);
   const step2Valid = gameResolved && platformUid && variantUid;
@@ -210,10 +219,17 @@ export default function AddInstanceForm() {
       }
       
       if (completionStateUid) {
+        const dates = showCompletionDateField
+          ? isCompletedState
+            ? { completedDate: completionDateValue || null }
+            : { finishedDate: completionDateValue || null }
+          : undefined;
         await GameCompletionApi.update(
           instance.uid,
           completionStateUid,
-          completionInfo || ''
+          completionInfo || '',
+          undefined,
+          dates
         );
       }
       setSuccessMessage('Instance created.');
@@ -231,6 +247,7 @@ export default function AddInstanceForm() {
       setForFree(false);
       setInPossession(true);
       setCompletionStateUid('');
+      setCompletionDateValue(today());
       setCompletionInfo('');
       setPendingCoverImport(null);
       setNewGameExternalIgdbId(null);
@@ -258,7 +275,10 @@ export default function AddInstanceForm() {
     forFree,
     inPossession,
     completionStateUid,
+    completionDateValue,
     completionInfo,
+    showCompletionDateField,
+    isCompletedState,
     pendingCoverImport,
   ]);
 
@@ -527,6 +547,13 @@ export default function AddInstanceForm() {
                 </MenuItem>
               ))}
             </TextField>
+            {showCompletionDateField && (
+              <DateField
+                label={isCompletedState ? 'Completed date' : 'Finished date'}
+                value={completionDateValue}
+                onChange={setCompletionDateValue}
+              />
+            )}
             <FormControlLabel
               control={
                 <Checkbox

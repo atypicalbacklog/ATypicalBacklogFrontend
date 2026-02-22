@@ -62,14 +62,28 @@ export default function GameInstanceDetailPage() {
   const [relinkResults, setRelinkResults] = useState<SearchResultItem[]>([]);
   const [relinkTarget, setRelinkTarget] = useState<SearchResultItem | null>(null);
   const [relinkSubmitting, setRelinkSubmitting] = useState(false);
-  // Completion form
+  // Completion form (main instance completion; dates live on GameCompletionDTO)
   const [completionStateUid, setCompletionStateUid] = useState('');
   const [completionInfo, setCompletionInfo] = useState('');
+  const [completionFinishedDate, setCompletionFinishedDate] = useState('');
+  const [completionCompletedDate, setCompletionCompletedDate] = useState('');
   const [completionSubmitting, setCompletionSubmitting] = useState(false);
   // DLCs for this instance (edit section)
   const [dlcs, setDlcs] = useState<DlcDto[]>([]);
   const [dlcUpdatingUid, setDlcUpdatingUid] = useState<string | null>(null);
-  const [dlcEdits, setDlcEdits] = useState<Record<string, { name: string; receivedDate: string; releaseDate: string; completionStateUid: string }>>({});
+  const [dlcEdits, setDlcEdits] = useState<
+    Record<
+      string,
+      {
+        name: string;
+        receivedDate: string;
+        releaseDate: string;
+        completionStateUid: string;
+        finishedDate: string;
+        completedDate: string;
+      }
+    >
+  >({});
   const [dlcExpanded, setDlcExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -82,6 +96,18 @@ export default function GameInstanceDetailPage() {
         }
         const currentBacklog = inst.backlogEntries?.find((e) => !e.removedDate);
         if (currentBacklog) setReasonEdit(currentBacklog.reason);
+        const mainComp = inst.completions?.find((c) => !c.dlcUid);
+        if (mainComp) {
+          setCompletionStateUid(mainComp.completionStateUid);
+          setCompletionInfo(mainComp.info ?? '');
+          setCompletionFinishedDate(mainComp.finishedDate ?? '');
+          setCompletionCompletedDate(mainComp.completedDate ?? '');
+        } else {
+          setCompletionStateUid('');
+          setCompletionInfo('');
+          setCompletionFinishedDate('');
+          setCompletionCompletedDate('');
+        }
         DlcApi.getByGameInstance(uid)
           .then((list) => setDlcs(Array.isArray(list) ? list : []))
           .catch(() => {});
@@ -108,6 +134,13 @@ export default function GameInstanceDetailPage() {
       }
       const current = inst.backlogEntries?.find((e) => !e.removedDate);
       if (current) setReasonEdit(current.reason);
+      const mainComp = inst.completions?.find((c) => !c.dlcUid);
+      if (mainComp) {
+        setCompletionStateUid(mainComp.completionStateUid);
+        setCompletionInfo(mainComp.info ?? '');
+        setCompletionFinishedDate(mainComp.finishedDate ?? '');
+        setCompletionCompletedDate(mainComp.completedDate ?? '');
+      }
     }).catch(() => {});
   }, [uid]);
 
@@ -221,10 +254,11 @@ export default function GameInstanceDetailPage() {
     setCompletionSubmitting(true);
     setError(null);
     try {
-      await GameCompletionApi.update(uid, completionStateUid, completionInfo);
+      await GameCompletionApi.update(uid, completionStateUid, completionInfo, undefined, {
+        finishedDate: completionFinishedDate || null,
+        completedDate: completionCompletedDate || null,
+      });
       refetchInstance();
-      setCompletionStateUid('');
-      setCompletionInfo('');
     } catch {
       setError('Failed to set completion.');
     } finally {
@@ -240,7 +274,17 @@ export default function GameInstanceDetailPage() {
   }, [uid]);
 
   const handleDlcFieldChange = useCallback(
-    (dlcUid: string, field: 'name' | 'receivedDate' | 'releaseDate' | 'completionStateUid', value: string) => {
+    (
+      dlcUid: string,
+      field:
+        | 'name'
+        | 'receivedDate'
+        | 'releaseDate'
+        | 'completionStateUid'
+        | 'finishedDate'
+        | 'completedDate',
+      value: string
+    ) => {
       setDlcEdits((prev) => ({
         ...prev,
         [dlcUid]: {
@@ -253,13 +297,18 @@ export default function GameInstanceDetailPage() {
   );
 
   const getDlcEdit = useCallback(
-    (dlc: DlcDto) => ({
-      name: dlcEdits[dlc.uid]?.name ?? dlc.name ?? '',
-      receivedDate: dlcEdits[dlc.uid]?.receivedDate ?? dlc.receivedDate ?? '',
-      releaseDate: dlcEdits[dlc.uid]?.releaseDate ?? dlc.releaseDate ?? '',
-      completionStateUid: dlcEdits[dlc.uid]?.completionStateUid ?? dlc.completionStateUid ?? '',
-    }),
-    [dlcEdits]
+    (dlc: DlcDto) => {
+      const completion = instance?.completions?.find((c) => c.dlcUid === dlc.uid);
+      return {
+        name: dlcEdits[dlc.uid]?.name ?? dlc.name ?? '',
+        receivedDate: dlcEdits[dlc.uid]?.receivedDate ?? dlc.receivedDate ?? '',
+        releaseDate: dlcEdits[dlc.uid]?.releaseDate ?? dlc.releaseDate ?? '',
+        completionStateUid: dlcEdits[dlc.uid]?.completionStateUid ?? dlc.completionStateUid ?? '',
+        finishedDate: dlcEdits[dlc.uid]?.finishedDate ?? completion?.finishedDate ?? dlc.finishedDate ?? '',
+        completedDate: dlcEdits[dlc.uid]?.completedDate ?? completion?.completedDate ?? dlc.completedDate ?? '',
+      };
+    },
+    [dlcEdits, instance?.completions]
   );
 
   const handleDlcSave = useCallback(
@@ -273,6 +322,8 @@ export default function GameInstanceDetailPage() {
           receivedDate: edit.receivedDate || null,
           releaseDate: edit.releaseDate || null,
           completionStateUid: edit.completionStateUid || null,
+          finishedDate: edit.finishedDate || null,
+          completedDate: edit.completedDate || null,
         });
         refetchDlcs();
         setDlcEdits((prev) => {
@@ -560,6 +611,26 @@ export default function GameInstanceDetailPage() {
                   Set completion
                 </Button>
               </Stack>
+              <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mt: 1 }}>
+                <TextField
+                  type="date"
+                  label="Finished date"
+                  value={completionFinishedDate}
+                  onChange={(e) => setCompletionFinishedDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  sx={{ minWidth: 140 }}
+                />
+                <TextField
+                  type="date"
+                  label="Completed date"
+                  value={completionCompletedDate}
+                  onChange={(e) => setCompletionCompletedDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  sx={{ minWidth: 140 }}
+                />
+              </Stack>
             </>
           }
         />
@@ -709,6 +780,30 @@ export default function GameInstanceDetailPage() {
                         >
                           {updating ? 'Saving…' : 'Save DLC'}
                         </Button>
+                      </Stack>
+                      <Stack direction="row" spacing={2} flexWrap="wrap">
+                        <TextField
+                          type="date"
+                          label="Finished date"
+                          value={edit.finishedDate}
+                          onChange={(e) =>
+                            handleDlcFieldChange(dlc.uid, 'finishedDate', e.target.value)
+                          }
+                          InputLabelProps={{ shrink: true }}
+                          size="small"
+                          sx={{ minWidth: 140 }}
+                        />
+                        <TextField
+                          type="date"
+                          label="Completed date"
+                          value={edit.completedDate}
+                          onChange={(e) =>
+                            handleDlcFieldChange(dlc.uid, 'completedDate', e.target.value)
+                          }
+                          InputLabelProps={{ shrink: true }}
+                          size="small"
+                          sx={{ minWidth: 140 }}
+                        />
                       </Stack>
                     </Box>
                   </Collapse>

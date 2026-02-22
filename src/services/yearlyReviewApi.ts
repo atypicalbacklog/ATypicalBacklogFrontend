@@ -20,7 +20,14 @@ export interface YearlyReviewDto {
   uid: string;
   year: number;
   valid: boolean;
+  introText?: string | null;
+  outroText?: string | null;
   categories: YearlyReviewCategoryDto[];
+}
+
+export interface UpdateYearlyReviewRequest {
+  introText?: string | null;
+  outroText?: string | null;
 }
 
 export interface UpsertYearlyReviewCategoryRequest {
@@ -45,6 +52,12 @@ const BASE = '/api/yearly-review';
 export const YearlyReviewApi = {
   getByYear: (year: number) =>
     http<YearlyReviewDto>(`${BASE}?year=${year}`),
+
+  update: (uid: string, data: UpdateYearlyReviewRequest) =>
+    http<void>(`${BASE}/${encodeURIComponent(uid)}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 
   upsertCategory: (data: UpsertYearlyReviewCategoryRequest) =>
     http<void>(`${BASE}/category`, {

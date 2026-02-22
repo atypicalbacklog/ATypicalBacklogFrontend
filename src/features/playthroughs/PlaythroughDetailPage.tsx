@@ -53,9 +53,11 @@ export default function PlaythroughDetailPage() {
     new Date().toISOString().slice(0, 10)
   );
 
-  // Completions (for game instance)
+  // Completions (for game instance; dates saved with GameCompletion)
   const [completionStateUid, setCompletionStateUid] = useState('');
   const [completionInfo, setCompletionInfo] = useState('');
+  const [completionFinishedDate, setCompletionFinishedDate] = useState('');
+  const [completionCompletedDate, setCompletionCompletedDate] = useState('');
   const [completionSubmitting, setCompletionSubmitting] = useState(false);
 
   // DLCs for this game instance (linked to playthrough = this uid)
@@ -83,6 +85,13 @@ export default function PlaythroughDetailPage() {
         setDlcs(dlcList ?? []);
         const currentBacklog = inst.backlogEntries?.find((e) => !e.removedDate);
         if (currentBacklog) setReasonEdit(currentBacklog.reason);
+        const mainComp = inst.completions?.find((c) => !c.dlcUid);
+        if (mainComp) {
+          setCompletionStateUid(mainComp.completionStateUid);
+          setCompletionInfo(mainComp.info ?? '');
+          setCompletionFinishedDate(mainComp.finishedDate ?? '');
+          setCompletionCompletedDate(mainComp.completedDate ?? '');
+        }
       })
       .catch(() => setError('Failed to load playthrough.'))
       .finally(() => setLoading(false));
@@ -95,6 +104,13 @@ export default function PlaythroughDetailPage() {
         setInstance(inst);
         const currentBacklog = inst.backlogEntries?.find((e) => !e.removedDate);
         if (currentBacklog) setReasonEdit(currentBacklog.reason);
+        const mainComp = inst.completions?.find((c) => !c.dlcUid);
+        if (mainComp) {
+          setCompletionStateUid(mainComp.completionStateUid);
+          setCompletionInfo(mainComp.info ?? '');
+          setCompletionFinishedDate(mainComp.finishedDate ?? '');
+          setCompletionCompletedDate(mainComp.completedDate ?? '');
+        }
       })
       .catch(() => {});
   }, [playthrough]);
@@ -223,11 +239,14 @@ export default function PlaythroughDetailPage() {
       await GameCompletionApi.update(
         playthrough.gameInstanceUid,
         completionStateUid,
-        completionInfo ?? ''
+        completionInfo ?? '',
+        undefined,
+        {
+          finishedDate: completionFinishedDate || null,
+          completedDate: completionCompletedDate || null,
+        }
       );
       refetchInstance();
-      setCompletionStateUid('');
-      setCompletionInfo('');
     } catch {
       setError('Failed to set completion.');
     } finally {
@@ -584,36 +603,58 @@ export default function PlaythroughDetailPage() {
               </Box>
             );
           })()}
-          <Stack spacing={2} direction="row" flexWrap="wrap" alignItems="center">
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Completion state</InputLabel>
-              <Select
-                label="Completion state"
-                value={completionStateUid}
-                onChange={(e) => setCompletionStateUid(e.target.value)}
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>Completion state</InputLabel>
+                <Select
+                  label="Completion state"
+                  value={completionStateUid}
+                  onChange={(e) => setCompletionStateUid(e.target.value)}
+                >
+                  {completionStates.map((c) => (
+                    <MenuItem key={c.uid} value={c.uid}>
+                      {c.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Info"
+                value={completionInfo}
+                onChange={(e) => setCompletionInfo(e.target.value)}
+                size="small"
+                sx={{ minWidth: 120 }}
+              />
+            </Stack>
+            <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+              <TextField
+                type="date"
+                label="Finished date"
+                value={completionFinishedDate}
+                onChange={(e) => setCompletionFinishedDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                sx={{ minWidth: 140 }}
+              />
+              <TextField
+                type="date"
+                label="Completed date"
+                value={completionCompletedDate}
+                onChange={(e) => setCompletionCompletedDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                size="small"
+                sx={{ minWidth: 140 }}
+              />
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleSetCompletion}
+                disabled={completionSubmitting || !completionStateUid}
               >
-                {completionStates.map((c) => (
-                  <MenuItem key={c.uid} value={c.uid}>
-                    {c.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Info"
-              value={completionInfo}
-              onChange={(e) => setCompletionInfo(e.target.value)}
-              size="small"
-              sx={{ minWidth: 120 }}
-            />
-            <Button
-              variant="contained"
-              size="small"
-              onClick={handleSetCompletion}
-              disabled={completionSubmitting || !completionStateUid}
-            >
-              Set Completion
-            </Button>
+                Set Completion
+              </Button>
+            </Stack>
           </Stack>
         </Box>
       </Box>

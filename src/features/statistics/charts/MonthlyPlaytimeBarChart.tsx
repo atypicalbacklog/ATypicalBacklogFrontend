@@ -50,7 +50,8 @@ export default function MonthlyPlaytimeBarChart({ data, height = 320 }: Props) {
             }}
             height={height}
             margin={{ top: 20, right: 20, bottom: 20, left: 60 }}
-            slotProps={{ ...contrastBarLabelSlotProps, legend: { hidden: true } }}
+            hideLegend
+            slotProps={contrastBarLabelSlotProps}
           />
         </Box>
       </CardContent>

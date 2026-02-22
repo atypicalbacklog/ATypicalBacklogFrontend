@@ -1,46 +1,48 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControl,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import { getImageUrl } from '../../services/imageApi';
-import { ImageApi } from '../../services/imageApi';
-import { queryGameOverview } from '../../services/gameOverviewApi';
-import type { GameOverviewQueryPayload } from '../../services/gameOverviewApi';
+import { GameApi } from '../../services/gameApi';
+import { YearlyReviewApi, type YearlyReviewDto } from '../../services/yearlyReviewApi';
+import { ReviewsApi } from '../../services/reviewsApi';
 import {
-  YearlyReviewApi,
-  type YearlyReviewDto,
-  type YearlyReviewGameDto,
-  type UpsertYearlyReviewGameRequest,
-} from '../../services/yearlyReviewApi';
-import type { GameOverviewRowDto } from '../library/types';
+  fetchYearlyActivity,
+  fetchGamePlaytimeRanking,
+  fetchConsoleYearActivity,
+  fetchConsoleInputStylePlaytime,
+  type ConsoleInputStyleDto,
+} from '../../services/statisticsApi';
+import type { ReviewSearchResultDto } from '../../types/dto';
+import type { GamePlaytimeDisplay } from '../statistics/hooks/useGamePlaytimeRanking';
+import type { ConsoleYearDisplay } from '../statistics/hooks/useConsoleYearActivity';
+import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import { getTierColorByIndex } from '../../constants/tierColors';
+import type { SimpleLookupDto } from '../../types/referenceData';
+import GamePlaytimeRankingBarChart from '../statistics/charts/GamePlaytimeRankingBarChart';
+import ConsolePlaytimePieChart from '../statistics/charts/ConsolePlaytimePieChart';
+import PcInputVariantsPieChart from '../statistics/charts/PcInputVariantsPieChart';
+import TierEntryCardView from '../reviews/TierEntryCardView';
 import YearlyReviewGameCard from './YearlyReviewGameCard';
-import SmartImage from '../shared/SmartImage';
+import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
 
+const MIN_YEAR = 2017;
 const CURRENT_YEAR = new Date().getFullYear();
 const LAST_YEAR = CURRENT_YEAR - 1;
-const MIN_YEAR = 2017;
-const YEARS = Array.from({ length: LAST_YEAR - MIN_YEAR + 1 }, (_, i) => LAST_YEAR - i);
+const YEARS = Array.from(
+  { length: LAST_YEAR - MIN_YEAR + 1 },
+  (_, i) => LAST_YEAR - i
+);
 
-/** Chunk games into rows with max 6 per row, balanced (e.g. 13 -> 5, 4, 4). */
 function chunkGames<T>(items: T[], maxPerRow: number = 6): T[][] {
   if (items.length === 0) return [];
   const numRows = Math.ceil(items.length / maxPerRow);
@@ -54,289 +56,135 @@ function chunkGames<T>(items: T[], maxPerRow: number = 6): T[][] {
   return rows;
 }
 
-function displayName(row: GameOverviewRowDto): string {
-  return row.instanceName ?? row.gameName ?? '';
+function formatTotalPlaytime(totalPlaytimeSeconds: number): string {
+  const  totalhours = Math.round(totalPlaytimeSeconds / 3600);
+  return `${totalhours} hours`;
 }
 
-function displayCoverUid(row: GameOverviewRowDto): string | null {
-  if (row.isDlc) return row.dlcCoverImageUid ?? row.instanceCoverImageUid ?? row.gameCoverImageUid ?? row.coverImageUid;
-  return row.instanceCoverImageUid ?? row.gameCoverImageUid ?? row.coverImageUid;
+function cardTierUid(card: ReviewSearchResultDto): string | null {
+  if (!card.playthroughs.length) return null;
+  const first = card.playthroughs[0].tierUid;
+  if (!first) return null;
+  if (card.playthroughs.every((p) => p.tierUid === first)) return first;
+  return null;
 }
 
 export default function YearlyReviewPage() {
+  const { referenceData, isLoaded } = useReferenceData();
   const [year, setYear] = useState(LAST_YEAR);
-  const [data, setData] = useState<YearlyReviewDto | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [yearlyReview, setYearlyReview] = useState<YearlyReviewDto | null>(null);
+  const [tierlistResults, setTierlistResults] = useState<ReviewSearchResultDto[]>([]);
+  const [totalPlaytimeSeconds, setTotalPlaytimeSeconds] = useState<number | null>(null);
+  const [gameRankingData, setGameRankingData] = useState<GamePlaytimeDisplay[]>([]);
+  const [consoleYearData, setConsoleYearData] = useState<ConsoleYearDisplay[]>([]);
+  const [pcInputStyleData, setPcInputStyleData] = useState<ConsoleInputStyleDto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [categoryEditIdx, setCategoryEditIdx] = useState<number | null>(null);
-  const [categoryName, setCategoryName] = useState('');
-  const [categorySaving, setCategorySaving] = useState(false);
+  const inputName = (inputUid: string) =>
+    referenceData?.data.inputs.find((i) => i.uid === inputUid)?.name ?? inputUid;
 
-  const [gameDialogOpen, setGameDialogOpen] = useState(false);
-  const [gameEditTarget, setGameEditTarget] = useState<{ categoryUid: string; game?: YearlyReviewGameDto } | null>(null);
-  const [gameSearchQuery, setGameSearchQuery] = useState('');
-  const [gameSearchResults, setGameSearchResults] = useState<GameOverviewRowDto[]>([]);
-  const [gameSearching, setGameSearching] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<GameOverviewRowDto | null>(null);
-  const [gameText, setGameText] = useState('');
-  const [preferredImageUid, setPreferredImageUid] = useState<string | null>(null);
-  const [gameImages, setGameImages] = useState<{ uid: string }[]>([]);
-  const [gameSaving, setGameSaving] = useState(false);
-
-  const [dragState, setDragState] = useState<{ categoryUid: string; gameUid: string } | null>(null);
-  const [dragOver, setDragOver] = useState<{ categoryUid: string; insertIndex: number } | null>(null);
-  const [reorderSaving, setReorderSaving] = useState(false);
-
-  const loadReview = useCallback(() => {
+  const load = useCallback(async () => {
+    if (!referenceData) return;
     setLoading(true);
     setError(null);
-    YearlyReviewApi.getByYear(year)
-      .then(setData)
-      .catch(() => setError('Failed to load yearly review'))
-      .finally(() => setLoading(false));
-  }, [year]);
+    try {
+      const [review, reviews, yearlyActivityRaw, rankingRaw, consoleRaw, inputStyleRaw] = await Promise.all([
+        YearlyReviewApi.getByYear(year),
+        ReviewsApi.searchByYear({ years: [year], includeActivePlaythroughs: true }),
+        fetchYearlyActivity(),
+        fetchGamePlaytimeRanking({ fromYear: year, toYear: year }),
+        fetchConsoleYearActivity(year),
+        fetchConsoleInputStylePlaytime(year),
+      ]);
+      setYearlyReview(review);
+      setTierlistResults(reviews);
+      const yearEntry = yearlyActivityRaw.find((r) => r.year === year);
+      setTotalPlaytimeSeconds(yearEntry?.totalSeconds ?? null);
+      const consoleMap = new Map(referenceData.data.consoles.map((c) => [c.uid, c.name]));
+      const sortedRanking = rankingRaw
+        .map((r) => ({
+          gameUid: r.gameUid,
+          totalHours: r.totalSeconds / 3600,
+        }))
+        .sort((a, b) => b.totalHours - a.totalHours);
+      const topGameUids = [...new Set(sortedRanking.slice(0, 20).map((r) => r.gameUid))];
+      const nameMap = new Map<string, string>();
+      await Promise.all(
+        topGameUids.map(async (uid) => {
+          try {
+            const instances = await GameApi.getInstances(uid);
+            if (instances.length > 0 && instances[0].name != null && instances[0].name !== '') {
+              nameMap.set(uid, instances[0].name);
+              return;
+            }
+          } catch {
+            // ignore
+          }
+          try {
+            const game = await GameApi.get(uid);
+            nameMap.set(uid, game.name);
+          } catch {
+            nameMap.set(uid, uid);
+          }
+        })
+      );
+      setGameRankingData(
+        sortedRanking.map((r) => ({
+          gameUid: r.gameUid,
+          gameName: nameMap.get(r.gameUid) ?? r.gameUid,
+          totalHours: r.totalHours,
+        }))
+      );
+      setConsoleYearData(
+        consoleRaw.map((r) => ({
+          year: r.year,
+          consoleUid: r.consoleUid,
+          consoleName: consoleMap.get(r.consoleUid) ?? r.consoleUid,
+          totalHours: r.totalSeconds / 3600,
+          distinctGames: r.distinctGames,
+          bookingCount: r.bookingCount,
+        }))
+      );
+      const pcUid = referenceData.data.consoles.find((c) => c.name === 'PC')?.uid ?? null;
+      setPcInputStyleData(
+        pcUid ? inputStyleRaw.filter((r) => r.consoleUid === pcUid) : []
+      );
+    } catch {
+      setError('Failed to load yearly review data.');
+      setYearlyReview(null);
+      setTierlistResults([]);
+      setTotalPlaytimeSeconds(null);
+      setGameRankingData([]);
+      setConsoleYearData([]);
+      setPcInputStyleData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [year, referenceData]);
 
   useEffect(() => {
-    loadReview();
-  }, [loadReview]);
+    if (isLoaded) load();
+  }, [isLoaded, load]);
 
-  useEffect(() => {
-    if (!gameSearchQuery.trim() || gameSearchQuery.length < 2) {
-      setGameSearchResults([]);
-      return;
-    }
-    const t = setTimeout(() => {
-      setGameSearching(true);
-      const payload: GameOverviewQueryPayload = {
-        searchText: gameSearchQuery || null,
-        platformUids: null,
-        consoleUids: null,
-        inBacklog: null,
-        hasActivePlaythrough: null,
-        completionStateUids: null,
-        playthroughTypeUids: null,
-        includeDlc: false,
-        onlyGamesWithDlc: null,
-        sortMode: 'NAME_ASC',
-      };
-      queryGameOverview(payload)
-        .then((rows) => setGameSearchResults(rows.filter((r) => !r.isDlc)))
-        .catch(() => setGameSearchResults([]))
-        .finally(() => setGameSearching(false));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [gameSearchQuery]);
+  const tiers: SimpleLookupDto[] = (referenceData?.data?.tiers ?? []).slice().sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+  const cardsByTier = (tierUid: string) =>
+    tierlistResults.filter((c) => cardTierUid(c) === tierUid);
+  const tierListCardsOnly = tierlistResults.filter((c) => cardTierUid(c) != null);
 
-  useEffect(() => {
-    if (!selectedRow?.gameUid) {
-      setGameImages([]);
-      return;
-    }
-    ImageApi.listByGame(selectedRow.gameUid)
-      .then((list) => setGameImages(list.map((im) => ({ uid: im.uid }))))
-      .catch(() => setGameImages([]));
-  }, [selectedRow?.gameUid]);
-
-  const openCategoryEdit = (idx: number) => {
-    const sorted = data?.categories ? [...data.categories].sort((a, b) => a.order - b.order) : [];
-    const cat = sorted[idx];
-    if (cat) {
-      setCategoryEditIdx(idx);
-      setCategoryName(cat.name);
-    }
-  };
-
-  const saveCategory = async () => {
-    if (!data || categoryEditIdx == null) return;
-    const sorted = [...data.categories].sort((a, b) => a.order - b.order);
-    const cat = sorted[categoryEditIdx];
-    if (!cat) return;
-    setCategorySaving(true);
-    try {
-      await YearlyReviewApi.upsertCategory({
-        uid: cat.uid,
-        yearlyReviewUid: data.uid,
-        name: categoryName.trim(),
-        order: cat.order,
-      });
-      setCategoryEditIdx(null);
-      loadReview();
-    } catch {
-      setError('Failed to save category');
-    } finally {
-      setCategorySaving(false);
-    }
-  };
-
-  const addCategoryAtOrder = async (newOrder: number) => {
-    if (!data) return;
-    setCategorySaving(true);
-    try {
-      const sorted = [...data.categories].sort((a, b) => a.order - b.order);
-      for (const cat of sorted) {
-        if (cat.order >= newOrder) {
-          await YearlyReviewApi.upsertCategory({
-            uid: cat.uid,
-            yearlyReviewUid: data.uid,
-            name: cat.name,
-            order: cat.order + 1,
-          });
-        }
-      }
-      await YearlyReviewApi.upsertCategory({
-        uid: null,
-        yearlyReviewUid: data.uid,
-        name: 'New category',
-        order: newOrder,
-      });
-      loadReview();
-    } catch {
-      setError('Failed to add category');
-    } finally {
-      setCategorySaving(false);
-    }
-  };
-
-  const removeCategory = async (categoryUid: string) => {
-    const sorted = data?.categories ? [...data.categories].sort((a, b) => a.order - b.order) : [];
-    const removed = sorted.find((c) => c.uid === categoryUid);
-    const removedOrder = removed?.order ?? -1;
-    try {
-      await YearlyReviewApi.invalidateCategory(categoryUid);
-      const newData = await YearlyReviewApi.getByYear(year);
-      setData(newData);
-      const reordered = [...newData.categories].sort((a, b) => a.order - b.order);
-      for (const cat of reordered) {
-        if (cat.order > removedOrder) {
-          await YearlyReviewApi.upsertCategory({
-            uid: cat.uid,
-            yearlyReviewUid: newData.uid,
-            name: cat.name,
-            order: cat.order - 1,
-          });
-        }
-      }
-      const updated = await YearlyReviewApi.getByYear(year);
-      setData(updated);
-    } catch {
-      setError('Failed to remove category');
-    }
-  };
-
-  const openAddGame = (categoryUid: string) => {
-    setGameEditTarget({ categoryUid });
-    setSelectedRow(null);
-    setGameText('');
-    setPreferredImageUid(null);
-    setGameSearchQuery('');
-    setGameSearchResults([]);
-    setGameDialogOpen(true);
-  };
-
-  const openEditGame = (categoryUid: string, game: YearlyReviewGameDto) => {
-    setGameEditTarget({ categoryUid, game });
-    setGameText(game.text ?? '');
-    setPreferredImageUid(game.preferredImageUid);
-    setGameSearchQuery('');
-    setGameSearchResults([]);
-    if (game.gameUid) {
-      setSelectedRow({
-        gameUid: game.gameUid,
-        gameInstanceUid: game.gameInstanceUid ?? null,
-        gameName: '',
-        instanceName: '',
-        coverImageUid: game.preferredImageUid,
-        inBacklog: false,
-        hasActivePlaythrough: false,
-        completionStateUid: null,
-        totalPlaytimeSeconds: 0,
-      } as GameOverviewRowDto);
-    } else {
-      setSelectedRow(null);
-    }
-    setGameDialogOpen(true);
-  };
-
-  const saveGame = async () => {
-    if (!data || !gameEditTarget) return;
-    const category = data.categories.find((c) => c.uid === gameEditTarget.categoryUid);
-    if (!category) return;
-    if (!selectedRow) {
-      setError('Select a game/instance');
-      return;
-    }
-    setGameSaving(true);
-    try {
-      const order = gameEditTarget.game != null ? gameEditTarget.game.order : category.games.length;
-      const payload: UpsertYearlyReviewGameRequest = {
-        uid: gameEditTarget.game?.uid ?? null,
-        categoryUid: gameEditTarget.categoryUid,
-        gameUid: selectedRow.gameUid,
-        gameInstanceUid: selectedRow.gameInstanceUid ?? null,
-        preferredImageUid,
-        text: gameText.trim() || null,
-        order,
-      };
-      await YearlyReviewApi.upsertGame(payload);
-      setGameDialogOpen(false);
-      setGameEditTarget(null);
-      loadReview();
-    } catch {
-      setError('Failed to save game');
-    } finally {
-      setGameSaving(false);
-    }
-  };
-
-  const removeGame = async (gameUid: string) => {
-    try {
-      await YearlyReviewApi.invalidateGame(gameUid);
-      loadReview();
-    } catch {
-      setError('Failed to remove game');
-    }
-  };
-
-  const persistReorder = async (categoryUid: string, games: YearlyReviewGameDto[]) => {
-    if (!data) return;
-    setReorderSaving(true);
-    setError(null);
-    try {
-      for (let i = 0; i < games.length; i++) {
-        const g = games[i];
-        const payload: UpsertYearlyReviewGameRequest = {
-          uid: g.uid,
-          categoryUid,
-          gameUid: g.gameUid,
-          gameInstanceUid: g.gameInstanceUid ?? null,
-          preferredImageUid: g.preferredImageUid ?? null,
-          text: g.text ?? null,
-          order: i,
-        };
-        // Persist sequentially to keep server-side order deterministic.
-        // (Endpoint is single-upsert; no bulk reorder contract.)
-        // eslint-disable-next-line no-await-in-loop
-        await YearlyReviewApi.upsertGame(payload);
-      }
-      await YearlyReviewApi.getByYear(year).then(setData);
-    } catch {
-      setError('Failed to reorder games');
-    } finally {
-      setReorderSaving(false);
-      setDragState(null);
-      setDragOver(null);
-    }
-  };
-
-  const categories = data?.categories ?? [];
+  const categories = yearlyReview?.categories ?? [];
   const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Yearly review
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} sx={{ mb: 2 }}>
+        <Typography variant="h4">Yearly review</Typography>
+        <Button component={Link} to="/reviews/yearly/edit" variant="outlined" size="small">
+          Edit yearly review
+        </Button>
+      </Stack>
 
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 120 }}>
@@ -359,353 +207,150 @@ export default function YearlyReviewPage() {
         </Alert>
       )}
 
-      {loading && <CircularProgress />}
-
-      {!loading && data && (
-        <Stack spacing={4}>
-          {sortedCategories.map((category, catIdx) => (
-            <Box key={category.uid}>
-              {catIdx === 0 && (
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={() => addCategoryAtOrder(category.order)}
-                  disabled={categorySaving}
-                  sx={{ mb: 1 }}
-                >
-                  Add category
-                </Button>
-              )}
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                {categoryEditIdx === catIdx ? (
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <TextField
-                      size="small"
-                      value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
-                      label="Category name"
-                      sx={{ minWidth: 200 }}
-                    />
-                    <Button size="small" onClick={saveCategory} disabled={categorySaving}>
-                      Save
-                    </Button>
-                    <Button size="small" onClick={() => setCategoryEditIdx(null)}>
-                      Cancel
-                    </Button>
-                  </Stack>
-                ) : (
-                  <>
-                    <Typography variant="h6">{category.name}</Typography>
-                    <IconButton size="small" onClick={() => openCategoryEdit(catIdx)} aria-label="Edit category">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => removeCategory(category.uid)} aria-label="Remove category">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </>
-                )}
-              </Stack>
-
-              <Stack spacing={2}>
-                {(() => {
-                  const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
-                  const rows = chunkGames(gamesSorted, 6);
-                  let globalIdx = 0;
-
-                  const isActiveCategory = dragState?.categoryUid === category.uid;
-                  const activeInsertIndex =
-                    dragOver?.categoryUid === category.uid ? dragOver.insertIndex : null;
-
-                  const handleDrop = async (insertIndex: number) => {
-                    if (!dragState || dragState.categoryUid !== category.uid) return;
-                    if (reorderSaving) return;
-
-                    const fromIndex = gamesSorted.findIndex((g) => g.uid === dragState.gameUid);
-                    if (fromIndex < 0) return;
-
-                    let toIndex = insertIndex;
-                    if (toIndex > fromIndex) toIndex -= 1;
-                    toIndex = Math.max(0, Math.min(gamesSorted.length, toIndex));
-                    if (toIndex === fromIndex) return;
-
-                    const next = [...gamesSorted];
-                    const [moved] = next.splice(fromIndex, 1);
-                    next.splice(toIndex, 0, moved);
-
-                    await persistReorder(category.uid, next);
-                  };
-
-                  return (
-                    <Box
-                      onDragOver={(e) => {
-                        if (!isActiveCategory || reorderSaving) return;
-                        e.preventDefault();
-                        setDragOver({ categoryUid: category.uid, insertIndex: gamesSorted.length });
-                      }}
-                      onDrop={(e) => {
-                        if (!isActiveCategory || reorderSaving) return;
-                        e.preventDefault();
-                        void handleDrop(activeInsertIndex ?? gamesSorted.length);
-                      }}
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
-                    >
-                      {rows.map((row, rowIdx) => (
-                        <Stack key={rowIdx} direction="row" spacing={2} flexWrap="wrap">
-                          {row.map((game) => {
-                            const idx = globalIdx++;
-                            const showBefore = isActiveCategory && activeInsertIndex === idx;
-                            const showAfter =
-                              isActiveCategory &&
-                              activeInsertIndex === gamesSorted.length &&
-                              idx === gamesSorted.length - 1;
-
-                            return (
-                              <Box
-                                key={game.uid}
-                                onDragOver={(e) => {
-                                  if (!isActiveCategory || reorderSaving) return;
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                  const before = e.clientX < rect.left + rect.width / 2;
-                                  setDragOver({
-                                    categoryUid: category.uid,
-                                    insertIndex: before ? idx : idx + 1,
-                                  });
-                                }}
-                                onDrop={(e) => {
-                                  if (!isActiveCategory || reorderSaving) return;
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                  const before = e.clientX < rect.left + rect.width / 2;
-                                  void handleDrop(before ? idx : idx + 1);
-                                }}
-                                sx={{
-                                  position: 'relative',
-                                  '&::before': showBefore
-                                    ? {
-                                        content: '""',
-                                        position: 'absolute',
-                                        left: -6,
-                                        top: 0,
-                                        bottom: 0,
-                                        width: 4,
-                                        bgcolor: 'primary.main',
-                                        borderRadius: 2,
-                                      }
-                                    : undefined,
-                                  '&::after': showAfter
-                                    ? {
-                                        content: '""',
-                                        position: 'absolute',
-                                        right: -6,
-                                        top: 0,
-                                        bottom: 0,
-                                        width: 4,
-                                        bgcolor: 'primary.main',
-                                        borderRadius: 2,
-                                      }
-                                    : undefined,
-                                  opacity:
-                                    reorderSaving && dragState?.gameUid === game.uid ? 0.6 : 1,
-                                }}
-                              >
-                                <YearlyReviewGameCard
-                                  game={game}
-                                  onEdit={() => openEditGame(category.uid, game)}
-                                />
-
-                                {/* Drag handle (top-left) */}
-                                <IconButton
-                                  size="small"
-                                  draggable
-                                  onDragStart={(e) => {
-                                    e.stopPropagation();
-                                    e.dataTransfer.effectAllowed = 'move';
-                                    e.dataTransfer.setData('text/plain', game.uid);
-                                    setDragState({ categoryUid: category.uid, gameUid: game.uid });
-                                    setDragOver({ categoryUid: category.uid, insertIndex: idx });
-                                  }}
-                                  onDragEnd={() => {
-                                    setDragState(null);
-                                    setDragOver(null);
-                                  }}
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 4,
-                                    left: 4,
-                                    bgcolor: (theme) =>
-                                      theme.palette.mode === 'dark'
-                                        ? theme.palette.grey[900]
-                                        : theme.palette.common.white,
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    boxShadow: 1,
-                                    cursor: 'grab',
-                                    '&:active': { cursor: 'grabbing' },
-                                  }}
-                                  aria-label="Drag to reorder"
-                                >
-                                  <DragIndicatorIcon fontSize="small" />
-                                </IconButton>
-
-                                {/* Delete (top-right) */}
-                                <IconButton
-                                  size="small"
-                                  sx={{
-                                    position: 'absolute',
-                                    top: 4,
-                                    right: 4,
-                                    bgcolor: (theme) =>
-                                      theme.palette.mode === 'dark'
-                                        ? theme.palette.grey[900]
-                                        : theme.palette.common.white,
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                    boxShadow: 1,
-                                  }}
-                                  onClick={() => removeGame(game.uid)}
-                                  aria-label="Remove game"
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Box>
-                            );
-                          })}
-                        </Stack>
-                      ))}
-                    </Box>
-                  );
-                })()}
-              </Stack>
-              <Button size="small" startIcon={<AddIcon />} onClick={() => openAddGame(category.uid)} sx={{ mt: 1 }}>
-                Add game
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => addCategoryAtOrder(category.order + 1)}
-                disabled={categorySaving}
-                sx={{ mt: 1 }}
-              >
-                Add category
-              </Button>
-            </Box>
-          ))}
-
-          {sortedCategories.length === 0 && (
-            <Stack spacing={1}>
-              <Typography color="text.secondary">No categories yet.</Typography>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => addCategoryAtOrder(0)}
-                disabled={categorySaving}
-              >
-                Add category
-              </Button>
-            </Stack>
-          )}
+      {loading && (
+        <Stack alignItems="center" sx={{ py: 4 }}>
+          <CircularProgress />
         </Stack>
       )}
 
-      {/* Game add/edit dialog */}
-      <Dialog open={gameDialogOpen} onClose={() => setGameDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{gameEditTarget?.game ? 'Edit game' : 'Add game'}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Search game / instance"
-              value={gameSearchQuery}
-              onChange={(e) => setGameSearchQuery(e.target.value)}
-              size="small"
-              fullWidth
-              placeholder="Type to search (no DLCs)"
-            />
-            {gameSearching && <CircularProgress size={24} />}
-            {gameSearchResults.length > 0 && (
-              <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                {gameSearchResults.map((r) => (
-                  <Box
-                    key={r.gameInstanceUid ?? r.gameUid}
-                    onClick={() => setSelectedRow(r)}
-                    sx={{
-                      p: 1,
-                      cursor: 'pointer',
-                      bgcolor: selectedRow?.gameInstanceUid === r.gameInstanceUid ? 'action.selected' : undefined,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    {displayCoverUid(r) && (
-                      <SmartImage
-                        imageUid={displayCoverUid(r)}
-                        thumbnail
-                        alt=""
-                        aspectRatio={2 / 3}
-                        fit="contain"
-                        sx={{ width: 40, height: 56, borderRadius: 0.5 }}
-                        imgSx={{ borderRadius: 0.5 }}
-                      />
-                    )}
-                    <Typography variant="body2">{displayName(r)}</Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
-            {selectedRow && gameImages.length > 0 && (
-              <Box>
-                <Typography variant="caption" color="text.secondary">Preferred image (optional)</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                  {gameImages.map((im) => (
+      {!loading && (
+        <Stack spacing={4}>
+          {yearlyReview?.introText != null && yearlyReview.introText !== '' && (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>Intro</Typography>
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                {yearlyReview.introText}
+              </Typography>
+            </Box>
+          )}
+
+          {totalPlaytimeSeconds != null && (
+            <Typography variant="h4" component="p" gutterBottom>
+              Total playtime {formatTotalPlaytime(totalPlaytimeSeconds)}
+            </Typography>
+          )}
+
+          <Box>
+            <GamePlaytimeRankingBarChart data={gameRankingData} maxBars={15} />
+          </Box>
+
+          <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
+            <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
+              <ConsolePlaytimePieChart data={consoleYearData} year={year} />
+            </Box>
+            <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
+              <PcInputVariantsPieChart
+                data={pcInputStyleData}
+                year={year}
+                inputName={inputName}
+              />
+            </Box>
+          </Stack>
+
+          {tiers.length > 0 && (
+            <Box>
+              <Typography variant="h6" gutterBottom>Tier list for playthroughs of {year}</Typography>
+              <Stack spacing={0}>
+                {tiers.map((tier, index) => {
+                  const cards = cardsByTier(tier.uid);
+                  if (cards.length === 0) return null;
+                  const color = getTierColorByIndex(index);
+                  return (
                     <Box
-                      key={im.uid}
-                      onClick={() => setPreferredImageUid(preferredImageUid === im.uid ? null : im.uid)}
+                      key={tier.uid}
                       sx={{
-                        width: 48,
-                        height: 48,
+                        display: 'flex',
+                        alignItems: 'stretch',
+                        minHeight: 120,
+                        bgcolor: '#000000',
                         borderRadius: 1,
-                        border: 2,
-                        borderColor: preferredImageUid === im.uid ? 'primary.main' : 'divider',
+                        mb: 1,
                         overflow: 'hidden',
-                        cursor: 'pointer',
                       }}
                     >
-                      <SmartImage
-                        imageUid={im.uid}
-                        thumbnail
-                        alt=""
-                        aspectRatio={1}
-                        fit="contain"
-                        sx={{ width: '100%', height: '100%' }}
-                      />
+                      <Box
+                        sx={{
+                          width: 80,
+                          flexShrink: 0,
+                          bgcolor: color,
+                          color: '#000',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: '1.15rem',
+                          fontFamily: 'sans-serif',
+                          letterSpacing: 0.3,
+                        }}
+                      >
+                        {tier.name}
+                      </Box>
+                      <Box
+                        sx={{
+                          flex: 1,
+                          display: 'flex',
+                          gap: 2,
+                          p: 2,
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          overflowX: 'auto',
+                        }}
+                      >
+                        {cards.map((card, idx) => (
+                          <TierEntryCardView
+                            key={`${card.displayName}-${card.playthroughs[0]?.playthroughUid ?? idx}`}
+                            card={card}
+                          />
+                        ))}
+                      </Box>
                     </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-            <TextField
-              label="Text"
-              value={gameText}
-              onChange={(e) => setGameText(e.target.value)}
-              multiline
-              minRows={3}
-              size="small"
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setGameDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={saveGame} disabled={gameSaving || !selectedRow}>
-            {gameSaving ? 'Saving…' : 'Save'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                  );
+                })}
+              </Stack>
+              {tierListCardsOnly.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No tier list entries for {year}.
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          {sortedCategories.length > 0 && (
+            <Box>
+              <Typography variant="h6" color="text.secondary" gutterBottom>Categories</Typography>
+              <Stack spacing={4}>
+                {sortedCategories.map((category) => {
+                  const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
+                  const rows = chunkGames(gamesSorted, 6);
+                  return (
+                    <Box key={category.uid}>
+                      <Typography variant="h6" sx={{ mb: 1 }}>{category.name}</Typography>
+                      <Stack spacing={2}>
+                        {rows.map((row, rowIdx) => (
+                          <Stack key={rowIdx} direction="row" spacing={2} flexWrap="wrap">
+                            {row.map((game: YearlyReviewGameDto) => (
+                              <YearlyReviewGameCard key={game.uid} game={game} />
+                            ))}
+                          </Stack>
+                        ))}
+                      </Stack>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </Box>
+          )}
+
+          {yearlyReview?.outroText != null && yearlyReview.outroText !== '' && (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>Outro</Typography>
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                {yearlyReview.outroText}
+              </Typography>
+            </Box>
+          )}
+        </Stack>
+      )}
     </Box>
   );
 }
