@@ -179,7 +179,7 @@ export default function YearlyReviewPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} sx={{ mb: 2 }}>
+      <Stack direction="row" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 2 }}>
         <Typography variant="h4">Yearly review</Typography>
         <Button component={Link} to="/reviews/yearly/edit" variant="outlined" size="small">
           Edit yearly review

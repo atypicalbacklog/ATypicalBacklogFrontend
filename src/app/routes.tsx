@@ -1,4 +1,3 @@
-import DashboardPage from '../features/dashboard/DashboardPage';
 import AddCatalogPage from '../features/catalog/AddCatalogPage';
 import GameDetailPage from '../features/games/GameDetailPage';
 import GameInstanceOverviewPage from '../features/gameInstances/GameInstanceOverviewPage';
@@ -18,26 +17,51 @@ import EditStagedGamePage from '../features/admin/EditStagedGamePage';
 import EditStagedPlaythroughGroupPage from '../features/admin/EditStagedPlaythroughGroupPage';
 import StatisticsDashboardPage from '../features/statistics/StatisticsDashboardPage';
 import BacklogCompletionOverviewPage from '../features/backlogCompletion/BacklogCompletionOverviewPage';
+import ReviewsPage from '../features/reviews/ReviewsPage';
+import ModeAwareHome from './ModeAwareHome';
+import ManagementOnly from './ManagementOnly';
 
 export const appRoutes = [
-  { path: '/', element: <DashboardPage /> },
-  { path: '/games', element: <AddCatalogPage /> },
-  { path: '/games/:uid', element: <GameDetailPage /> },
-  { path: '/game-instances/:uid', element: <GameInstanceOverviewPage /> },
-  { path: '/game-instances/:uid/edit', element: <GameInstanceDetailPage /> },
-  { path: '/game-instances/:instanceUid/images/:imageUid/edit', element: <EditImagePage /> },
+  { path: '/', element: <ModeAwareHome /> },
+  { path: '/games', element: <ManagementOnly><AddCatalogPage /></ManagementOnly> },
+  { path: '/games/:uid', element: <ManagementOnly><GameDetailPage /></ManagementOnly> },
+  { path: '/game-instances/:uid', element: <ManagementOnly><GameInstanceOverviewPage /></ManagementOnly> },
+  { path: '/game-instances/:uid/edit', element: <ManagementOnly><GameInstanceDetailPage /></ManagementOnly> },
+  {
+    path: '/game-instances/:instanceUid/images/:imageUid/edit',
+    element: (
+      <ManagementOnly>
+        <EditImagePage />
+      </ManagementOnly>
+    ),
+  },
   { path: '/library', element: <LibraryPage /> },
   { path: '/backlog', element: <BacklogPage /> },
-  { path: '/play-activity/active', element: <ActivePlaythroughsPage /> },
-  { path: '/playthroughs/new', element: <AddPlaythroughPage /> },
-  { path: '/playthroughs/:uid', element: <PlaythroughDetailPage /> },
-  { path: '/reviews/year-tierlist', element: <ManageYearTierlistPage /> },
+  { path: '/play-activity/active', element: <ManagementOnly><ActivePlaythroughsPage /></ManagementOnly> },
+  { path: '/playthroughs/new', element: <ManagementOnly><AddPlaythroughPage /></ManagementOnly> },
+  { path: '/playthroughs/:uid', element: <ManagementOnly><PlaythroughDetailPage /></ManagementOnly> },
+  { path: '/reviews/year-tierlist', element: <ManagementOnly><ManageYearTierlistPage /></ManagementOnly> },
+  { path: '/reviews', element: <ReviewsPage /> },
   { path: '/reviews/yearly', element: <YearlyReviewPage /> },
-  { path: '/reviews/yearly/edit', element: <YearlyReviewEditPage /> },
-  { path: '/reviews/edit', element: <EditReviewPage /> },
+  { path: '/reviews/yearly/edit', element: <ManagementOnly><YearlyReviewEditPage /></ManagementOnly> },
+  { path: '/reviews/edit', element: <ManagementOnly><EditReviewPage /></ManagementOnly> },
   { path: '/statistics', element: <StatisticsDashboardPage /> },
   { path: '/backlog-completion-overview', element: <BacklogCompletionOverviewPage /> },
-  { path: '/admin/import/staging', element: <AdminImportStagingPage /> },
-  { path: '/admin/import/staged-games/:uid', element: <EditStagedGamePage /> },
-  { path: '/admin/import/staged-playthrough-groups/:uid', element: <EditStagedPlaythroughGroupPage /> },
+  { path: '/admin/import/staging', element: <ManagementOnly><AdminImportStagingPage /></ManagementOnly> },
+  {
+    path: '/admin/import/staged-games/:uid',
+    element: (
+      <ManagementOnly>
+        <EditStagedGamePage />
+      </ManagementOnly>
+    ),
+  },
+  {
+    path: '/admin/import/staged-playthrough-groups/:uid',
+    element: (
+      <ManagementOnly>
+        <EditStagedPlaythroughGroupPage />
+      </ManagementOnly>
+    ),
+  },
 ];

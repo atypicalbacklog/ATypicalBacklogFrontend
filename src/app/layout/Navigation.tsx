@@ -1,7 +1,10 @@
 import { Box, List, ListItemButton, ListItemText } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { getAppConfig } from '../AppConfig';
 
 export default function Navigation() {
+  const { mode } = getAppConfig();
+
   return (
     <Box
       component="nav"
@@ -15,10 +18,7 @@ export default function Navigation() {
     >
       <List>
         <ListItemButton component={Link} to="/">
-          <ListItemText primary="Dashboard" />
-        </ListItemButton>
-        <ListItemButton component={Link} to="/games">
-          <ListItemText primary="Add to Catalog" />
+          <ListItemText primary={mode === 'MANAGEMENT' ? 'Active Playthroughs' : 'Dashboard'} />
         </ListItemButton>
         <ListItemButton component={Link} to="/library">
           <ListItemText primary="Library" />
@@ -26,21 +26,14 @@ export default function Navigation() {
         <ListItemButton component={Link} to="/backlog">
           <ListItemText primary="Backlog" />
         </ListItemButton>
-        <ListItemButton component={Link} to="/play-activity/active">
-          <ListItemText primary="Active Playthroughs" />
+        <ListItemButton component={Link} to="/reviews">
+          <ListItemText primary="Reviews" />
         </ListItemButton>
-        <ListItemButton component={Link} to="/reviews/year-tierlist">
-          <ListItemText primary="Manage Year Tierlist" />
-        </ListItemButton>
-        <ListItemButton component={Link} to="/reviews/yearly">
-          <ListItemText primary="Yearly review" />
-        </ListItemButton>
-        <ListItemButton component={Link} to="/statistics">
-          <ListItemText primary="Statistics" />
-        </ListItemButton>
-        <ListItemButton component={Link} to="/backlog-completion-overview">
-          <ListItemText primary="Backlog completion overview" />
-        </ListItemButton>
+        {mode === 'MANAGEMENT' && (
+          <ListItemButton component={Link} to="/admin/import/staging">
+            <ListItemText primary="Import Staging" />
+          </ListItemButton>
+        )}
       </List>
     </Box>
   );

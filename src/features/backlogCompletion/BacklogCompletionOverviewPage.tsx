@@ -6,6 +6,7 @@ import {
   AccordionSummary,
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   CircularProgress,
@@ -171,7 +172,17 @@ export default function BacklogCompletionOverviewPage() {
 
   return (
     <Stack spacing={3} sx={{ p: 2 }}>
-      <Typography variant="h5">Backlog & completion overview</Typography>
+      <Stack direction="row" alignItems="center" gap={2}>
+        <Typography variant="h5">Backlog & completion overview</Typography>
+        <Button
+          component={Link}
+          to="/backlog"
+          variant="outlined"
+          size="small"
+        >
+          Back to Backlog
+        </Button>
+      </Stack>
 
       <FormControl size="small" sx={{ minWidth: 120 }}>
         <InputLabel>Year</InputLabel>

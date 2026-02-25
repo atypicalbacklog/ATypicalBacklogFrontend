@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   FormControl,
   FormControlLabel,
@@ -182,9 +183,19 @@ export default function ActivePlaythroughsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Active Playthroughs
-      </Typography>
+      <Stack direction="row" alignItems="center" gap={2}>
+        <Typography variant="h4" gutterBottom>
+          Active Playthroughs
+        </Typography>
+        <Button
+          component={Link}
+          to="/reviews/year-tierlist"
+          variant="outlined"
+          size="small"
+        >
+          Edit tierlist
+        </Button>
+      </Stack>
 
       {/* Search old playthroughs (history) at top */}
       <Box sx={{ mt: 2 }}>

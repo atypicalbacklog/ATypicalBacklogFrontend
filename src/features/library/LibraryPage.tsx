@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Alert, Box, CircularProgress, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import { LibraryFilterState } from './types';
 import { useLibraryQuery } from './useLibraryQuery';
 import LibraryFilters from './LibraryFilters';
@@ -46,9 +47,27 @@ export default function LibraryPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Library
-      </Typography>
+      <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 2 }}>
+        <Typography variant="h4">
+          Library
+        </Typography>
+        <Tooltip title="Add new Game/DLC">
+          <IconButton
+            component={Link}
+            to="/games"
+            aria-label="Add new Game/DLC"
+            sx={(theme) => ({
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              '&:hover': {
+                bgcolor: theme.palette.primary.dark,
+              },
+            })}
+          >
+            <AddIcon />
+          </IconButton>
+        </Tooltip>
+      </Stack>
 
       <LibraryFilters value={filters} onChange={setFilters} />
 

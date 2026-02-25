@@ -6,16 +6,34 @@ import CssBaseline from '@mui/material/CssBaseline';
 import App from './app/App';
 import { ReferenceDataProvider } from './referenceData/ReferenceDataContext';
 import { theme } from './app/theme';
+import { loadAppConfig } from './app/AppConfig';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <ReferenceDataProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ReferenceDataProvider>
-    </ThemeProvider>
-  </React.StrictMode>
-);
+async function bootstrap() {
+  try {
+    await loadAppConfig();
+  } catch (error) {
+    // If app config cannot be loaded, fail fast with a simple message.
+    // This should be rare because config is deployment-time static.
+    const container = document.getElementById('root');
+    if (container) {
+      container.innerText = 'Failed to initialize application configuration.';
+    }
+    console.error(error);
+    return;
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <ReferenceDataProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ReferenceDataProvider>
+      </ThemeProvider>
+    </React.StrictMode>
+  );
+}
+
+void bootstrap();

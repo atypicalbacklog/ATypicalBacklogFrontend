@@ -22,7 +22,7 @@ export default function AddCatalogPage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Add to Catalog
+        Add new Game to Library
       </Typography>
 
       <SegmentControl value={mode} onChange={setMode} />

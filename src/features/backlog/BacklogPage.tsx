@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Alert, Box, CircularProgress, Stack, Typography } from '@mui/material';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
 import BacklogFilters from './BacklogFilters';
 import BacklogList from './BacklogList';
 import { useBacklogQuery } from './useBacklogQuery';
@@ -38,9 +38,19 @@ export default function BacklogPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Backlog
-      </Typography>
+      <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 2 }}>
+        <Typography variant="h4">
+          Backlog
+        </Typography>
+        <Button
+          component={Link}
+          to="/backlog-completion-overview"
+          variant="outlined"
+          size="small"
+        >
+          Completion overview
+        </Button>
+      </Stack>
 
       <BacklogFilters value={filters} onChange={setFilters} />
 
