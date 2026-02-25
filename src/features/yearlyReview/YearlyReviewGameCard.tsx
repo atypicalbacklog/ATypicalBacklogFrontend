@@ -10,17 +10,23 @@ import type { GameInstanceDetailDTO } from '../../types/dto';
 
 const CARD_WIDTH = 200;
 const CARD_HEIGHT = 330;
+const CARD_WIDTH_COMPACT = 100;
+const CARD_HEIGHT_COMPACT = 180;
 const TEXT_FONT_SIZE_DEFAULT = '1.0rem';
 const TEXT_FONT_SIZE_SMALL = '0.85rem';
 const TEXT_FONT_SIZE_MIN = '0.75rem';
 
 const DEFAULT_IMAGE_HEIGHT = CARD_HEIGHT - 40;
 const MIN_IMAGE_HEIGHT = 80;
+const DEFAULT_IMAGE_HEIGHT_COMPACT = CARD_HEIGHT_COMPACT - 32;
+const MIN_IMAGE_HEIGHT_COMPACT = 48;
 const IMAGE_SHRINK_STEP_PX = 20;
 
 interface Props {
   game: YearlyReviewGameDto;
   onEdit?: () => void;
+  /** When true, use smaller card size (e.g. smartphone); font size unchanged, padding can be 0. */
+  compact?: boolean;
 }
 
 interface ResolvedData {
@@ -28,8 +34,13 @@ interface ResolvedData {
   coverImageUid: string | null;
 }
 
-export default function YearlyReviewGameCard({ game, onEdit }: Props) {
+export default function YearlyReviewGameCard({ game, onEdit, compact = false }: Props) {
   const [resolved, setResolved] = useState<ResolvedData | null>(null);
+
+  const cardWidth = compact ? CARD_WIDTH_COMPACT : CARD_WIDTH;
+  const cardHeight = compact ? CARD_HEIGHT_COMPACT : CARD_HEIGHT;
+  const defaultImageHeight = compact ? DEFAULT_IMAGE_HEIGHT_COMPACT : DEFAULT_IMAGE_HEIGHT;
+  const minImageHeight = compact ? MIN_IMAGE_HEIGHT_COMPACT : MIN_IMAGE_HEIGHT;
 
   useEffect(() => {
     let cancelled = false;
@@ -87,10 +98,10 @@ export default function YearlyReviewGameCard({ game, onEdit }: Props) {
   const textRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
-    setBaseImageHeight(DEFAULT_IMAGE_HEIGHT);
+    setBaseImageHeight(defaultImageHeight);
     setTextFontSize(TEXT_FONT_SIZE_DEFAULT);
-    setImageHeight(DEFAULT_IMAGE_HEIGHT);
-  }, [game.uid, imageUrl]);
+    setImageHeight(defaultImageHeight);
+  }, [game.uid, imageUrl, defaultImageHeight]);
 
   // When the text changes, restore the image to its natural size first.
   useEffect(() => {
@@ -115,9 +126,9 @@ export default function YearlyReviewGameCard({ game, onEdit }: Props) {
 
     // Compute a "natural" height for this fixed card width (preserves aspect ratio).
     // Cap it to card height, leaving a small minimum for text; we can shrink further if needed.
-    const computed = Math.round(CARD_WIDTH * (h / w));
-    const capped = Math.min(computed, DEFAULT_IMAGE_HEIGHT);
-    const nextBase = Math.max(MIN_IMAGE_HEIGHT, capped);
+    const computed = Math.round(cardWidth * (h / w));
+    const capped = Math.min(computed, defaultImageHeight);
+    const nextBase = Math.max(minImageHeight, capped);
     setBaseImageHeight(nextBase);
     setImageHeight(nextBase);
   };
@@ -130,17 +141,17 @@ export default function YearlyReviewGameCard({ game, onEdit }: Props) {
     if (!overflow) return;
 
     if (textFontSize !== TEXT_FONT_SIZE_MIN) return;
-    if (imageHeight <= MIN_IMAGE_HEIGHT) return;
+    if (imageHeight <= minImageHeight) return;
 
-    setImageHeight((prev) => Math.max(MIN_IMAGE_HEIGHT, prev - IMAGE_SHRINK_STEP_PX));
-  }, [game.text, textFontSize, imageHeight]);
+    setImageHeight((prev) => Math.max(minImageHeight, prev - IMAGE_SHRINK_STEP_PX));
+  }, [game.text, textFontSize, imageHeight, minImageHeight]);
 
   return (
     <Box
       onClick={onEdit}
       sx={{
-        width: CARD_WIDTH,
-        height: CARD_HEIGHT,
+        width: cardWidth,
+        height: cardHeight,
         flexShrink: 0,
         cursor: onEdit ? 'pointer' : 'default',
         display: 'flex',
@@ -157,7 +168,7 @@ export default function YearlyReviewGameCard({ game, onEdit }: Props) {
         sx={{
           height: imageHeight,
           flex: '0 0 auto',
-          minHeight: MIN_IMAGE_HEIGHT,
+          minHeight: minImageHeight,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-start',
@@ -169,7 +180,7 @@ export default function YearlyReviewGameCard({ game, onEdit }: Props) {
           {...(imageUrl ? { src: imageUrl, alt: '', onLoad: handleImageLoad } : {})}
           sx={{
             width: '100%',
-            maxWidth: CARD_WIDTH,
+            maxWidth: cardWidth,
             height: '100%',
             objectFit: 'contain',
             objectPosition: 'top center',
@@ -186,8 +197,8 @@ export default function YearlyReviewGameCard({ game, onEdit }: Props) {
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            px: 0.25,
-            py: 0.25,
+            px: compact ? 0 : 0.25,
+            py: compact ? 0 : 0.25,
           }}
         >
           <Typography

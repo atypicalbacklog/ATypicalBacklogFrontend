@@ -56,7 +56,7 @@ export default function VariantPlaytimeStackedBarChart({ data, height = 320 }: P
         <Box sx={{ width: '100%' }}>
           <BarChart
             xAxis={[{ scaleType: 'band', data: xAxisData }]}
-            yAxis={[{ min: 0, max: 100, valueFormatter: (v) => `${v}%` }]}
+            yAxis={[{ min: 0, max: 100, valueFormatter: (v: number) => `${v}%` }]}
             series={series}
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
@@ -65,7 +65,7 @@ export default function VariantPlaytimeStackedBarChart({ data, height = 320 }: P
             }}
             height={height}
             margin={{ top: 50, right: 20, bottom: 40, left: 50 }}
-            slotProps={{ ...contrastBarLabelSlotProps, legend: { position: { vertical: 'top', horizontal: 'middle' } } }}
+            slotProps={{ ...contrastBarLabelSlotProps, legend: { position: { vertical: 'top', horizontal: 'center' } } }}
           />
         </Box>
       </CardContent>

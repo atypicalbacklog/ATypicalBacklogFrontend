@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   CircularProgress,
@@ -6,6 +9,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { StatisticsFiltersProvider, useStatisticsFilters } from './StatisticsFiltersContext';
 import StatisticsFilterBar from './StatisticsFilterBar';
 import { useYearlyActivityStats } from './hooks/useYearlyActivityStats';
@@ -14,6 +18,7 @@ import { useVariantYearActivity } from './hooks/useVariantYearActivity';
 import { useMonthlyPlaytime } from './hooks/useMonthlyPlaytime';
 import { useWeeklyPlaytime } from './hooks/useWeeklyPlaytime';
 import { useWeekdayPlaytime } from './hooks/useWeekdayPlaytime';
+import { useBacklogCompletionGameOverview } from './hooks/useBacklogCompletionGameOverview';
 import YearlyPlaytimeBarChart from './charts/YearlyPlaytimeBarChart';
 import YearlyBookingDaysBarChart from './charts/YearlyBookingDaysBarChart';
 import YearlyBookingCountBarChart from './charts/YearlyBookingCountBarChart';
@@ -27,6 +32,8 @@ import VariantPlaytimeStackedBarChart from './charts/VariantPlaytimeStackedBarCh
 import MonthlyPlaytimeBarChart from './charts/MonthlyPlaytimeBarChart';
 import WeeklyPlaytimeLineChart from './charts/WeeklyPlaytimeLineChart';
 import WeekdayPlaytimeStackedBarChart from './charts/WeekdayPlaytimeStackedBarChart';
+import BacklogChangesBarChart from './charts/BacklogChangesBarChart';
+import { groupBacklogChangesByYear } from './backlogChangesUtils';
 
 function ChartCard({
   loading,
@@ -66,8 +73,13 @@ function ChartCard({
 }
 
 function StatisticsDashboardContent() {
-  const { fromYear, toYear } = useStatisticsFilters();
+  const { fromYear, toYear, yearRange } = useStatisticsFilters();
   const { data: yearlyData, isLoading: yearlyLoading, error: yearlyError } = useYearlyActivityStats();
+  const {
+    data: backlogOverviewData,
+    isLoading: backlogOverviewLoading,
+    error: backlogOverviewError,
+  } = useBacklogCompletionGameOverview();
   const {
     data: consoleYearData,
     isLoading: consoleYearLoading,
@@ -109,92 +121,157 @@ function StatisticsDashboardContent() {
         <Grid container spacing={2} sx={{ mt: 1 }}>
           {/* Yearly activity */}
           <Grid item xs={12}>
-            <Typography variant="h6" color="text.secondary" gutterBottom>
-              Yearly activity
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <YearlyPlaytimeBarChart data={yearlyData} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <YearlyBookingDaysBarChart data={yearlyData} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <YearlyBookingCountBarChart data={yearlyData} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <YearlyDistinctGamesBarChart data={yearlyData} />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <YearlyCompletionsBarChart data={yearlyData} />
+            <Accordion defaultExpanded sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" color="text.secondary">
+                  Yearly activity
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <YearlyPlaytimeBarChart data={yearlyData} />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <YearlyBookingDaysBarChart data={yearlyData} />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <YearlyBookingCountBarChart data={yearlyData} />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <YearlyDistinctGamesBarChart data={yearlyData} />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <YearlyCompletionsBarChart data={yearlyData} />
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
 
           {/* Console */}
           <Grid item xs={12}>
-            <Typography variant="h6" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-              By console
-            </Typography>
-          </Grid>
-          <Grid item xs={12} lg={6}>
-            <ChartCard loading={consoleYearLoading} error={consoleYearError}>
-              <ConsoleYearPlaytimeBarChart data={consoleYearData} />
-            </ChartCard>
-          </Grid>
-          <Grid item xs={12} lg={6}>
-            <ChartCard loading={consoleYearLoading} error={consoleYearError}>
-              <ConsoleYearGamesBarChart data={consoleYearData} />
-            </ChartCard>
-          </Grid>
-          <Grid item xs={12} lg={6}>
-            <ChartCard loading={consoleYearLoading} error={consoleYearError}>
-              <ConsoleYearBookingsBarChart data={consoleYearData} />
-            </ChartCard>
-          </Grid>
-          <Grid item xs={12}>
-            <ChartCard loading={consoleYearLoading} error={consoleYearError}>
-              <ConsolePlaytimeStackedBarChart data={consoleYearData} />
-            </ChartCard>
+            <Accordion defaultExpanded sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" color="text.secondary">
+                  By console
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} lg={6}>
+                    <ChartCard loading={consoleYearLoading} error={consoleYearError}>
+                      <ConsoleYearPlaytimeBarChart data={consoleYearData} />
+                    </ChartCard>
+                  </Grid>
+                  <Grid item xs={12} lg={6}>
+                    <ChartCard loading={consoleYearLoading} error={consoleYearError}>
+                      <ConsoleYearGamesBarChart data={consoleYearData} />
+                    </ChartCard>
+                  </Grid>
+                  <Grid item xs={12} lg={6}>
+                    <ChartCard loading={consoleYearLoading} error={consoleYearError}>
+                      <ConsoleYearBookingsBarChart data={consoleYearData} />
+                    </ChartCard>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <ChartCard loading={consoleYearLoading} error={consoleYearError}>
+                      <ConsolePlaytimeStackedBarChart data={consoleYearData} />
+                    </ChartCard>
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
 
           {/* Variant */}
           <Grid item xs={12}>
-            <Typography variant="h6" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-              By variant
-            </Typography>
+            <Accordion defaultExpanded sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" color="text.secondary">
+                  By variant
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <ChartCard loading={variantYearLoading} error={variantYearError}>
+                      <VariantPlaytimeStackedBarChart data={variantYearData} />
+                    </ChartCard>
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
+
+          {/* Backlog changes */}
           <Grid item xs={12}>
-            <ChartCard loading={variantYearLoading} error={variantYearError}>
-              <VariantPlaytimeStackedBarChart data={variantYearData} />
-            </ChartCard>
+            <Accordion defaultExpanded sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" color="text.secondary">
+                  Backlog changes
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <ChartCard
+                      loading={backlogOverviewLoading}
+                      error={backlogOverviewError}
+                    >
+                      <BacklogChangesBarChart
+                        data={groupBacklogChangesByYear(backlogOverviewData, yearRange)}
+                      />
+                    </ChartCard>
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
 
           {/* Calendar: monthly & weekly */}
           <Grid item xs={12}>
-            <Typography variant="h6" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-              By month & week
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <ChartCard loading={monthlyLoading} error={monthlyError}>
-              <MonthlyPlaytimeBarChart data={monthlyData} />
-            </ChartCard>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <ChartCard loading={weeklyLoading} error={weeklyError}>
-              <WeeklyPlaytimeLineChart data={weeklyData} />
-            </ChartCard>
+            <Accordion defaultExpanded sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" color="text.secondary">
+                  By month & week
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <ChartCard loading={monthlyLoading} error={monthlyError}>
+                      <MonthlyPlaytimeBarChart data={monthlyData} />
+                    </ChartCard>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <ChartCard loading={weeklyLoading} error={weeklyError}>
+                      <WeeklyPlaytimeLineChart data={weeklyData} />
+                    </ChartCard>
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
 
           {/* Weekday */}
           <Grid item xs={12}>
-            <Typography variant="h6" color="text.secondary" gutterBottom sx={{ mt: 2 }}>
-              By weekday
-            </Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <ChartCard loading={weekdayLoading} error={weekdayError}>
-              <WeekdayPlaytimeStackedBarChart data={weekdayData} />
-            </ChartCard>
+            <Accordion defaultExpanded sx={{ '&:before': { display: 'none' } }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="h6" color="text.secondary">
+                  By weekday
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails sx={{ pt: 0 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <ChartCard loading={weekdayLoading} error={weekdayError}>
+                      <WeekdayPlaytimeStackedBarChart data={weekdayData} />
+                    </ChartCard>
+                  </Grid>
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
           </Grid>
         </Grid>
       )}

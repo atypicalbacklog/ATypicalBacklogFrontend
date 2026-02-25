@@ -1,11 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Alert, Box, CircularProgress, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  FormControlLabel,
+  IconButton,
+  Stack,
+  Switch,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { LibraryFilterState } from './types';
 import { useLibraryQuery } from './useLibraryQuery';
 import LibraryFilters from './LibraryFilters';
-import LibraryList from './LibraryList';
+import LibraryList, { type LibraryViewMode } from './LibraryList';
 import {
   filtersToSearchParams,
   hasActiveFilters,
@@ -30,6 +40,7 @@ export default function LibraryPage() {
   const [filters, setFilters] = useState(() =>
     searchParamsToFilters(searchParams, initialFilters)
   );
+  const [viewMode, setViewMode] = useState<LibraryViewMode>('extended');
 
   useEffect(() => {
     setFilters(searchParamsToFilters(searchParams, initialFilters));
@@ -71,6 +82,28 @@ export default function LibraryPage() {
 
       <LibraryFilters value={filters} onChange={setFilters} />
 
+      <FormControlLabel
+        control={
+          <Switch
+            checked={viewMode === 'minimized'}
+            onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}
+            color="primary"
+          />
+        }
+        label={
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography variant="body2" color={viewMode === 'extended' ? 'text.primary' : 'text.secondary'}>
+              Extended
+            </Typography>
+            <Typography variant="body2">/</Typography>
+            <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
+              Minimized
+            </Typography>
+          </Stack>
+        }
+        sx={{ mb: 0 }}
+      />
+
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
           {error}
@@ -86,6 +119,7 @@ export default function LibraryPage() {
       {!isLoading && !error && (
         <LibraryList
           items={data}
+          viewMode={viewMode}
           hasActiveFilters={filtersApplied}
           onClearFilters={() => setFilters(initialFilters)}
         />

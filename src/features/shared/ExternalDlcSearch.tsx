@@ -341,10 +341,15 @@ export default function ExternalDlcSearch({
           direction="row"
           spacing={1}
           alignItems="stretch"
-          sx={{ mt: 1, width: '100%', flexWrap: 'wrap' }}
+          flexWrap="wrap"
+          sx={{
+            mt: 1,
+            width: '100%',
+            maxWidth: { xs: 'min(100%, 300px)', sm: 'none' },
+          }}
         >
           <Box
-            sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer', minWidth: 200 }}
+            sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer', minWidth: { sm: 200 } }}
             onClick={() => handleResultClick(selectedResult)}
           >
             {renderResultCard(selectedResult, true)}
@@ -358,8 +363,11 @@ export default function ExternalDlcSearch({
         sx={{
           mt: 1,
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
           gap: 1,
+          maxWidth: { xs: 'min(100%, 300px)', sm: 'none' },
+          maxHeight: { xs: 'min(60vh, 400px)', sm: 'none' },
+          overflowY: { xs: 'auto', sm: 'visible' },
         }}
       >
         {results.map((r) => renderResultCard(r, false))}
@@ -370,7 +378,7 @@ export default function ExternalDlcSearch({
   if (!canSearch) return null;
 
   return (
-    <Box sx={{ mt: 1 }}>
+    <Box sx={{ mt: 1, maxWidth: { xs: 'min(100%, 300px)', sm: 'none' } }}>
       <Button
         size="small"
         variant="outlined"

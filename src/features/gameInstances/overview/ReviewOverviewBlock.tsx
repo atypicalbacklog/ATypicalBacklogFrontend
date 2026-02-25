@@ -123,7 +123,7 @@ export default function ReviewOverviewBlock({
   }
 
   return (
-    <Box>
+    <Box sx={{ minWidth: 0 }}>
       <Typography variant="subtitle2" color="text.secondary" gutterBottom>
         Reviews
       </Typography>
@@ -134,6 +134,8 @@ export default function ReviewOverviewBlock({
           gap: 2,
           overflowX: 'auto',
           pb: 1,
+          minWidth: 0,
+          WebkitOverflowScrolling: 'touch',
           '&::-webkit-scrollbar': { height: 8 },
           '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 1 },
         }}

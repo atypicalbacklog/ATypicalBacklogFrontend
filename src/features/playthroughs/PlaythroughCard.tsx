@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -12,6 +12,8 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import PlaythroughTypeWithIcon from '../shared/PlaythroughTypeWithIcon';
@@ -49,6 +51,16 @@ export default function PlaythroughCard({
   const [retroactiveHours, setRetroactiveHours] = useState(0);
   const [retroactiveMinutes, setRetroactiveMinutes] = useState(0);
   const [retroactiveSubmitting, setRetroactiveSubmitting] = useState(false);
+  const theme = useTheme();
+  const isTouch = useMediaQuery(theme.breakpoints.down('sm')) || useMediaQuery('(pointer: coarse)');
+  const [headerTooltipOpen, setHeaderTooltipOpen] = useState(false);
+
+  useEffect(() => {
+    if (!headerTooltipOpen) return;
+    const close = () => setHeaderTooltipOpen(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [headerTooltipOpen]);
 
   const handleOverlayClick = () => {
     if (isActionDisabled) return;
@@ -73,8 +85,21 @@ export default function PlaythroughCard({
       }}
     >
       {/* Playthrough type (centered, bordered, bigger & bold) */}
-      <Tooltip title={row.displayName}>
+      <Tooltip
+        title={row.displayName}
+        disableHoverListener={isTouch}
+        disableFocusListener={isTouch}
+        disableTouchListener={isTouch}
+        open={isTouch ? headerTooltipOpen : undefined}
+        onClose={() => setHeaderTooltipOpen(false)}
+      >
         <Box
+          onClick={(e) => {
+            if (isTouch) {
+              e.stopPropagation();
+              setHeaderTooltipOpen((o) => !o);
+            }
+          }}
           sx={{
             p: 0,
             textAlign: 'center',
@@ -85,6 +110,9 @@ export default function PlaythroughCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            WebkitTouchCallout: 'none',
           }}
         >
           <PlaythroughTypeWithIcon typeName={playthroughTypeName} size="header" />

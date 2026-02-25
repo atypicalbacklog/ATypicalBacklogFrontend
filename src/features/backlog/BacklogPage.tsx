@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  FormControlLabel,
+  Stack,
+  Switch,
+  Typography,
+} from '@mui/material';
 import BacklogFilters from './BacklogFilters';
-import BacklogList from './BacklogList';
+import BacklogList, { type BacklogViewMode } from './BacklogList';
 import { useBacklogQuery } from './useBacklogQuery';
 import {
   filtersToSearchParams,
@@ -24,6 +33,7 @@ export default function BacklogPage() {
   const [filters, setFilters] = useState<BacklogFilterState>(() =>
     searchParamsToFilters(searchParams, initialFilters)
   );
+  const [viewMode, setViewMode] = useState<BacklogViewMode>('extended');
 
   useEffect(() => {
     setFilters(searchParamsToFilters(searchParams, initialFilters));
@@ -54,6 +64,28 @@ export default function BacklogPage() {
 
       <BacklogFilters value={filters} onChange={setFilters} />
 
+      <FormControlLabel
+        control={
+          <Switch
+            checked={viewMode === 'minimized'}
+            onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}
+            color="primary"
+          />
+        }
+        label={
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Typography variant="body2" color={viewMode === 'extended' ? 'text.primary' : 'text.secondary'}>
+              Extended
+            </Typography>
+            <Typography variant="body2">/</Typography>
+            <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
+              Minimized
+            </Typography>
+          </Stack>
+        }
+        sx={{ mb: 0 }}
+      />
+
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>
           {error}
@@ -69,6 +101,7 @@ export default function BacklogPage() {
       {!isLoading && !error && (
         <BacklogList
           items={data}
+          viewMode={viewMode}
           hasActiveFilters={filtersApplied}
           onClearFilters={() => setFilters(initialFilters)}
         />

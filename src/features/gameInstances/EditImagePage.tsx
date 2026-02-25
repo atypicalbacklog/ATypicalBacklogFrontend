@@ -145,7 +145,7 @@ export default function EditImagePage() {
     return (
       <Box>
         <Typography color="error">Missing instance or image.</Typography>
-        <Button component={Link} to="/">Back to Dashboard</Button>
+        <Button component={Link} to="/library">Back to Library</Button>
       </Box>
     );
   if (error && !metadata)
@@ -163,8 +163,8 @@ export default function EditImagePage() {
   return (
     <Box sx={{ maxWidth: 480 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <Button component={Link} to="/" size="small">
-          Back to Dashboard
+        <Button component={Link} to="/library" size="small">
+          Back to Library
         </Button>
         <Typography variant="body2" color="text.secondary">
           Edit image · Instance: {instanceUid}

@@ -58,7 +58,7 @@ export default function WeekdayPlaytimeStackedBarChart({ data, height = 320 }: P
           <BarChart
             layout="horizontal"
             yAxis={[{ scaleType: 'band', data: xAxisData }]}
-            xAxis={[{ min: 0, max: 100, valueFormatter: (v) => `${v}%` }]}
+            xAxis={[{ min: 0, max: 100, valueFormatter: (v: number) => `${v}%` }]}
             series={series}
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
@@ -67,7 +67,7 @@ export default function WeekdayPlaytimeStackedBarChart({ data, height = 320 }: P
             }}
             height={height}
             margin={{ top: 50, right: 20, bottom: 40, left: 60 }}
-            slotProps={{ ...contrastBarLabelSlotProps, legend: { position: { vertical: 'top', horizontal: 'middle' } } }}
+            slotProps={{ ...contrastBarLabelSlotProps, legend: { position: { vertical: 'top', horizontal: 'center' } } }}
           />
         </Box>
       </CardContent>

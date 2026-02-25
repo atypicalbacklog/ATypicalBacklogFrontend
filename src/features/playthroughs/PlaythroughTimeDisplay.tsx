@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Stack, Typography } from '@mui/material';
-import { formatSecondsAsHhMm, formatSecondsAsHhMmSs } from './formatSecondsAsHhMmSs';
+import { formatSecondsAsHhMm } from './formatSecondsAsHhMmSs';
 
 /**
  * Parse ISO instant to UTC milliseconds. Uses Date.UTC() for Z-suffix so the value
@@ -27,6 +27,26 @@ function parseIsoToUtcMs(isoInstant: string): number {
   );
 }
 
+function formatCurrentSession(seconds: number): string {
+  if (seconds < 3600) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
+
+function formatTotalRunning(totalSeconds: number): string {
+  const hours = totalSeconds / 3600;
+  const formatter = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: hours < 10 ? 1 : 0,
+    maximumFractionDigits: hours < 10 ? 1 : 0,
+  });
+  return `${formatter.format(hours)}h`;
+}
+
 /** When not running: total as hours+minutes. When running: left = total (no current session), right = elapsed since activeSessionStartedAt. */
 interface Props {
   totalPlaytimeSeconds: number;
@@ -48,7 +68,8 @@ export default function PlaythroughTimeDisplay({
     }
     const startMs = parseIsoToUtcMs(activeSessionStartedAt);
     const tick = () => {
-      setCurrentSessionSeconds(Math.floor((Date.now() - startMs) / 1000));
+      const diffSeconds = Math.floor((Date.now() - startMs) / 1000);
+      setCurrentSessionSeconds(diffSeconds > 0 ? diffSeconds : 0);
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -66,10 +87,10 @@ export default function PlaythroughTimeDisplay({
   return (
     <Stack direction="row" spacing={1} alignItems="baseline">
       <Typography variant="body2" component="span" fontFamily="monospace">
-        {formatSecondsAsHhMm(totalPlaytimeSeconds)}
+        {formatTotalRunning(totalPlaytimeSeconds)}
       </Typography>
       <Typography variant="body2" component="span" color="primary.main" fontFamily="monospace">
-        +{formatSecondsAsHhMmSs(currentSessionSeconds)}
+        +{formatCurrentSession(currentSessionSeconds)}
       </Typography>
     </Stack>
   );

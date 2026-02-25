@@ -356,7 +356,7 @@ export default function GameInstanceDetailPage() {
     : 'Backlog';
 
   return (
-    <Box>
+    <Box sx={{ minWidth: 0 }}>
       <Box display="flex" alignItems="center" gap={2} mb={2}>
         <Typography variant="h4">Game Instance</Typography>
         <Button component={Link} to={uid ? `/game-instances/${uid}` : '/'} size="small">
@@ -407,8 +407,10 @@ export default function GameInstanceDetailPage() {
         sx={{
           p: 2,
           mb: 3,
-          width: 900,
-          maxWidth: '100%',
+          maxWidth: 900,
+          width: '100%',
+          mx: { xs: 'auto', md: 0 },
+          overflow: 'hidden',
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
         }}
       >
@@ -550,8 +552,10 @@ export default function GameInstanceDetailPage() {
         sx={{
           p: 2,
           mb: 3,
-          width: 900,
-          maxWidth: '100%',
+          maxWidth: 900,
+          width: '100%',
+          mx: { xs: 'auto', md: 0 },
+          overflow: 'hidden',
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
         }}
       >
@@ -562,75 +566,81 @@ export default function GameInstanceDetailPage() {
           submitLabel="Save"
           insertAboveSubmit={
             <>
-              <Stack
-                direction="row"
-                flexWrap="nowrap"
-                alignItems="center"
-                gap={2}
-                sx={{ mb: 1, width: '100%', minWidth: 0 }}
-              >
-                <Box sx={{ minWidth: 100, maxWidth: 320, flex: '1 1 200px', overflow: 'hidden' }}>
-                  <CompletionBar
-                    completionState={instanceCompletionState}
-                    playthroughState={null}
+              <Grid container spacing={2} alignItems="center">
+                {/* Row 1: CompletionBar + Completion state + Info */}
+                <Grid item xs={12} sm={4}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <CompletionBar
+                      completionState={instanceCompletionState}
+                      playthroughState={null}
+                    />
+                    {mainCompletion?.info && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                        {mainCompletion.info}
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Completion state</InputLabel>
+                    <Select
+                      label="Completion state"
+                      value={completionStateUid}
+                      onChange={(e) => setCompletionStateUid(e.target.value)}
+                    >
+                      {completionStates.map((c) => (
+                        <MenuItem key={c.uid} value={c.uid}>
+                          {c.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <TextField
+                    label="Info"
+                    value={completionInfo}
+                    onChange={(e) => setCompletionInfo(e.target.value)}
+                    size="small"
+                    fullWidth
                   />
-                  {mainCompletion?.info && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {mainCompletion.info}
-                    </Typography>
-                  )}
-                </Box>
-                <FormControl size="small" sx={{ minWidth: 180, flexShrink: 0 }}>
-                  <InputLabel>Completion state</InputLabel>
-                  <Select
-                    label="Completion state"
-                    value={completionStateUid}
-                    onChange={(e) => setCompletionStateUid(e.target.value)}
+                </Grid>
+                {/* Row 2: Finished date + Completed date + Set completion */}
+                <Grid item xs={6} sm={4}>
+                  <TextField
+                    type="date"
+                    label="Finished date"
+                    value={completionFinishedDate}
+                    onChange={(e) => setCompletionFinishedDate(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <TextField
+                    type="date"
+                    label="Completed date"
+                    value={completionCompletedDate}
+                    onChange={(e) => setCompletionCompletedDate(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    size="small"
+                    fullWidth
+                  />
+                </Grid>
+                <Grid item xs={6} sm={4}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={handleSetCompletion}
+                    disabled={completionSubmitting || !completionStateUid}
+                    fullWidth
                   >
-                    {completionStates.map((c) => (
-                      <MenuItem key={c.uid} value={c.uid}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Info"
-                  value={completionInfo}
-                  onChange={(e) => setCompletionInfo(e.target.value)}
-                  size="small"
-                  sx={{ minWidth: 120, flexShrink: 0 }}
-                />
-                <Button
-                  variant="contained"
-                  size="small"
-                  onClick={handleSetCompletion}
-                  disabled={completionSubmitting || !completionStateUid}
-                  sx={{ flexShrink: 0 }}
-                >
-                  Set completion
-                </Button>
-              </Stack>
-              <Stack direction="row" spacing={2} flexWrap="wrap" sx={{ mt: 1 }}>
-                <TextField
-                  type="date"
-                  label="Finished date"
-                  value={completionFinishedDate}
-                  onChange={(e) => setCompletionFinishedDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  size="small"
-                  sx={{ minWidth: 140 }}
-                />
-                <TextField
-                  type="date"
-                  label="Completed date"
-                  value={completionCompletedDate}
-                  onChange={(e) => setCompletionCompletedDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  size="small"
-                  sx={{ minWidth: 140 }}
-                />
-              </Stack>
+                    Set completion
+                  </Button>
+                </Grid>
+              </Grid>
             </>
           }
         />
@@ -642,8 +652,10 @@ export default function GameInstanceDetailPage() {
         sx={{
           p: 2,
           mb: 3,
-          width: 900,
-          maxWidth: '100%',
+          maxWidth: 900,
+          width: '100%',
+          mx: { xs: 'auto', md: 0 },
+          overflow: 'hidden',
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
         }}
       >
@@ -673,6 +685,12 @@ export default function GameInstanceDetailPage() {
                   }}
                 >
                   <Box
+                    onClick={() =>
+                      setDlcExpanded((prev) => ({
+                        ...prev,
+                        [dlc.uid]: !prev[dlc.uid],
+                      }))
+                    }
                     sx={{
                       display: 'flex',
                       alignItems: 'center',
@@ -680,6 +698,7 @@ export default function GameInstanceDetailPage() {
                       px: 1.5,
                       py: 1,
                       bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.700' : 'grey.200'),
+                      cursor: 'pointer',
                     }}
                   >
                     <Typography variant="body2" fontWeight="medium">
@@ -687,124 +706,137 @@ export default function GameInstanceDetailPage() {
                     </Typography>
                     <IconButton
                       size="small"
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setDlcExpanded((prev) => ({
                           ...prev,
                           [dlc.uid]: !prev[dlc.uid],
-                        }))
-                      }
+                        }));
+                      }}
                       aria-expanded={expanded}
                     >
                       {expanded ? <ExpandLess /> : <ExpandMore />}
                     </IconButton>
                   </Box>
                   <Collapse in={expanded}>
-                    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 480 }}>
-                      <Box>
-                        <TextField
-                          label="Name"
-                          value={edit.name}
-                          onChange={(e) => handleDlcFieldChange(dlc.uid, 'name', e.target.value)}
-                          size="small"
-                          fullWidth
-                        />
-                        <ExternalDlcSearch
-                          gameInstanceExternalIgdbId={instance?.externalIgdbId ?? null}
-                          dlcName={edit.name}
-                          releaseDate={edit.releaseDate}
-                          onOverwriteName={(name) => handleDlcFieldChange(dlc.uid, 'name', name)}
-                          onOverwriteDate={(date) => handleDlcFieldChange(dlc.uid, 'releaseDate', date)}
-                          onMarkCoverImport={(externalId) => {
-                            IgdbApi.importCover({
-                              externalId,
-                              ownerType: 'DLC',
-                              dlcUid: dlc.uid,
-                              gameInstanceUid: uid ?? undefined,
-                            }).then(refetchDlcs).catch(() => {});
-                          }}
-                          dlcUid={dlc.uid}
-                          gameInstanceUid={uid ?? undefined}
-                        />
-                      </Box>
-                      <Stack direction="row" spacing={2} flexWrap="wrap">
-                        <TextField
-                          type="date"
-                          label="Release date"
-                          value={edit.releaseDate}
-                          onChange={(e) => handleDlcFieldChange(dlc.uid, 'releaseDate', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                          size="small"
-                          sx={{ minWidth: 140 }}
-                        />
-                        <TextField
-                          type="date"
-                          label="Received date"
-                          value={edit.receivedDate}
-                          onChange={(e) => handleDlcFieldChange(dlc.uid, 'receivedDate', e.target.value)}
-                          InputLabelProps={{ shrink: true }}
-                          size="small"
-                          sx={{ minWidth: 140 }}
-                        />
-                      </Stack>
-                      <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap" useFlexGap>
-                        <Box sx={{ flex: '1 1 120px', minWidth: 0 }}>
-                          <CompletionBar
-                            completionState={completionState}
-                            playthroughState={null}
+                    <Box sx={{ p: 2, minWidth: 0 }}>
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12}>
+                          <TextField
+                            label="Name"
+                            value={edit.name}
+                            onChange={(e) => handleDlcFieldChange(dlc.uid, 'name', e.target.value)}
+                            size="small"
+                            fullWidth
                           />
-                        </Box>
-                        <FormControl size="small" sx={{ minWidth: 160, flexShrink: 0 }}>
-                          <InputLabel>Completion state</InputLabel>
-                          <Select
-                            label="Completion state"
-                            value={edit.completionStateUid}
+                          <ExternalDlcSearch
+                            gameInstanceExternalIgdbId={instance?.externalIgdbId ?? null}
+                            dlcName={edit.name}
+                            releaseDate={edit.releaseDate}
+                            onOverwriteName={(name) => handleDlcFieldChange(dlc.uid, 'name', name)}
+                            onOverwriteDate={(date) => handleDlcFieldChange(dlc.uid, 'releaseDate', date)}
+                            onMarkCoverImport={(externalId) => {
+                              IgdbApi.importCover({
+                                externalId,
+                                ownerType: 'DLC',
+                                dlcUid: dlc.uid,
+                                gameInstanceUid: uid ?? undefined,
+                              }).then(refetchDlcs).catch(() => {});
+                            }}
+                            dlcUid={dlc.uid}
+                            gameInstanceUid={uid ?? undefined}
+                          />
+                        </Grid>
+                        <Grid item xs={6} sm={6}>
+                          <TextField
+                            type="date"
+                            label="Release date"
+                            value={edit.releaseDate}
+                            onChange={(e) => handleDlcFieldChange(dlc.uid, 'releaseDate', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            size="small"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={6} sm={6}>
+                          <TextField
+                            type="date"
+                            label="Received date"
+                            value={edit.receivedDate}
+                            onChange={(e) => handleDlcFieldChange(dlc.uid, 'receivedDate', e.target.value)}
+                            InputLabelProps={{ shrink: true }}
+                            size="small"
+                            fullWidth
+                          />
+                        </Grid>
+                        {/* Row 3: CompletionBar + Completion state select */}
+                        <Grid item xs={12} sm={6}>
+                          <Box sx={{ minWidth: 0 }}>
+                            <CompletionBar
+                              completionState={completionState}
+                              playthroughState={null}
+                            />
+                          </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <FormControl size="small" fullWidth>
+                            <InputLabel>Completion state</InputLabel>
+                            <Select
+                              label="Completion state"
+                              value={edit.completionStateUid}
+                              onChange={(e) =>
+                                handleDlcFieldChange(dlc.uid, 'completionStateUid', e.target.value)
+                              }
+                              disabled={updating}
+                            >
+                              <MenuItem value="">—</MenuItem>
+                              {completionStates.map((c) => (
+                                <MenuItem key={c.uid} value={c.uid}>
+                                  {c.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        {/* Row 4: Finished date + Completed date + Save DLC (button wraps on mobile) */}
+                        <Grid item xs={6} sm={4}>
+                          <TextField
+                            type="date"
+                            label="Finished date"
+                            value={edit.finishedDate}
                             onChange={(e) =>
-                              handleDlcFieldChange(dlc.uid, 'completionStateUid', e.target.value)
+                              handleDlcFieldChange(dlc.uid, 'finishedDate', e.target.value)
                             }
+                            InputLabelProps={{ shrink: true }}
+                            size="small"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={6} sm={4}>
+                          <TextField
+                            type="date"
+                            label="Completed date"
+                            value={edit.completedDate}
+                            onChange={(e) =>
+                              handleDlcFieldChange(dlc.uid, 'completedDate', e.target.value)
+                            }
+                            InputLabelProps={{ shrink: true }}
+                            size="small"
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            onClick={() => handleDlcSave(dlc)}
                             disabled={updating}
+                            fullWidth
                           >
-                            <MenuItem value="">—</MenuItem>
-                            {completionStates.map((c) => (
-                              <MenuItem key={c.uid} value={c.uid}>
-                                {c.name}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          onClick={() => handleDlcSave(dlc)}
-                          disabled={updating}
-                          sx={{ flexShrink: 0 }}
-                        >
-                          {updating ? 'Saving…' : 'Save DLC'}
-                        </Button>
-                      </Stack>
-                      <Stack direction="row" spacing={2} flexWrap="wrap">
-                        <TextField
-                          type="date"
-                          label="Finished date"
-                          value={edit.finishedDate}
-                          onChange={(e) =>
-                            handleDlcFieldChange(dlc.uid, 'finishedDate', e.target.value)
-                          }
-                          InputLabelProps={{ shrink: true }}
-                          size="small"
-                          sx={{ minWidth: 140 }}
-                        />
-                        <TextField
-                          type="date"
-                          label="Completed date"
-                          value={edit.completedDate}
-                          onChange={(e) =>
-                            handleDlcFieldChange(dlc.uid, 'completedDate', e.target.value)
-                          }
-                          InputLabelProps={{ shrink: true }}
-                          size="small"
-                          sx={{ minWidth: 140 }}
-                        />
-                      </Stack>
+                            {updating ? 'Saving…' : 'Save DLC'}
+                          </Button>
+                        </Grid>
+                      </Grid>
                     </Box>
                   </Collapse>
                 </Box>
@@ -821,12 +853,16 @@ export default function GameInstanceDetailPage() {
           sx={{
             p: 2,
             mb: 3,
-            width: 900,
-            maxWidth: '100%',
+            maxWidth: 900,
+            width: '100%',
+            mx: { xs: 'auto', md: 0 },
+            overflow: 'hidden',
             bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
           }}
         >
-          <ImageGallery gameUid={instance.gameUid} gameInstanceUid={instance.uid} />
+          <Box sx={{ maxHeight: 360, overflowY: 'auto', minWidth: 0 }}>
+            <ImageGallery gameUid={instance.gameUid} gameInstanceUid={instance.uid} />
+          </Box>
         </Paper>
       )}
     </Box>

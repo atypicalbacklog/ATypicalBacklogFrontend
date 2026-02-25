@@ -124,7 +124,7 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
   if (!gameUid) return null;
 
   return (
-    <Box>
+    <Box sx={{ minWidth: 0, width: '100%', overflow: 'hidden' }}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
         <Typography variant="subtitle2" color="text.secondary">
           Image gallery
@@ -151,10 +151,15 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
           sx={{
             display: 'flex',
             flexDirection: 'row',
+            flexWrap: { xs: 'wrap', sm: 'nowrap' },
             gap: 2,
-            overflowX: 'auto',
             pb: 1,
             minHeight: 280,
+            width: '100%',
+            minWidth: 0,
+            overflowX: { xs: 'hidden', sm: 'auto' },
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           {images.map((im) => {

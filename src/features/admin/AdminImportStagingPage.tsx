@@ -109,7 +109,7 @@ export default function AdminImportStagingPage() {
   };
 
   return (
-    <Box sx={{ p: 2, maxWidth: 800 }}>
+    <Box sx={{ maxWidth: 800 }}>
       <Typography variant="h5" gutterBottom>
         Admin – Import staging
       </Typography>

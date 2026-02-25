@@ -40,8 +40,8 @@ export default function GameDetailPage() {
       >
         <Box display="flex" alignItems="center" gap={2} mb={2}>
           <Typography variant="h4">{game.name}</Typography>
-          <Button component={Link} to="/" size="small">
-            Back to Dashboard
+          <Button component={Link} to="/library" size="small">
+            Back to Library
           </Button>
         </Box>
         <GameForm

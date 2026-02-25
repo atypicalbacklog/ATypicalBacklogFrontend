@@ -29,6 +29,16 @@ export interface VariantYearActivityDto {
   totalSeconds: number;
 }
 
+/** Backend DTO: GET /api/stats/console-year-variant-activity (24.3) */
+export interface ConsoleYearVariantActivityDto {
+  year: number;
+  consoleUid: string;
+  variantUid: string;
+  totalSeconds: number;
+  distinctGames?: number;
+  bookingCount?: number;
+}
+
 /** Backend DTO: GET /api/stats/monthly-playtime */
 export interface MonthlyPlaytimeDto {
   year: number;
@@ -129,6 +139,16 @@ export function fetchVariantYearActivity(
 ): Promise<VariantYearActivityDto[]> {
   return http<VariantYearActivityDto[]>(
     `${BASE}/variant-year-activity${queryString({ year })}`,
+    { signal }
+  );
+}
+
+export function fetchConsoleYearVariantActivity(
+  year: number,
+  signal?: AbortSignal
+): Promise<ConsoleYearVariantActivityDto[]> {
+  return http<ConsoleYearVariantActivityDto[]>(
+    `${BASE}/console-year-variant-activity${queryString({ year })}`,
     { signal }
   );
 }

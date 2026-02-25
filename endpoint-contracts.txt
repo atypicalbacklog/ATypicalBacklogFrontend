@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 29
+Version: 30
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -1843,7 +1843,22 @@ Array of ConsoleYearActivityDto:
 ]
 
 --------------------------------------------------------------------------------
-24.3 Variant Year Activity
+24.3 Console Year Variant Activity
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/stats/console-year-variant-activity?year={year}
+
+Query Parameters:
+- year (int, required): Calendar year
+
+Response: 200 OK
+Array of ConsoleYearVariantActivityDto:
+[
+  { "year": 0, "variantUid": "string", "consoleUid": "string", "totalSeconds": 0, "distinctGames": 0, "bookingCount": 0 }
+]
+
+--------------------------------------------------------------------------------
+24.4 Variant Year Activity
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/variant-year-activity?year={year}
@@ -1858,7 +1873,7 @@ Array of VariantYearActivityDto:
 ]
 
 --------------------------------------------------------------------------------
-24.4 Monthly Playtime
+24.5 Monthly Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/monthly-playtime?year={year}
@@ -1873,7 +1888,7 @@ Array of MonthlyPlaytimeDto:
 ]
 
 --------------------------------------------------------------------------------
-24.5 Weekly Playtime
+24.6 Weekly Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/weekly-playtime?year={year}
@@ -1888,7 +1903,7 @@ Array of WeeklyPlaytimeDto:
 ]
 
 --------------------------------------------------------------------------------
-24.6 Weekday Playtime
+24.7 Weekday Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/weekday-playtime?year={year}
@@ -1903,7 +1918,7 @@ Array of WeekdayPlaytimeDto:
 ]
 
 --------------------------------------------------------------------------------
-24.7 Console Input Style Playtime
+24.8 Console Input Style Playtime
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/console-inputstyle-playtime?year={year}
@@ -1918,7 +1933,7 @@ Array of ConsoleInputStyleDto:
 ]
 
 --------------------------------------------------------------------------------
-24.8 Game Playtime Ranking
+24.9 Game Playtime Ranking
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/game-playtime-ranking?fromYear={fromYear}&toYear={toYear}
@@ -1934,7 +1949,7 @@ Array of GamePlaytimeRankingDto:
 ]
 
 --------------------------------------------------------------------------------
-24.9 Booking Duration Distribution
+24.10 Booking Duration Distribution
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/booking-duration-distribution?gameUid={gameUid}&fromYear={fromYear}&toYear={toYear}
@@ -1951,7 +1966,7 @@ Array of BookingDurationDistributionDto:
 ]
 
 --------------------------------------------------------------------------------
-24.10 Backlog Completion Game Overview
+24.11 Backlog Completion Game Overview
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/backlog-completion-game-overview?year={year}
@@ -1977,12 +1992,14 @@ Array of BacklogCompletionGameOverviewDto (from view backlog_completion_game_ove
     "backlogUid": "string" | null,
     "platformUid": "string" | null,
     "gameCompletionUid": "string" | null,
+    "variantUid": "string" | null,
+    "consoleUid": "string" | null,
     "coverImageUid": "string" | null
   }
 ]
 
 --------------------------------------------------------------------------------
-24.11 Game Played Per Year
+24.12 Game Played Per Year
 --------------------------------------------------------------------------------
 Method: GET
 Path: /api/stats/game-played-per-year?year={year}
@@ -2016,5 +2033,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-22  |  Document version: 29
+Generated: 2026-02-25  |  Document version: 30
 ================================================================================

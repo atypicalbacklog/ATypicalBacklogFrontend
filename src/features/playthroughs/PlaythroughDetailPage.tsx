@@ -8,6 +8,7 @@ import {
   CircularProgress,
   FormControl,
   FormControlLabel,
+  Grid,
   InputLabel,
   MenuItem,
   Select,
@@ -603,9 +604,10 @@ export default function PlaythroughDetailPage() {
               </Box>
             );
           })()}
-          <Stack spacing={2}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
-              <FormControl size="small" sx={{ minWidth: 180 }}>
+          <Grid container spacing={2} alignItems="center">
+            {/* Top row: completion state select + info */}
+            <Grid item xs={6} sm={6}>
+              <FormControl size="small" fullWidth>
                 <InputLabel>Completion state</InputLabel>
                 <Select
                   label="Completion state"
@@ -619,15 +621,18 @@ export default function PlaythroughDetailPage() {
                   ))}
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item xs={6} sm={6}>
               <TextField
                 label="Info"
                 value={completionInfo}
                 onChange={(e) => setCompletionInfo(e.target.value)}
                 size="small"
-                sx={{ minWidth: 120 }}
+                fullWidth
               />
-            </Stack>
-            <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
+            </Grid>
+            {/* Bottom row: finished date + completed date + Set completion button */}
+            <Grid item xs={6} sm={4}>
               <TextField
                 type="date"
                 label="Finished date"
@@ -635,8 +640,10 @@ export default function PlaythroughDetailPage() {
                 onChange={(e) => setCompletionFinishedDate(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 size="small"
-                sx={{ minWidth: 140 }}
+                fullWidth
               />
+            </Grid>
+            <Grid item xs={6} sm={4}>
               <TextField
                 type="date"
                 label="Completed date"
@@ -644,8 +651,10 @@ export default function PlaythroughDetailPage() {
                 onChange={(e) => setCompletionCompletedDate(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 size="small"
-                sx={{ minWidth: 140 }}
+                fullWidth
               />
+            </Grid>
+            <Grid item xs={6} sm={4}>
               <Button
                 variant="contained"
                 size="small"
@@ -654,8 +663,8 @@ export default function PlaythroughDetailPage() {
               >
                 Set Completion
               </Button>
-            </Stack>
-          </Stack>
+            </Grid>
+          </Grid>
         </Box>
       </Box>
     </Box>

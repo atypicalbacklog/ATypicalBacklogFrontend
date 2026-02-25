@@ -472,9 +472,21 @@ export default function ExternalGameSearch({
 
     if (selectedResult) {
       return (
-        <Stack direction="row" spacing={1} alignItems="stretch" sx={{ mt: 1, width: '100%', position: 'relative', zIndex: 1 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="stretch"
+          flexWrap="wrap"
+          sx={{
+            mt: 1,
+            width: '100%',
+            maxWidth: { xs: 'min(100%, 300px)', sm: 'none' },
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
           <Box
-            sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer' }}
+            sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer', minWidth: { sm: 0 } }}
             onClick={() => handleResultClick(selectedResult)}
           >
             {renderResultCard(selectedResult, true)}
@@ -489,10 +501,13 @@ export default function ExternalGameSearch({
         sx={{
           mt: 1,
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
           gap: 1,
           position: 'relative',
           zIndex: 1,
+          maxWidth: { xs: 'min(100%, 300px)', sm: 'none' },
+          maxHeight: { xs: 'min(60vh, 400px)', sm: 'none' },
+          overflowY: { xs: 'auto', sm: 'visible' },
         }}
       >
         {results.map((result) => renderResultCard(result, false))}
@@ -505,7 +520,9 @@ export default function ExternalGameSearch({
       <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
         {searchButton}
       </Box>
-      <Box sx={{ width: '100%', order: 10, mt: 1 }}>{searchResults}</Box>
+      <Box sx={{ width: '100%', maxWidth: { xs: 'min(100%, 300px)', sm: 'none' }, order: 10, mt: 1 }}>
+        {searchResults}
+      </Box>
     </>
   );
 }

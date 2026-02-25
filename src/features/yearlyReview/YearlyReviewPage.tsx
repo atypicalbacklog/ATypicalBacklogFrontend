@@ -20,6 +20,7 @@ import {
   fetchGamePlaytimeRanking,
   fetchConsoleYearActivity,
   fetchConsoleInputStylePlaytime,
+  fetchConsoleYearVariantActivity,
   type ConsoleInputStyleDto,
 } from '../../services/statisticsApi';
 import type { ReviewSearchResultDto } from '../../types/dto';
@@ -31,6 +32,9 @@ import type { SimpleLookupDto } from '../../types/referenceData';
 import GamePlaytimeRankingBarChart from '../statistics/charts/GamePlaytimeRankingBarChart';
 import ConsolePlaytimePieChart from '../statistics/charts/ConsolePlaytimePieChart';
 import PcInputVariantsPieChart from '../statistics/charts/PcInputVariantsPieChart';
+import ConsoleVariantPlaytimeStackedBarChart from '../statistics/charts/ConsoleVariantPlaytimeStackedBarChart';
+import ConsoleVariantGameCountStackedBarChart from '../statistics/charts/ConsoleVariantGameCountStackedBarChart';
+import type { ConsoleVariantPlaytimeRow } from '../statistics/charts/ConsoleVariantPlaytimeStackedBarChart';
 import TierEntryCardView from '../reviews/TierEntryCardView';
 import YearlyReviewGameCard from './YearlyReviewGameCard';
 import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
@@ -77,6 +81,7 @@ export default function YearlyReviewPage() {
   const [totalPlaytimeSeconds, setTotalPlaytimeSeconds] = useState<number | null>(null);
   const [gameRankingData, setGameRankingData] = useState<GamePlaytimeDisplay[]>([]);
   const [consoleYearData, setConsoleYearData] = useState<ConsoleYearDisplay[]>([]);
+  const [consoleVariantData, setConsoleVariantData] = useState<ConsoleVariantPlaytimeRow[]>([]);
   const [pcInputStyleData, setPcInputStyleData] = useState<ConsoleInputStyleDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,12 +94,13 @@ export default function YearlyReviewPage() {
     setLoading(true);
     setError(null);
     try {
-      const [review, reviews, yearlyActivityRaw, rankingRaw, consoleRaw, inputStyleRaw] = await Promise.all([
+      const [review, reviews, yearlyActivityRaw, rankingRaw, consoleRaw, consoleVariantRaw, inputStyleRaw] = await Promise.all([
         YearlyReviewApi.getByYear(year),
         ReviewsApi.searchByYear({ years: [year], includeActivePlaythroughs: true }),
         fetchYearlyActivity(),
         fetchGamePlaytimeRanking({ fromYear: year, toYear: year }),
         fetchConsoleYearActivity(year),
+        fetchConsoleYearVariantActivity(year),
         fetchConsoleInputStylePlaytime(year),
       ]);
       setYearlyReview(review);
@@ -146,6 +152,15 @@ export default function YearlyReviewPage() {
           bookingCount: r.bookingCount,
         }))
       );
+      const variantMap = new Map(referenceData.data.variants.map((v) => [v.uid, v.name]));
+      setConsoleVariantData(
+        consoleVariantRaw.map((r) => ({
+          consoleName: consoleMap.get(r.consoleUid) ?? r.consoleUid,
+          variantName: variantMap.get(r.variantUid) ?? r.variantUid,
+          totalHours: r.totalSeconds / 3600,
+          distinctGames: r.distinctGames ?? 0,
+        }))
+      );
       const pcUid = referenceData.data.consoles.find((c) => c.name === 'PC')?.uid ?? null;
       setPcInputStyleData(
         pcUid ? inputStyleRaw.filter((r) => r.consoleUid === pcUid) : []
@@ -157,6 +172,7 @@ export default function YearlyReviewPage() {
       setTotalPlaytimeSeconds(null);
       setGameRankingData([]);
       setConsoleYearData([]);
+      setConsoleVariantData([]);
       setPcInputStyleData([]);
     } finally {
       setLoading(false);
@@ -243,6 +259,21 @@ export default function YearlyReviewPage() {
                 data={pcInputStyleData}
                 year={year}
                 inputName={inputName}
+              />
+            </Box>
+          </Stack>
+
+          <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
+            <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
+              <ConsoleVariantPlaytimeStackedBarChart
+                data={consoleVariantData}
+                year={year}
+              />
+            </Box>
+            <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
+              <ConsoleVariantGameCountStackedBarChart
+                data={consoleVariantData}
+                year={year}
               />
             </Box>
           </Stack>

@@ -1,4 +1,5 @@
-import { Box, Tooltip, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
+import { Box, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 interface Props {
@@ -22,16 +23,43 @@ export default function DateWithIcon({
   sx = {},
 }: Props) {
   const displayDate = date ?? '—';
+  const theme = useTheme();
+  const isTouch = useMediaQuery(theme.breakpoints.down('sm')) || useMediaQuery('(pointer: coarse)');
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
+  useEffect(() => {
+    if (!tooltipOpen) return;
+    const close = () => setTooltipOpen(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [tooltipOpen]);
 
   return (
-    <Tooltip title={tooltip}>
+    <Tooltip
+      title={tooltip}
+      disableHoverListener={isTouch}
+      disableFocusListener={isTouch}
+      disableTouchListener={isTouch}
+      open={isTouch ? tooltipOpen : undefined}
+      onClose={() => setTooltipOpen(false)}
+    >
       <Box
         component="span"
+        onClick={(e) => {
+          if (isTouch) {
+            e.stopPropagation();
+            setTooltipOpen((o) => !o);
+          }
+        }}
         sx={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: 0.5,
           color: 'text.secondary',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          cursor: isTouch ? 'pointer' : undefined,
           ...sx,
         }}
       >

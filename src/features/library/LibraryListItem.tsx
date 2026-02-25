@@ -48,8 +48,8 @@ export default function LibraryListItem({ item }: Props) {
       component={RouterLink}
       to={to}
       sx={{
-        width: LIBRARY_CARD_WIDTH,
-        height: CARD_HEIGHT,
+        width: { xs: 170, sm: LIBRARY_CARD_WIDTH },
+        height: { xs: 290, sm: CARD_HEIGHT },
         flexShrink: 0,
         borderRadius: 1,
         overflow: 'hidden',
@@ -88,7 +88,7 @@ export default function LibraryListItem({ item }: Props) {
           sx={{
             position: 'relative',
             width: '100%',
-            height: COVER_HEIGHT,
+            height: { xs: 220, sm: COVER_HEIGHT },
             flexShrink: 0,
           }}
         >
@@ -151,6 +151,7 @@ export default function LibraryListItem({ item }: Props) {
           <CompletionBar
             completionState={completionStateName}
             playthroughState={item.hasActivePlaythrough ? 'Active' : null}
+            size="small"
           />
         ) : null}
       </Stack>

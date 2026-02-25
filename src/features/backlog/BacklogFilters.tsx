@@ -1,15 +1,23 @@
+import { useState } from 'react';
 import {
+  Button,
+  Collapse,
+  FormControl,
   FormControlLabel,
   Checkbox,
   Stack,
   TextField,
   MenuItem,
   InputLabel,
-  FormControl,
   OutlinedInput,
   Select,
   SelectChangeEvent,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { BacklogFilterState } from './types';
 
@@ -20,9 +28,18 @@ interface Props {
 
 export default function BacklogFilters({ value, onChange }: Props) {
   const { referenceData, isLoaded } = useReferenceData();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
   if (!isLoaded || !referenceData) return null;
 
   const { consoles, completionStates } = referenceData.data;
+  const activeCount =
+    (value.consoleUids.length > 0 ? 1 : 0) +
+    (value.platformUids.length > 0 ? 1 : 0) +
+    (value.hasActivePlaythrough !== null ? 1 : 0) +
+    (value.completionStateUids.length > 0 ? 1 : 0);
 
   const handleCompletionChange = (e: SelectChangeEvent<string[]>) => {
     const v = e.target.value;
@@ -32,16 +49,42 @@ export default function BacklogFilters({ value, onChange }: Props) {
     });
   };
 
-  return (
-    <Stack direction="row" spacing={2} mb={3} flexWrap="wrap" alignItems="center">
+  const searchRow = (
+    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: isMobile ? 2 : 0 }}>
       <TextField
         label="Search"
         value={value.searchText}
         onChange={(e) => onChange({ ...value, searchText: e.target.value })}
         size="small"
+        sx={{
+          minWidth: 160,
+          ...(isMobile ? { flex: 1 } : { maxWidth: 280 }),
+        }}
       />
+      {isMobile && (
+        <Button
+          variant={filtersOpen ? 'outlined' : 'text'}
+          size="small"
+          startIcon={filtersOpen ? <ExpandLessIcon /> : <FilterListIcon />}
+          onClick={() => setFiltersOpen((o) => !o)}
+        >
+          {filtersOpen ? 'Hide filters' : 'Show filters'}
+          {activeCount > 0 && ` (${activeCount})`}
+        </Button>
+      )}
+    </Stack>
+  );
 
-      <FormControl size="small" sx={{ minWidth: 160 }}>
+  const filterFields = (
+    <Stack
+      direction="row"
+      spacing={2}
+      flexWrap="wrap"
+      alignItems="center"
+      useFlexGap
+      sx={isMobile ? { mt: 1, '& > *': { minWidth: 0, flex: '1 1 160px' } } : {}}
+    >
+      <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 160, flex: isMobile ? '1 1 160px' : undefined }}>
         <InputLabel>Consoles</InputLabel>
         <Select
           multiple
@@ -82,7 +125,7 @@ export default function BacklogFilters({ value, onChange }: Props) {
         label="Playthrough active"
       />
 
-      <FormControl size="small" sx={{ minWidth: 180 }}>
+      <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 180, flex: isMobile ? '1 1 160px' : undefined }}>
         <InputLabel>Completion state</InputLabel>
         <Select
           multiple
@@ -105,6 +148,19 @@ export default function BacklogFilters({ value, onChange }: Props) {
           ))}
         </Select>
       </FormControl>
+    </Stack>
+  );
+
+  return (
+    <Stack spacing={0} mb={1}>
+      {searchRow}
+      {isMobile ? (
+        <Collapse in={filtersOpen}>
+          {filterFields}
+        </Collapse>
+      ) : (
+        filterFields
+      )}
     </Stack>
   );
 }

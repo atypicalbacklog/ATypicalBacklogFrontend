@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { formatPlaytime } from '../../library/formatPlaytime';
 import CompletionBar from '../../shared/CompletionBar';
 import type { GameCompletionDTO } from '../../../types/dto';
@@ -16,6 +16,8 @@ export default function PlaytimeSummary({
   completionStateName,
   playthroughState = null,
 }: Props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const main = completions.filter((c) => !c.dlcUid);
   const completionState = main[0]
     ? completionStateName(main[0].completionStateUid)
@@ -39,14 +41,14 @@ export default function PlaytimeSummary({
           position: 'absolute',
           left: 0,
           right: 0,
-          top: '33%',
+          top: isMobile ? '30%' : '33%',
           transform: 'translateY(-50%)',
         }}
       >
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={isMobile ? { fontSize: '0.8125rem' } : undefined}>
           Total Playtime
         </Typography>
-        <Typography variant="h6" fontWeight={600}>
+        <Typography variant="h6" fontWeight={600} sx={isMobile ? { fontSize: '1rem' } : undefined}>
           {formatPlaytime(totalSeconds)}
         </Typography>
       </Box>
@@ -54,6 +56,7 @@ export default function PlaytimeSummary({
         <CompletionBar
           completionState={completionState}
           playthroughState={playthroughState}
+          size={isMobile ? 'small' : 'medium'}
         />
       </Box>
     </Box>

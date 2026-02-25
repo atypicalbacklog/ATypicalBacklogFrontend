@@ -12,6 +12,8 @@ import {
   Select,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
@@ -131,10 +133,42 @@ export default function ManageYearTierlistPage() {
     e.dataTransfer.dropEffect = 'move';
   }, []);
 
+  const moveCardToTier = useCallback(
+    (card: ReviewSearchResultDto, tierUid: string) => {
+      const playthroughUids = card.playthroughs.map((p) => p.playthroughUid);
+      const reviewUids = card.playthroughs.map((p) => p.reviewUid).filter(Boolean) as string[];
+      if (playthroughUids.length === 0) return;
+      const key = cardKey(card);
+      setSavingTier(tierUid);
+      ReviewsApi.updateTierBulk({
+        playthroughUids,
+        reviewUids,
+        tierUid,
+      })
+        .then(() => {
+          setResults((prev) =>
+            prev.map((r) => {
+              if (cardKey(r) !== key) return r;
+              return {
+                ...r,
+                playthroughs: r.playthroughs.map((p) => ({ ...p, tierUid })),
+              };
+            })
+          );
+        })
+        .catch(() => setError('Failed to update tier.'))
+        .finally(() => setSavingTier(null));
+    },
+    []
+  );
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   if (!isLoaded) return null;
 
   return (
-    <Box sx={{ px: 2, py: 2 }}>
+    <Box>
       <Typography variant="h4" gutterBottom>
         Manage Year Tierlist
       </Typography>
@@ -145,53 +179,63 @@ export default function ManageYearTierlistPage() {
         </Alert>
       )}
 
-      {/* Filters */}
-      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mb: 3 }}>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={includeCurrentYear}
-              onChange={(e) => setIncludeCurrentYear(e.target.checked)}
-            />
-          }
-          label={String(currentYear)}
-        />
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={includeLastYear}
-              onChange={(e) => setIncludeLastYear(e.target.checked)}
-            />
-          }
-          label={String(lastYear)}
-        />
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel>Previous years</InputLabel>
-          <Select
-            multiple
-            value={selectedPreviousYears}
-            onChange={(e) => setSelectedPreviousYears(e.target.value as number[])}
-            label="Previous years"
-            renderValue={(selected) =>
-              selected.length === 0 ? 'None' : selected.sort((a, b) => b - a).join(', ')
+      {/* Filters: on mobile row1 = this year + last year, row2 = previous years + include active */}
+      <Stack
+        direction={isMobile ? 'column' : 'row'}
+        spacing={2}
+        flexWrap="wrap"
+        useFlexGap
+        sx={{ mb: 1 }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={includeCurrentYear}
+                onChange={(e) => setIncludeCurrentYear(e.target.checked)}
+              />
             }
-          >
-            {previousYearOptions.map((y) => (
-              <MenuItem key={y} value={y}>
-                {y}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={includeActivePlaythroughs}
-              onChange={(e) => setIncludeActivePlaythroughs(e.target.checked)}
-            />
-          }
-          label="Include Active"
-        />
+            label={String(currentYear)}
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={includeLastYear}
+                onChange={(e) => setIncludeLastYear(e.target.checked)}
+              />
+            }
+            label={String(lastYear)}
+          />
+        </Stack>
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
+          <FormControl size="small" sx={{ minWidth: isMobile ? 140 : 200 }}>
+            <InputLabel>Previous years</InputLabel>
+            <Select
+              multiple
+              value={selectedPreviousYears}
+              onChange={(e) => setSelectedPreviousYears(e.target.value as number[])}
+              label="Previous years"
+              renderValue={(selected) =>
+                selected.length === 0 ? 'None' : selected.sort((a, b) => b - a).join(', ')
+              }
+            >
+              {previousYearOptions.map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={includeActivePlaythroughs}
+                onChange={(e) => setIncludeActivePlaythroughs(e.target.checked)}
+              />
+            }
+            label="Include Active"
+          />
+        </Stack>
       </Stack>
 
       {loading ? (
@@ -207,11 +251,11 @@ export default function ManageYearTierlistPage() {
           <Box
             sx={{
               display: 'flex',
-              gap: 2,
+              gap: isMobile ? 1 : 2,
               overflowX: 'auto',
               pb: 2,
               mb: 3,
-              minHeight: 160,
+              minHeight: isMobile ? 120 : 160,
               alignItems: 'flex-start',
               '&::-webkit-scrollbar': { height: 8 },
               '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 1 },
@@ -225,6 +269,9 @@ export default function ManageYearTierlistPage() {
                 onDragStart={setDraggingCard}
                 onEdit={(state) => navigate('/reviews/edit', { state })}
                 isDragging={draggingCard === card}
+                compact={isMobile}
+                tiers={isMobile ? tiers : undefined}
+                onMoveToTier={isMobile ? moveCardToTier : undefined}
               />
             ))}
             {unassignedCards.length === 0 && !loading && (
@@ -249,7 +296,7 @@ export default function ManageYearTierlistPage() {
                   sx={{
                     display: 'flex',
                     alignItems: 'stretch',
-                    minHeight: 120,
+                    minHeight: isMobile ? 90 : 120,
                     bgcolor: '#000000',
                     borderRadius: 1,
                     mb: 1,
@@ -258,7 +305,7 @@ export default function ManageYearTierlistPage() {
                 >
                   <Box
                     sx={{
-                      width: 80,
+                      width: isMobile ? 48 : 80,
                       flexShrink: 0,
                       bgcolor: color,
                       color: '#000',
@@ -266,7 +313,7 @@ export default function ManageYearTierlistPage() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 700,
-                      fontSize: '1.15rem',
+                      fontSize: isMobile ? '0.875rem' : '1.15rem',
                       fontFamily: 'sans-serif',
                       letterSpacing: 0.3,
                     }}
@@ -279,8 +326,8 @@ export default function ManageYearTierlistPage() {
                     sx={{
                       flex: 1,
                       display: 'flex',
-                      gap: 2,
-                      p: 2,
+                      gap: isMobile ? 1 : 2,
+                      p: isMobile ? 1 : 2,
                       alignItems: 'center',
                       flexWrap: 'wrap',
                       overflowX: 'auto',
@@ -296,6 +343,9 @@ export default function ManageYearTierlistPage() {
                         onDragStart={setDraggingCard}
                         onEdit={(state) => navigate('/reviews/edit', { state })}
                         isDragging={draggingCard === card}
+                        compact={isMobile}
+                        tiers={isMobile ? tiers : undefined}
+                        onMoveToTier={isMobile ? moveCardToTier : undefined}
                       />
                     ))}
                   </Box>

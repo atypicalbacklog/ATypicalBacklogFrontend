@@ -171,9 +171,9 @@ export default function BacklogCompletionOverviewPage() {
   const thumbSx = { width: 20, height: 28, flexShrink: 0, borderRadius: 0.5 };
 
   return (
-    <Stack spacing={3} sx={{ p: 2 }}>
+    <Stack spacing={2}>
       <Stack direction="row" alignItems="center" gap={2}>
-        <Typography variant="h5">Backlog & completion overview</Typography>
+        <Typography variant="h5">Backlog & Completion Overview</Typography>
         <Button
           component={Link}
           to="/backlog"
@@ -184,7 +184,7 @@ export default function BacklogCompletionOverviewPage() {
         </Button>
       </Stack>
 
-      <FormControl size="small" sx={{ minWidth: 120 }}>
+      <FormControl size="small" sx={{ minWidth: 120, maxWidth: 160, alignSelf: 'flex-start' }}>
         <InputLabel>Year</InputLabel>
         <Select
           label="Year"

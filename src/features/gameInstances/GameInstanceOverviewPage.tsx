@@ -204,10 +204,10 @@ export default function GameInstanceOverviewPage() {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, width: '100%' }}>
       <Box display="flex" alignItems="center" gap={2} mb={2}>
-        <Button component={Link} to="/" size="small">
-          Back to Dashboard
+        <Button component={Link} to="/library" size="small">
+          Back to Library
         </Button>
       </Box>
 
@@ -224,7 +224,9 @@ export default function GameInstanceOverviewPage() {
           mb: 2,
           p: 2,
           width: '100%',
-          maxWidth: 1200,
+          maxWidth: { xs: 480, sm: 1200 },
+          minWidth: 0,
+          mx: { xs: 'auto', sm: 0 },
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
           display: 'flex',
           flexDirection: 'row',
@@ -274,8 +276,11 @@ export default function GameInstanceOverviewPage() {
         sx={{
           mb: 2,
           width: '100%',
-          maxWidth: 1200,
+          maxWidth: { xs: 480, sm: 1200 },
+          minWidth: 0,
+          mx: { xs: 'auto', sm: 0 },
           overflow: 'hidden',
+          boxSizing: 'border-box',
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
         }}
       >
@@ -305,7 +310,7 @@ export default function GameInstanceOverviewPage() {
           </Tooltip>
         </Box>
 
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 2, minWidth: 0 }}>
           {/* Per-instance content: Left | Right */}
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="flex-start" sx={{ mb: 3 }}>
             {/* Left area: Image left, Data right */}
@@ -314,12 +319,12 @@ export default function GameInstanceOverviewPage() {
               sx={{
                 p: 2,
                 bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
-                width: 650,
+                width: { xs: '100%', md: 650 },
                 maxWidth: '100%',
                 boxSizing: 'border-box',
               }}
             >
-              <Stack direction="row" spacing={2} alignItems="stretch" sx={{ minHeight: 280 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'center', sm: 'stretch' }} sx={{ minHeight: { xs: 'auto', sm: 280 } }}>
                 <CoverWithTabs instance={instance} game={game} instances={instances} />
                 <Stack
                   direction="column"
@@ -344,14 +349,15 @@ export default function GameInstanceOverviewPage() {
             </Paper>
 
             {/* Right area: fixed width top and bottom */}
-            <Stack spacing={2} sx={{ flexShrink: 0 }}>
-              <Stack direction="row" spacing={2}>
+            <Stack spacing={2} sx={{ flexShrink: 0, width: { xs: '100%', sm: 'auto' } }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Paper
                   variant="outlined"
                   sx={{
                     p: 2,
-                    width: 250,
-                    height: 180,
+                    width: { xs: '100%', sm: 250 },
+                    height: { xs: 140, sm: 180 },
+                    minHeight: { xs: 140 },
                     boxSizing: 'border-box',
                     bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
                   }}
@@ -367,8 +373,9 @@ export default function GameInstanceOverviewPage() {
                   variant="outlined"
                   sx={{
                     p: 2,
-                    width: 250,
-                    height: 180,
+                    width: { xs: '100%', sm: 250 },
+                    height: { xs: 140, sm: 180 },
+                    minHeight: { xs: 140 },
                     boxSizing: 'border-box',
                     bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
                   }}
@@ -390,7 +397,7 @@ export default function GameInstanceOverviewPage() {
                 variant="outlined"
                 sx={{
                   p: 2,
-                  width: 500,
+                  width: { xs: '100%', sm: 500 },
                   boxSizing: 'border-box',
                   bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
                 }}
@@ -407,7 +414,7 @@ export default function GameInstanceOverviewPage() {
           </Stack>
 
           {/* Playthrough list */}
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 3, minWidth: 0 }}>
             <Typography variant="subtitle1" gutterBottom>
               Playthroughs
             </Typography>
@@ -420,7 +427,7 @@ export default function GameInstanceOverviewPage() {
           </Box>
 
           {/* Reviews */}
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 3, minWidth: 0 }}>
             <ReviewOverviewBlock
               reviews={reviews}
               gameInstanceUid={instance.uid}

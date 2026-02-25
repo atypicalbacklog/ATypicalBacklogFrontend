@@ -198,8 +198,8 @@ export default function ActivePlaythroughsPage() {
       </Stack>
 
       {/* Search old playthroughs (history) at top */}
-      <Box sx={{ mt: 2 }}>
-        <Stack direction="row" alignItems="center" spacing={1}>
+      <Box>
+        <Stack direction="row" alignItems="center" spacing={0}>
           <FormControlLabel
             control={
               <Checkbox
@@ -296,9 +296,9 @@ export default function ActivePlaythroughsPage() {
                     <Grid
                       item
                       key={`history-${row.playthroughUid}`}
-                      xs={12}
-                      sm={6}
-                      md={4}
+                      xs={6}
+                      sm={4}
+                      md={3}
                       lg={2}
                     >
                       <PlaythroughCard
@@ -324,9 +324,9 @@ export default function ActivePlaythroughsPage() {
             No active playthroughs.
           </Typography>
         ) : (
-          <Grid container spacing={2} sx={{ mt: 2 }}>
+          <Grid container spacing={2} sx={{ mt: -1 }}>
             {rows.map((row) => (
-              <Grid item key={row.playthroughUid} xs={12} sm={6} md={4} lg={2}>
+              <Grid item key={row.playthroughUid} xs={6} sm={4} md={3} lg={2}>
                 <PlaythroughCard
                   row={row}
                   playthroughTypeName={typeName(row.playthroughTypeUid)}

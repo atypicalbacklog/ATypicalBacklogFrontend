@@ -38,12 +38,15 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
   const [coverTab, setCoverTab] = useState(0);
   const selected = sources[coverTab] ?? sources[0];
 
+  const coverWidth = { xs: 120, sm: 200 };
+  const coverHeight = { xs: 168, sm: 280 };
+
   if (sources.length === 0) {
     return (
       <Box
         sx={{
-          width: 200,
-          height: 280,
+          width: coverWidth,
+          height: coverHeight,
           borderRadius: 1,
           bgcolor: 'grey.200',
           display: 'flex',
@@ -57,7 +60,7 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
           alt=""
           aspectRatio={2 / 3}
           fit="contain"
-          sx={{ width: 200, height: 280, borderRadius: 1 }}
+          sx={{ width: coverWidth, height: coverHeight, borderRadius: 1 }}
           imgSx={{ borderRadius: 1 }}
         />
       </Box>
@@ -72,7 +75,7 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
         alt="Cover"
         aspectRatio={2 / 3}
         fit="contain"
-        sx={{ width: 200, height: 280, borderRadius: 1 }}
+        sx={{ width: coverWidth, height: coverHeight, borderRadius: 1 }}
         imgSx={{ borderRadius: 1 }}
       />
     );
@@ -86,15 +89,15 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
         variant="scrollable"
         scrollButtons="auto"
         sx={{
-          minHeight: 28,
+          minHeight: { xs: 24, sm: 28 },
           mb: 0.5,
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
           borderRadius: '4px 4px 0 0',
           '& .MuiTab-root': {
             bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
-            minHeight: 28,
+            minHeight: { xs: 24, sm: 28 },
             py: 0,
-            fontSize: '0.75rem',
+            fontSize: { xs: '0.6875rem', sm: '0.75rem' },
           },
           '& .Mui-selected': {
             bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.700' : 'grey.200'),
@@ -102,7 +105,7 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
         }}
       >
         {sources.map((s, i) => (
-          <Tab key={s.id} label={s.label} id={`cover-tab-${i}`} sx={{ minHeight: 28, py: 0, fontSize: '0.75rem' }} />
+          <Tab key={s.id} label={s.label} id={`cover-tab-${i}`} sx={{ minHeight: { xs: 24, sm: 28 }, py: 0, fontSize: { xs: '0.6875rem', sm: '0.75rem' } }} />
         ))}
       </Tabs>
       <SmartImage
@@ -111,7 +114,7 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
         alt="Cover"
         aspectRatio={2 / 3}
         fit="contain"
-        sx={{ width: 200, height: 280, borderRadius: 1 }}
+        sx={{ width: coverWidth, height: coverHeight, borderRadius: 1 }}
         imgSx={{ borderRadius: 1 }}
       />
     </Box>

@@ -6,6 +6,8 @@ export interface CompletionBarProps {
   completionState: string;
   /** Already-resolved playthrough state name or null. Affects border only. */
   playthroughState: string | null;
+  /** Visual size variant; default is medium (original size). */
+  size?: 'small' | 'medium';
 }
 
 const hueRotateBorder = keyframes`
@@ -46,7 +48,11 @@ function normalize(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-export default function CompletionBar({ completionState, playthroughState }: CompletionBarProps) {
+export default function CompletionBar({
+  completionState,
+  playthroughState,
+  size = 'medium',
+}: CompletionBarProps) {
   const key = normalize(completionState);
   if (NONE_VALUES.includes(key) || key === '') return null;
 
@@ -55,6 +61,14 @@ export default function CompletionBar({ completionState, playthroughState }: Com
   const tooltipTitle = playthroughState
     ? `${completionState} | ${playthroughState}`
     : completionState;
+
+  const isSmall = size === 'small';
+  const barHeight = isSmall ? 16 : 20;
+  const barMinWidth = isSmall ? 96 : 132;
+  const containerMinWidth = isSmall ? 96 : 120;
+  const containerMaxWidth = isSmall ? 200 : 240;
+  const innerFontSize = isSmall ? '0.625rem' : '0.6875rem';
+  const iconFontSize = isSmall ? '0.875rem' : '1rem';
 
   const innerBar = (
     <Box
@@ -98,7 +112,7 @@ export default function CompletionBar({ completionState, playthroughState }: Com
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '0.6875rem',
+            fontSize: innerFontSize,
             fontWeight: 700,
             fontFamily: 'sans-serif',
             textTransform: 'uppercase',
@@ -118,10 +132,10 @@ export default function CompletionBar({ completionState, playthroughState }: Com
       <Box
         sx={{
           flex: 1,
-          minWidth: 132,
-          height: 20,
-          minHeight: 20,
-          maxHeight: 20,
+          minWidth: barMinWidth,
+          height: barHeight,
+          minHeight: barHeight,
+          maxHeight: barHeight,
           position: 'relative',
           borderRadius: 1,
           overflow: 'hidden',
@@ -145,10 +159,10 @@ export default function CompletionBar({ completionState, playthroughState }: Com
       <Box
         sx={{
           flex: 1,
-          minWidth: 132,
-          height: 20,
-          minHeight: 20,
-          maxHeight: 20,
+          minWidth: barMinWidth,
+          height: barHeight,
+          minHeight: barHeight,
+          maxHeight: barHeight,
           boxSizing: 'border-box',
           borderRadius: 1,
           border: '2px solid',
@@ -175,18 +189,22 @@ export default function CompletionBar({ completionState, playthroughState }: Com
           display: 'inline-flex',
           alignItems: 'center',
           gap: 0.5,
-          minWidth: 120,
-          maxWidth: 240,
+          minWidth: containerMinWidth,
+          maxWidth: containerMaxWidth,
         }}
       >
         {barWithBorder}
         {config.icon === 'check' && (
-          <Box component="span" sx={{ color: '#22c55e', fontSize: '1rem', lineHeight: 1 }} aria-hidden>
+          <Box
+            component="span"
+            sx={{ color: '#22c55e', fontSize: iconFontSize, lineHeight: 1 }}
+            aria-hidden
+          >
             ✓
           </Box>
         )}
         {config.icon === 'trophy' && (
-          <Box component="span" sx={{ fontSize: '1rem', lineHeight: 1 }} aria-hidden>
+          <Box component="span" sx={{ fontSize: iconFontSize, lineHeight: 1 }} aria-hidden>
             🏆
           </Box>
         )}

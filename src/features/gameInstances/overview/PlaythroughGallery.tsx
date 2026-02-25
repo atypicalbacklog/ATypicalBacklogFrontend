@@ -39,6 +39,8 @@ export default function PlaythroughGallery({
         gap: 2,
         overflowX: 'auto',
         pb: 1,
+        minWidth: 0,
+        WebkitOverflowScrolling: 'touch',
       }}
     >
       {items.map(({ playthrough, totalSeconds, dlcName, sessions }) => (

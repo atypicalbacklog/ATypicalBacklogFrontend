@@ -1,6 +1,8 @@
-import { Box, IconButton, Typography } from '@mui/material';
-import NotesIcon from '@mui/icons-material/Notes';
+import { useState } from 'react';
+import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import NotesIcon from '@mui/icons-material/Notes';
+import ListIcon from '@mui/icons-material/List';
 import SmartImage from '../shared/SmartImage';
 import type { ReviewSearchResultDto, ReviewSearchPlaythroughDto } from '../../types/dto';
 import type { EditReviewLocationState } from './EditReviewPage';
@@ -29,6 +31,12 @@ export interface TierEntryCardProps {
   onDragStart: (card: ReviewSearchResultDto | null) => void;
   onEdit?: (state: EditReviewLocationState) => void;
   isDragging?: boolean;
+  /** When true, use smaller card size (for smartphone). */
+  compact?: boolean;
+  /** Tiers for "Move to tier" menu (touch fallback when compact). */
+  tiers?: { uid: string; name: string }[];
+  /** Called when user selects a tier from the move menu (touch fallback). */
+  onMoveToTier?: (card: ReviewSearchResultDto, tierUid: string) => void;
 }
 
 export default function TierEntryCard({
@@ -37,25 +45,37 @@ export default function TierEntryCard({
   onDragStart,
   onEdit,
   isDragging,
+  compact = false,
+  tiers,
+  onMoveToTier,
 }: TierEntryCardProps) {
+  const [moveAnchor, setMoveAnchor] = useState<null | HTMLElement>(null);
+
   const types = [...new Set(card.playthroughs.map((p) => p.playthroughTypeUid).filter(Boolean))];
   const typeLabels = types.map((uid) => playthroughTypeNames(uid)).filter(Boolean).join(', ') || '—';
   const preferredForEdit = pickReviewPlaythroughForEdit(card, playthroughTypeNames);
   const hasTextReview = card.playthroughs.some((p) => p.hasTextReview);
 
+  const cardWidth = compact ? 100 : 155;
+  const imageHeight = compact ? 135 : 210;
+
   return (
     <Box
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('application/json', JSON.stringify({ card }));
-        e.dataTransfer.effectAllowed = 'move';
-        onDragStart(card);
-      }}
-      onDragEnd={() => onDragStart(null)}
+      draggable={!compact}
+      onDragStart={
+        !compact
+          ? (e) => {
+              e.dataTransfer.setData('application/json', JSON.stringify({ card }));
+              e.dataTransfer.effectAllowed = 'move';
+              onDragStart(card);
+            }
+          : undefined
+      }
+      onDragEnd={!compact ? () => onDragStart(null) : undefined}
       title={card.displayName}
       sx={{
         flexShrink: 0,
-        width: 155,
+        width: cardWidth,
         pb: 1,
         borderRadius: 1,
         overflow: 'hidden',
@@ -72,8 +92,8 @@ export default function TierEntryCard({
           borderColor: 'primary.main',
         },
         opacity: isDragging ? 0.5 : 1,
-        cursor: 'grab',
-        '&:active': { cursor: 'grabbing' },
+        cursor: compact ? 'default' : 'grab',
+        '&:active': compact ? undefined : { cursor: 'grabbing' },
         position: 'relative',
       }}
     >
@@ -83,7 +103,7 @@ export default function TierEntryCard({
         alt=""
         aspectRatio={2 / 3}
         fit="contain"
-        sx={{ width: '100%', height: 210 }}
+        sx={{ width: '100%', height: imageHeight }}
       />
       <Box sx={{ p: 1, pb: 4, textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
         <Typography variant="caption" color="text.secondary" noWrap title={typeLabels}>
@@ -138,6 +158,52 @@ export default function TierEntryCard({
           }}
         >
           <NotesIcon fontSize="small" />
+        </Box>
+      )}
+      {compact && tiers && tiers.length > 0 && onMoveToTier && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            zIndex: 1,
+          }}
+        >
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setMoveAnchor(e.currentTarget);
+            }}
+            aria-label="Move to tier"
+            sx={{
+              bgcolor: 'background.paper',
+              boxShadow: 1,
+              '&:hover': { bgcolor: 'background.paper' },
+            }}
+          >
+            <ListIcon fontSize="small" />
+          </IconButton>
+          <Menu
+            anchorEl={moveAnchor}
+            open={Boolean(moveAnchor)}
+            onClose={() => setMoveAnchor(null)}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            {tiers.map((tier) => (
+              <MenuItem
+                key={tier.uid}
+                onClick={() => {
+                  onMoveToTier(card, tier.uid);
+                  setMoveAnchor(null);
+                }}
+              >
+                {tier.name}
+              </MenuItem>
+            ))}
+          </Menu>
         </Box>
       )}
     </Box>

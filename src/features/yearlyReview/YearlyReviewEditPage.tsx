@@ -20,6 +20,8 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AddIcon from '@mui/icons-material/Add';
@@ -96,6 +98,9 @@ export default function YearlyReviewEditPage() {
   const [dragState, setDragState] = useState<{ categoryUid: string; gameUid: string } | null>(null);
   const [dragOver, setDragOver] = useState<{ categoryUid: string; insertIndex: number } | null>(null);
   const [reorderSaving, setReorderSaving] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const loadReview = useCallback(() => {
     setLoading(true);
@@ -513,6 +518,24 @@ export default function YearlyReviewEditPage() {
                     await persistReorder(category.uid, next);
                   };
 
+                  const addGameButton = (
+                    <IconButton
+                      onClick={() => openAddGame(category.uid)}
+                      aria-label="Add game"
+                      sx={{
+                        flexShrink: 0,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        '&:hover': { bgcolor: 'primary.dark' },
+                        alignSelf: 'flex-start',
+                        minWidth: 40,
+                        minHeight: 40,
+                      }}
+                    >
+                      <AddIcon />
+                    </IconButton>
+                  );
+
                   return (
                     <Box
                       onDragOver={(e) => {
@@ -525,10 +548,21 @@ export default function YearlyReviewEditPage() {
                         e.preventDefault();
                         void handleDrop(activeInsertIndex ?? gamesSorted.length);
                       }}
-                      sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                      sx={{ display: 'flex', flexDirection: 'column', gap: 2, position: 'relative' }}
                     >
-                      {rows.map((row, rowIdx) => (
-                        <Stack key={rowIdx} direction="row" spacing={2} flexWrap="wrap">
+                      {gamesSorted.length === 0 ? (
+                        <Stack direction="row" alignItems="flex-start">
+                          {addGameButton}
+                        </Stack>
+                      ) : (
+                        rows.map((row, rowIdx) => (
+                        <Stack
+                          key={rowIdx}
+                          direction="row"
+                          spacing={isMobile ? 1 : 2}
+                          flexWrap="wrap"
+                          alignItems="flex-start"
+                        >
                           {row.map((game) => {
                             const idx = globalIdx++;
                             const showBefore = isActiveCategory && activeInsertIndex === idx;
@@ -592,6 +626,7 @@ export default function YearlyReviewEditPage() {
                                 <YearlyReviewGameCard
                                   game={game}
                                   onEdit={() => openEditGame(category.uid, game)}
+                                  compact={isMobile}
                                 />
 
                                 {/* Drag handle (top-left) */}
@@ -651,15 +686,14 @@ export default function YearlyReviewEditPage() {
                               </Box>
                             );
                           })}
+                          {rowIdx === rows.length - 1 && addGameButton}
                         </Stack>
-                      ))}
+                      ))
+                      )}
                     </Box>
                   );
                 })()}
               </Stack>
-              <Button size="small" startIcon={<AddIcon />} onClick={() => openAddGame(category.uid)} sx={{ mt: 1 }}>
-                Add game
-              </Button>
               <Button
                 size="small"
                 variant="outlined"

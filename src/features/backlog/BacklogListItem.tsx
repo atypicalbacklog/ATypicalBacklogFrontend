@@ -221,22 +221,35 @@ export default function BacklogListItem({
           #{backlogCount}
         </Typography>
       )}
-      <Stack direction="row" spacing={0} alignItems="stretch">
-        {/* Left: Main segment */}
+      <Stack
+        direction="row"
+        spacing={0}
+        alignItems="stretch"
+        sx={{
+          flexDirection: { xs: 'column', sm: 'row' },
+        }}
+      >
+        {/* Left: Main segment — same layout on all breakpoints */}
         <Box
           sx={{
             flex: '1 1 0',
-            minWidth: 220,
-            maxWidth: 400,
+            minWidth: { xs: 0, sm: 220 },
+            maxWidth: { xs: 'none', sm: 400 },
             p: 1.5,
-            borderRight: 1,
+            borderRight: { xs: 0, sm: 1 },
+            borderBottom: { xs: 1, sm: 0 },
             borderColor: 'divider',
             display: 'flex',
             alignItems: 'flex-start',
           }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ width: '100%' }}>
-            {/* Score to the left of image */}
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="stretch"
+            sx={{ width: '100%' }}
+          >
+            {/* Score: right-aligned, vertically centered with image */}
             <Typography
               variant="h6"
               fontWeight={600}
@@ -258,7 +271,12 @@ export default function BacklogListItem({
               alt=""
               aspectRatio={2 / 3}
               fit="contain"
-              sx={{ width: 100, height: 133, borderRadius: 1, flexShrink: 0 }}
+              sx={{
+                width: 100,
+                height: 133,
+                borderRadius: 1,
+                flexShrink: 0,
+              }}
               imgSx={{ borderRadius: 1 }}
             />
             <Stack
@@ -308,7 +326,7 @@ export default function BacklogListItem({
         </Box>
 
         {/* Right: GameInstance segment */}
-        <Box sx={{ flex: '1 1 0', minWidth: 200, p: 1.5 }}>
+        <Box sx={{ flex: '1 1 0', minWidth: { xs: 0, sm: 200 }, p: 1.5 }}>
           {item.instances.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               No instances

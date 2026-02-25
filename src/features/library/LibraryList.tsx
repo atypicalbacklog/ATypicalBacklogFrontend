@@ -1,15 +1,20 @@
 import { Box, Button, Typography } from '@mui/material';
 import { GameOverviewRowDto } from './types';
 import LibraryListItem, { LIBRARY_CARD_WIDTH } from './LibraryListItem';
+import LibraryListItemMinimized from './LibraryListItemMinimized';
+
+export type LibraryViewMode = 'extended' | 'minimized';
 
 type Props = {
   items: GameOverviewRowDto[];
+  viewMode?: LibraryViewMode;
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
 };
 
 export default function LibraryList({
   items,
+  viewMode = 'extended',
   hasActiveFilters = false,
   onClearFilters,
 }: Props) {
@@ -30,12 +35,35 @@ export default function LibraryList({
     );
   }
 
+  if (viewMode === 'minimized') {
+    return (
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 80px))',
+          gap: 1.5,
+          justifyContent: 'start',
+        }}
+      >
+        {items.map((item) => (
+          <LibraryListItemMinimized
+            key={item.gameInstanceUid ?? `game-${item.gameUid}`}
+            item={item}
+          />
+        ))}
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: `repeat(auto-fill, minmax(${LIBRARY_CARD_WIDTH}px, ${LIBRARY_CARD_WIDTH}px))`,
-        gap: 2,
+        gridTemplateColumns: {
+          xs: 'repeat(2, 1fr)',
+          sm: `repeat(auto-fill, minmax(${LIBRARY_CARD_WIDTH}px, ${LIBRARY_CARD_WIDTH}px))`,
+        },
+        gap: 1,
         justifyContent: 'start',
       }}
     >
