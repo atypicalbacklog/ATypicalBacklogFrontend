@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
-import {
-  fetchWeeklyPlaytime,
-  type WeeklyPlaytimeDto,
-} from '../../../services/statisticsApi';
+import { fetchWeeklyPlaytime } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
 
 export interface WeeklyPlaytimeDisplay {

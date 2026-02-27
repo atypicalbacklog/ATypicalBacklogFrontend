@@ -38,41 +38,12 @@ interface Props {
   onSelectedResultChange?: (result: IgdbGameSearchResultDto | null) => void;
 }
 
-/** Platforms in release-date order, with date in brackets; fallback to releasedPlatforms list. */
-function formatPlatformsByReleaseDate(result: IgdbGameSearchResultDto): string {
-  const releaseDates = result.releaseDates?.filter(
-    (rd) => rd.platformAbbreviation != null && rd.platformAbbreviation.trim() !== ''
-  );
-  if (releaseDates && releaseDates.length > 0) {
-    const sorted = [...releaseDates].sort((a, b) => {
-      const da = a.date ?? '';
-      const db = b.date ?? '';
-      if (da && db) return da.localeCompare(db);
-      if (da) return -1;
-      if (db) return 1;
-      return 0;
-    });
-    return sorted
-      .map((rd) =>
-        rd.date
-          ? `${rd.platformAbbreviation} (${rd.date})`
-          : String(rd.platformAbbreviation)
-      )
-      .join(', ');
-  }
-  if (result.releasedPlatforms?.length) {
-    return result.releasedPlatforms.join(', ');
-  }
-  return '';
-}
-
 /**
  * External game database search component (IGDB).
  * When a game is selected, only that item is shown with options on the right; click selected again to deselect.
  */
 export default function ExternalGameSearch({
   gameName,
-  releaseDate,
   onOverwriteName,
   onOverwriteDate,
   onMarkCoverImport,
@@ -486,7 +457,7 @@ export default function ExternalGameSearch({
           }}
         >
           <Box
-            sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer', minWidth: { sm: 0 } }}
+            sx={{ flex: '1 1 auto', cursor: 'pointer', minWidth: { xs: 0, sm: 0 } }}
             onClick={() => handleResultClick(selectedResult)}
           >
             {renderResultCard(selectedResult, true)}

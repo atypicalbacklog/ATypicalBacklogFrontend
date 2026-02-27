@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
-import {
-  fetchMonthlyPlaytime,
-  type MonthlyPlaytimeDto,
-} from '../../../services/statisticsApi';
+import { fetchMonthlyPlaytime } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
 
 export interface MonthlyPlaytimeDisplay {
@@ -12,8 +9,6 @@ export interface MonthlyPlaytimeDisplay {
   totalHours: number;
   label: string; // e.g. "2023-01"
 }
-
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export function useMonthlyPlaytime(): {
   data: MonthlyPlaytimeDisplay[];

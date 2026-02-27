@@ -7,7 +7,6 @@ interface Props {
 }
 
 export default function StepSection({
-  title,
   locked = false,
   children,
 }: Props) {

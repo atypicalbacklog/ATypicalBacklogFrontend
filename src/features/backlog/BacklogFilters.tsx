@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { BacklogFilterState } from './types';
 

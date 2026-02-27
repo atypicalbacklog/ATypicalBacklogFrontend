@@ -62,8 +62,6 @@ export default function EditStagedPlaythroughGroupPage() {
     platformUid ? platforms.find((p) => p.uid === platformUid)?.name ?? platformUid : '—';
   const completionStateName = (uid: string | null) =>
     uid ? completionStates.find((c) => c.uid === uid)?.name ?? uid : '—';
-  const playthroughTypeName = (typeUid: string | null) =>
-    typeUid ? playthroughTypes.find((t) => t.uid === typeUid)?.name ?? typeUid : '—';
 
   useEffect(() => {
     if (!uid) return;

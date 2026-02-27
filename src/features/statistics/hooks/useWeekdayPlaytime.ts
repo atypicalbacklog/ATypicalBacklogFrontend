@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
-import {
-  fetchWeekdayPlaytime,
-  type WeekdayPlaytimeDto,
-} from '../../../services/statisticsApi';
+import { fetchWeekdayPlaytime } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
 
 /** weekday: 0 = Monday … 6 = Sunday (backend contract) */

@@ -29,7 +29,6 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
-import { getImageUrl } from '../../services/imageApi';
 import { ImageApi } from '../../services/imageApi';
 import { queryGameOverview } from '../../services/gameOverviewApi';
 import type { GameOverviewQueryPayload } from '../../services/gameOverviewApi';

@@ -12,8 +12,7 @@ async function bootstrap() {
   try {
     await loadAppConfig();
   } catch (error) {
-    // If app config cannot be loaded, fail fast with a simple message.
-    // This should be rare because config is deployment-time static.
+    // If app config cannot be loaded from the backend, fail fast.
     const container = document.getElementById('root');
     if (container) {
       container.innerText = 'Failed to initialize application configuration.';

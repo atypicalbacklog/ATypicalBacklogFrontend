@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
-import {
-  fetchGamePlaytimeRanking,
-  type GamePlaytimeRankingDto,
-} from '../../../services/statisticsApi';
+import { fetchGamePlaytimeRanking } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
 
 export interface GamePlaytimeDisplay {

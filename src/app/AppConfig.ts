@@ -1,3 +1,5 @@
+import { http } from '../services/httpClient';
+
 export type AppMode = 'MANAGEMENT' | 'PUBLIC';
 
 export interface AppConfig {
@@ -7,15 +9,13 @@ export interface AppConfig {
 let appConfig: AppConfig | null = null;
 
 export async function loadAppConfig(): Promise<void> {
-  const response = await fetch('/app-config', {
-    headers: { Accept: 'application/json' },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to load app config (${response.status})`);
+  try {
+    appConfig = await http<AppConfig>('/api/app-config');
+  } catch (e) {
+    throw new Error(
+      `Failed to load app config: ${e instanceof Error ? e.message : String(e)}`
+    );
   }
-
-  appConfig = (await response.json()) as AppConfig;
 }
 
 export function getAppConfig(): AppConfig {

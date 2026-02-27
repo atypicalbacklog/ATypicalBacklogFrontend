@@ -1,2 +1,5 @@
 /endpoint-contractsv2.txt
 node_modules
+node_modules/
+
+dist/

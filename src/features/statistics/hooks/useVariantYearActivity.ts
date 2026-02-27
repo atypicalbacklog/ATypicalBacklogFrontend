@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
-import {
-  fetchVariantYearActivity,
-  type VariantYearActivityDto,
-} from '../../../services/statisticsApi';
+import { fetchVariantYearActivity } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
 import { useReferenceData } from '../../../referenceData/ReferenceDataContext';
 

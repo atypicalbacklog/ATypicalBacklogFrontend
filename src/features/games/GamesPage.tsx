@@ -177,9 +177,12 @@ export default function GamesPage() {
               value={vm.platformUid ?? ''}
               onChange={(v) => {
                 if (v === undefined || v === null) return;
-                setVm({ ...vm, platformUid: typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || undefined });
+                setVm({
+                  ...vm,
+                  platformUid:
+                    typeof v === 'string' ? v : (Array.isArray(v) && v[0]) || undefined,
+                });
               }}
-              }
               required
             />
 

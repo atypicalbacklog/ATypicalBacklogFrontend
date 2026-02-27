@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { initialFetchBegin, initialFetchEnd } from '../app/initialFetchGuard';
 import { ReferenceDataPayload } from '../types/referenceData';
 import { fetchReferenceData } from '../services/referenceDataApi';
 

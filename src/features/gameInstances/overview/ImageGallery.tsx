@@ -27,7 +27,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import EditIcon from '@mui/icons-material/Edit';
 import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
-import { ImageApi, getImageUrl, type ImageMetadataDto } from '../../../services/imageApi';
+import { ImageApi, type ImageMetadataDto } from '../../../services/imageApi';
 import SmartImage from '../../shared/SmartImage';
 
 const OWNER_TYPES: Array<'GAME' | 'GAME_INSTANCE' | 'DLC'> = ['GAME', 'GAME_INSTANCE', 'DLC'];
@@ -167,7 +167,6 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
         >
           {images.map((im) => {
             const expanded = expandedUid === im.uid;
-            const thumbUrl = getImageUrl(im.uid, true);
             const editLink =
               im.gameInstanceUid != null
                 ? `/game-instances/${im.gameInstanceUid}/images/${im.uid}/edit`

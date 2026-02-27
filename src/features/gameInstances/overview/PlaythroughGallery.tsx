@@ -1,6 +1,5 @@
 import { Box, Typography } from '@mui/material';
 import type { PlaythroughQueryResultDto, TimeBookingQueryDto } from '../../../types/dto';
-import type { DlcDto } from '../../../services/dlcApi';
 import PlaythroughOverviewCard from './PlaythroughOverviewCard';
 
 export interface PlaythroughWithTime {

@@ -42,7 +42,6 @@ interface Props {
 export default function ExternalDlcSearch({
   gameInstanceExternalIgdbId,
   dlcName,
-  releaseDate,
   onOverwriteName,
   onOverwriteDate,
   onMarkCoverImport,
@@ -349,7 +348,7 @@ export default function ExternalDlcSearch({
           }}
         >
           <Box
-            sx={{ flex: '1 1 auto', minWidth: 0, cursor: 'pointer', minWidth: { sm: 200 } }}
+            sx={{ flex: '1 1 auto', cursor: 'pointer', minWidth: { sm: 200 } }}
             onClick={() => handleResultClick(selectedResult)}
           >
             {renderResultCard(selectedResult, true)}

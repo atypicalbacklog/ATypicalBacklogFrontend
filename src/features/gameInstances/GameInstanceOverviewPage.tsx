@@ -26,7 +26,6 @@ import type {
   GameInstanceDetailDTO,
   GameDTO,
   GameInstanceSummaryDto,
-  PlaythroughQueryResultDto,
   ReviewByUidDto,
 } from '../../types/dto';
 import type { DlcDto } from '../../services/dlcApi';
@@ -52,9 +51,6 @@ export default function GameInstanceOverviewPage() {
   const [game, setGame] = useState<GameDTO | null>(null);
   const [instances, setInstances] = useState<GameInstanceSummaryDto[]>([]);
   const [dlcs, setDlcs] = useState<DlcDto[]>([]);
-  const [playthroughs, setPlaythroughs] = useState<PlaythroughQueryResultDto[]>(
-    []
-  );
   const [playthroughsWithTime, setPlaythroughsWithTime] = useState<
     PlaythroughWithTime[]
   >([]);
@@ -86,7 +82,6 @@ export default function GameInstanceOverviewPage() {
       PlaythroughApi.findByGameInstance(instanceUid),
     ]);
     setDlcs(dlcList);
-    setPlaythroughs(playthroughList);
 
     const byPlaythrough = new Map<string, DlcDto>();
     dlcList.forEach((d) => {

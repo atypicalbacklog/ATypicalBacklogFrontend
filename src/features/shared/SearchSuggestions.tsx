@@ -1,4 +1,4 @@
-import { Box, List, ListItemButton, ListItemText } from '@mui/material';
+import { Box, List, ListItemButton, ListItemText, Typography } from '@mui/material';
 import SmartImage from './SmartImage';
 
 export interface SearchResultItem {
@@ -11,15 +11,34 @@ export interface SearchResultItem {
 interface Props {
   results: SearchResultItem[];
   onSelect: (item: SearchResultItem) => void;
+  /** Message to show when there are no results. If omitted, renders nothing. */
   emptyMessage?: string;
 }
 
 export default function SearchSuggestions({
   results,
   onSelect,
-  emptyMessage = 'No results',
+  emptyMessage,
 }: Props) {
-  if (results.length === 0) return null;
+  if (results.length === 0) {
+    if (!emptyMessage) return null;
+    return (
+      <Box
+        sx={{
+          mt: 1,
+          border: 1,
+          borderColor: 'divider',
+          borderRadius: 1,
+          px: 1.5,
+          py: 1,
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          {emptyMessage}
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
