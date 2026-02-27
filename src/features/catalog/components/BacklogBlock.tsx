@@ -1,5 +1,5 @@
 import { FormControlLabel, Checkbox, Stack, TextField } from '@mui/material';
-import DateField from './DateField';
+import DateField from '../../shared/DateField';
 
 interface Props {
   addToBacklog: boolean;

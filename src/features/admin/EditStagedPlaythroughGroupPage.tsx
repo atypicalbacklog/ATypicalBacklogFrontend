@@ -21,6 +21,7 @@ import {
   Typography,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { AdminImportApi } from '../../services/adminImportApi';
 import type {
@@ -66,6 +67,8 @@ export default function EditStagedPlaythroughGroupPage() {
 
   useEffect(() => {
     if (!uid) return;
+    const key = `edit-staged-playthrough-group-${uid}`;
+    if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
     AdminImportApi.getStagedPlaythroughGroup(uid)
@@ -80,7 +83,10 @@ export default function EditStagedPlaythroughGroupPage() {
         setProposedPlaythroughStateUid(d.proposedPlaythroughStateUid ?? '');
       })
       .catch(() => setError('Failed to load staged playthrough group'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [uid]);
 
   // Refetch linked staged game when stagedGameUid is set (on load or when user selects one)
@@ -89,9 +95,12 @@ export default function EditStagedPlaythroughGroupPage() {
       setLinkedStagedGame(null);
       return;
     }
+    const key = `edit-staged-playthrough-group-linked-${stagedGameUid}`;
+    if (!initialFetchBegin(key)) return;
     AdminImportApi.getStagedGame(stagedGameUid)
       .then(setLinkedStagedGame)
-      .catch(() => setLinkedStagedGame(null));
+      .catch(() => setLinkedStagedGame(null))
+      .finally(() => initialFetchEnd(key));
   }, [stagedGameUid]);
 
   // Preset proposed playthrough state when inferred year is not this year: use linked game's completion state

@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { PlaythroughApi } from '../../services/playthroughApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { BacklogApi } from '../../services/backlogApi';
@@ -69,6 +70,8 @@ export default function PlaythroughDetailPage() {
 
   useEffect(() => {
     if (!uid) return;
+    const key = `playthrough-detail-${uid}`;
+    if (!initialFetchBegin(key)) return;
     PlaythroughApi.get(uid)
       .then((p) => {
         setPlaythrough(p);
@@ -95,7 +98,10 @@ export default function PlaythroughDetailPage() {
         }
       })
       .catch(() => setError('Failed to load playthrough.'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [uid]);
 
   const refetchInstance = useCallback(() => {

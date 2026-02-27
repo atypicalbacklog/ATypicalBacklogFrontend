@@ -26,6 +26,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import EditIcon from '@mui/icons-material/Edit';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import { ImageApi, getImageUrl, type ImageMetadataDto } from '../../../services/imageApi';
 import SmartImage from '../../shared/SmartImage';
 
@@ -67,7 +68,7 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
   const loadImages = useCallback(() => {
     if (!gameUid) return;
     setLoading(true);
-    ImageApi.listByGame(gameUid)
+    return ImageApi.listByGame(gameUid)
       .then(setImages)
       .catch(() => setImages([]))
       .finally(() => setLoading(false));
@@ -78,7 +79,9 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
       setImages([]);
       return;
     }
-    loadImages();
+    const key = `image-gallery-${gameUid}`;
+    if (!initialFetchBegin(key)) return;
+    loadImages()?.finally(() => initialFetchEnd(key));
   }, [gameUid, loadImages]);
 
   useEffect(() => {

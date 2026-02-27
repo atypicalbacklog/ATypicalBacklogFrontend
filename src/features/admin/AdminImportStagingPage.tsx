@@ -17,6 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { AdminImportApi } from '../../services/adminImportApi';
 import type {
@@ -60,11 +61,16 @@ export default function AdminImportStagingPage() {
   // When Staged Games tab is selected, fetch counts by status
   useEffect(() => {
     if (tabIndex !== 0) return;
+    const key = 'admin-import-counts';
+    if (!initialFetchBegin(key)) return;
     setCountsLoading(true);
     AdminImportApi.getStagedGameCountsByStatus()
       .then(setCountsByStatus)
       .catch(() => setCountsByStatus(null))
-      .finally(() => setCountsLoading(false));
+      .finally(() => {
+        setCountsLoading(false);
+        initialFetchEnd(key);
+      });
   }, [tabIndex]);
 
   const loadStagedGames = async () => {

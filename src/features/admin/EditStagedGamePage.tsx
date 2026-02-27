@@ -32,11 +32,12 @@ import { searchGames } from '../../services/gameSearchApi';
 import type { StagedGameDetailDto, StagedResolutionStatus, UpdateStagedGameRequest } from '../../types/adminImport';
 import type { GameQueryResultDto } from '../../types/dto';
 import type { IgdbGameSearchResultDto } from '../../services/igdbApi';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { resolveVariantAndOriginalFromExternalGame } from './stagedGameResolutionUtils';
-import DateField from '../catalog/components/DateField';
-import SearchSuggestions from '../catalog/components/SearchSuggestions';
-import type { SearchResultItem } from '../catalog/components/SearchSuggestions';
-import SelectedItemChip from '../catalog/components/SelectedItemChip';
+import DateField from '../shared/DateField';
+import SearchSuggestions from '../shared/SearchSuggestions';
+import type { SearchResultItem } from '../shared/SearchSuggestions';
+import SelectedItemChip from '../shared/SelectedItemChip';
 import ExternalGameSearch from '../shared/ExternalGameSearch';
 import PlatformSelect from '../shared/PlatformSelect';
 
@@ -78,8 +79,8 @@ export default function EditStagedGamePage() {
   const [directExternalLoading, setDirectExternalLoading] = useState(false);
   const [directExternalError, setDirectExternalError] = useState<string | null>(null);
   const [directExternalSelectedActions, setDirectExternalSelectedActions] = useState<string[]>(['name']);
-  
-  const autoMatchTimeoutRef = useRef<number | null>(null);
+
+  const autoMatchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const variants = referenceData?.data?.variants ?? [];
   const completionStates = referenceData?.data?.completionStates ?? [];
@@ -90,6 +91,8 @@ export default function EditStagedGamePage() {
 
   useEffect(() => {
     if (!uid) return;
+    const key = `edit-staged-game-${uid}`;
+    if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
     AdminImportApi.getStagedGame(uid)
@@ -113,7 +116,10 @@ export default function EditStagedGamePage() {
         setMatchedOriginalConsoleUid(d.matchedOriginalConsoleUid ?? '');
       })
       .catch(() => setError('Failed to load staged game'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [uid]);
 
   useEffect(() => {

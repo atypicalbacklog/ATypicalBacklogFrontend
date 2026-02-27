@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import {
   fetchGamePlaytimeRanking,
   type GamePlaytimeRankingDto,
@@ -43,8 +44,10 @@ export function useGamePlaytimeRanking(): {
   }, [fromYear, toYear]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `game-playtime-ranking-${fromYear}-${toYear}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, fromYear, toYear]);
 
   return { data, isLoading, error };
 }

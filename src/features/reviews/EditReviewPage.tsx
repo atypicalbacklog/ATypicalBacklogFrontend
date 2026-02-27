@@ -14,9 +14,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import DateField from '../catalog/components/DateField';
+import DateField from '../shared/DateField';
 import type { ReviewByUidDto } from '../../types/dto';
 import SmartImage from '../shared/SmartImage';
 
@@ -48,6 +49,8 @@ export default function EditReviewPage() {
 
   useEffect(() => {
     if (!state?.reviewUid) return;
+    const key = `edit-review-${state.reviewUid}`;
+    if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
     ReviewsApi.getByUid(state.reviewUid)
@@ -58,7 +61,10 @@ export default function EditReviewPage() {
         setText(data.text ?? '');
       })
       .catch(() => setError('Failed to load review.'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [state?.reviewUid]);
 
   const tiers = (referenceData?.data?.tiers ?? []).slice().sort(

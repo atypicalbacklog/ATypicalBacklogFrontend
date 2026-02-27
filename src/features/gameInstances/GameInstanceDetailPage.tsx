@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { GameApi } from '../../services/gameApi';
 import { searchGames } from '../../services/gameSearchApi';
@@ -33,7 +34,7 @@ import GameForm from '../games/GameForm';
 import CompletionBar from '../shared/CompletionBar';
 import ExternalDlcSearch from '../shared/ExternalDlcSearch';
 import { IgdbApi } from '../../services/igdbApi';
-import SearchSuggestions, { type SearchResultItem } from '../catalog/components/SearchSuggestions';
+import SearchSuggestions, { type SearchResultItem } from '../shared/SearchSuggestions';
 import ImageGallery from './overview/ImageGallery';
 
 export default function GameInstanceDetailPage() {
@@ -88,6 +89,8 @@ export default function GameInstanceDetailPage() {
 
   useEffect(() => {
     if (!uid) return;
+    const key = `game-instance-detail-${uid}`;
+    if (!initialFetchBegin(key)) return;
     GameInstanceApi.get(uid)
       .then((inst) => {
         setInstance(inst);
@@ -113,7 +116,10 @@ export default function GameInstanceDetailPage() {
           .catch(() => {});
       })
       .catch(() => setError('Failed to load game instance'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [uid]);
 
   const handleUpdateInstance = (data: UpdateGameInstanceRequest) => {

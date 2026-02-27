@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { GameApi } from '../../services/gameApi';
 import { DlcApi } from '../../services/dlcApi';
@@ -146,9 +147,16 @@ export default function GameInstanceOverviewPage() {
 
   useEffect(() => {
     if (!uid) return;
+    const key = `game-instance-overview-${uid}`;
+    if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
-    loadData(uid).catch(() => setError('Failed to load game instance')).finally(() => setLoading(false));
+    loadData(uid)
+      .catch(() => setError('Failed to load game instance'))
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [uid, loadData]);
 
   if (!isLoaded) return null;

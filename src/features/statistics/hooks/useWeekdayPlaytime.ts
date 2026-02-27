@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import {
   fetchWeekdayPlaytime,
   type WeekdayPlaytimeDto,
@@ -51,8 +52,10 @@ export function useWeekdayPlaytime(): {
   }, [yearRange]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `weekday-playtime-${yearRange.join(',')}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, yearRange]);
 
   return { data, isLoading, error };
 }

@@ -17,9 +17,9 @@ import { getImageUrl } from '../../services/imageApi';
 import { searchGameOverviewForPlaythrough } from '../../services/gameOverviewApi';
 import { PlaythroughApi } from '../../services/playthroughApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
-import StepSection from '../catalog/components/StepSection';
-import DateField from '../catalog/components/DateField';
-import SelectedItemChip from '../catalog/components/SelectedItemChip';
+import StepSection from '../shared/StepSection';
+import DateField from '../shared/DateField';
+import SelectedItemChip from '../shared/SelectedItemChip';
 import type { GameOverviewRowDto } from '../library/types';
 
 /** Rows that have an instance (one row per instance), excluding DLC rows. */

@@ -15,6 +15,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { ReviewsApi } from '../../services/reviewsApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { ReviewSearchResultDto } from '../../types/dto';
@@ -71,6 +72,8 @@ export default function ManageYearTierlistPage() {
       setResults([]);
       return;
     }
+    const key = `manage-tierlist-${y.join(',')}-${includeActivePlaythroughs}`;
+    if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
     ReviewsApi.searchByYear({
@@ -79,7 +82,10 @@ export default function ManageYearTierlistPage() {
     })
       .then(setResults)
       .catch(() => setError('Failed to load review results.'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [includeCurrentYear, includeLastYear, selectedPreviousYears, includeActivePlaythroughs, years]);
 
   const unassignedCards = results.filter((c) => !cardTierUid(c));

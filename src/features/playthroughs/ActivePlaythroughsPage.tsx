@@ -18,6 +18,7 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import {
   fetchActivePlaythroughs,
   searchPlaythroughHistory,
@@ -44,10 +45,15 @@ export default function ActivePlaythroughsPage() {
   const [historyYear, setHistoryYear] = useState<string>('');
 
   useEffect(() => {
+    const key = 'active-playthroughs';
+    if (!initialFetchBegin(key)) return;
     fetchActivePlaythroughs()
       .then(setRows)
       .catch(() => setError('Failed to load active playthroughs.'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, []);
 
   const handleStart = async (playthroughUid: string) => {

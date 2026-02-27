@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import {
   fetchConsoleYearActivity,
   type ConsoleYearActivityDto,
@@ -57,8 +58,10 @@ export function useConsoleYearActivity(): {
   }, [yearRange, referenceData]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `console-year-activity-${yearRange.join(',')}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, yearRange]);
 
   return { data, isLoading, error };
 }

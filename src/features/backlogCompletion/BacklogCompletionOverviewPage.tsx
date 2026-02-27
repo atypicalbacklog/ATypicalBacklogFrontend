@@ -23,6 +23,7 @@ import {
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { fetchBacklogCompletionGameOverview, fetchGamePlayedPerYear } from '../../services/statisticsApi';
 import type {
   BacklogCompletionGameOverviewDto,
@@ -78,8 +79,10 @@ export default function BacklogCompletionOverviewPage() {
   }, [year]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `backlog-completion-overview-${year}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, year]);
 
   const addedThisYear = rows.filter((r) => isInYear(r.addedToBacklog, year));
   const removedThisYear = rows.filter((r) => isInYear(r.removedFromBacklog, year));

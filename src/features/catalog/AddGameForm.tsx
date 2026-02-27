@@ -4,10 +4,10 @@ import { GameApi } from '../../services/gameApi';
 import { BacklogApi } from '../../services/backlogApi';
 import { IgdbApi } from '../../services/igdbApi';
 import { searchGames } from '../../services/gameSearchApi';
-import StepSection from './components/StepSection';
-import DateField from './components/DateField';
+import StepSection from '../shared/StepSection';
+import DateField from '../shared/DateField';
 import BacklogBlock from './components/BacklogBlock';
-import SearchSuggestions, { type SearchResultItem } from './components/SearchSuggestions';
+import SearchSuggestions, { type SearchResultItem } from '../shared/SearchSuggestions';
 import ExternalGameSearch from '../shared/ExternalGameSearch';
 
 const today = () => new Date().toISOString().slice(0, 10);

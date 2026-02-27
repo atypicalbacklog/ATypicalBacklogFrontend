@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import { fetchYearlyActivity, type YearlyActivityDto } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
 
@@ -51,8 +52,10 @@ export function useYearlyActivityStats(): {
   }, [fromYear, toYear]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `yearly-activity-${fromYear}-${toYear}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, fromYear, toYear]);
 
   return { data, isLoading, error };
 }

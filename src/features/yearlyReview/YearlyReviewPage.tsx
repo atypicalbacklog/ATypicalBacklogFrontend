@@ -12,6 +12,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { GameApi } from '../../services/gameApi';
 import { YearlyReviewApi, type YearlyReviewDto } from '../../services/yearlyReviewApi';
 import { ReviewsApi } from '../../services/reviewsApi';
@@ -114,19 +115,14 @@ export default function YearlyReviewPage() {
           totalHours: r.totalSeconds / 3600,
         }))
         .sort((a, b) => b.totalHours - a.totalHours);
+
+      // Resolve display names for top games by gameUid only.
+      // This avoids an extra /instances call per game; we rely on GameApi.get
+      // (which is cached) for the display name.
       const topGameUids = [...new Set(sortedRanking.slice(0, 20).map((r) => r.gameUid))];
       const nameMap = new Map<string, string>();
       await Promise.all(
         topGameUids.map(async (uid) => {
-          try {
-            const instances = await GameApi.getInstances(uid);
-            if (instances.length > 0 && instances[0].name != null && instances[0].name !== '') {
-              nameMap.set(uid, instances[0].name);
-              return;
-            }
-          } catch {
-            // ignore
-          }
           try {
             const game = await GameApi.get(uid);
             nameMap.set(uid, game.name);
@@ -180,8 +176,11 @@ export default function YearlyReviewPage() {
   }, [year, referenceData]);
 
   useEffect(() => {
-    if (isLoaded) load();
-  }, [isLoaded, load]);
+    if (!isLoaded) return;
+    const key = `yearly-review-${year}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [isLoaded, load, year]);
 
   const tiers: SimpleLookupDto[] = (referenceData?.data?.tiers ?? []).slice().sort(
     (a, b) => (a.order ?? 0) - (b.order ?? 0)

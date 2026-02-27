@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { GameApi } from '../../services/gameApi';
 import { GameDTO } from '../../types/dto';
 import GameForm from './GameForm';
@@ -13,10 +14,15 @@ export default function GameDetailPage() {
 
   useEffect(() => {
     if (!uid) return;
+    const key = `game-detail-${uid}`;
+    if (!initialFetchBegin(key)) return;
     GameApi.get(uid)
       .then(setGame)
       .catch(() => setError('Failed to load game'))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        initialFetchEnd(key);
+      });
   }, [uid]);
 
   const handleUpdate = async (data: Omit<GameDTO, 'uid'>) => {

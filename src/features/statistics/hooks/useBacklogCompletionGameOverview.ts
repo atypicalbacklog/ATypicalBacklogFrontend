@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import { fetchBacklogCompletionGameOverview } from '../../../services/statisticsApi';
 import type { BacklogCompletionGameOverviewDto } from '../../../services/statisticsApi';
 import { useStatisticsFilters } from '../StatisticsFiltersContext';
@@ -32,8 +33,10 @@ export function useBacklogCompletionGameOverview(): {
   }, [yearRange]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `backlog-completion-game-overview-${yearRange.join(',')}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, yearRange]);
 
   return { data, isLoading, error };
 }

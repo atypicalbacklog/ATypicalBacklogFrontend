@@ -28,6 +28,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { getImageUrl } from '../../services/imageApi';
 import { ImageApi } from '../../services/imageApi';
 import { queryGameOverview } from '../../services/gameOverviewApi';
@@ -105,7 +106,7 @@ export default function YearlyReviewEditPage() {
   const loadReview = useCallback(() => {
     setLoading(true);
     setError(null);
-    YearlyReviewApi.getByYear(year)
+    return YearlyReviewApi.getByYear(year)
       .then((d) => {
         setData(d);
         setIntroText(d?.introText ?? '');
@@ -132,8 +133,10 @@ export default function YearlyReviewEditPage() {
   }, [data?.uid, introText, outroText]);
 
   useEffect(() => {
-    loadReview();
-  }, [loadReview]);
+    const key = `yearly-review-edit-${year}`;
+    if (!initialFetchBegin(key)) return;
+    loadReview()?.finally(() => initialFetchEnd(key));
+  }, [loadReview, year]);
 
   useEffect(() => {
     if (!gameSearchQuery.trim() || gameSearchQuery.length < 2) {

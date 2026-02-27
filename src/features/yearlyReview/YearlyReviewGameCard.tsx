@@ -52,18 +52,33 @@ export default function YearlyReviewGameCard({ game, onEdit, compact = false }: 
     const imageUid = game.preferredImageUid;
 
     if (game.gameInstanceUid) {
-      GameInstanceApi.get(game.gameInstanceUid)
-        .then((inst: GameInstanceDetailDTO) => {
-          const displayName = inst.name ?? 'Game';
-          const cover = imageUid ?? inst.coverImageUid ?? null;
-          if (inst.gameUid && !cover) {
-            return GameApi.get(inst.gameUid).then(
-              (g: GameDTO) => set({ displayName, coverImageUid: g.coverImageUid })
-            );
+      (async () => {
+        try {
+          const inst: GameInstanceDetailDTO = await GameInstanceApi.get(game.gameInstanceUid!);
+          let displayName = inst.name ?? 'Game';
+          let cover = imageUid ?? inst.coverImageUid ?? null;
+
+          // If the instance has no name, or we still don't have a cover,
+          // fall back to the base game for better metadata.
+          if (inst.gameUid && (!inst.name || !inst.name.trim() || !cover)) {
+            try {
+              const g: GameDTO = await GameApi.get(inst.gameUid);
+              if (!inst.name || !inst.name.trim()) {
+                displayName = g.name;
+              }
+              if (!cover) {
+                cover = g.coverImageUid ?? null;
+              }
+            } catch {
+              // ignore game fetch failure; keep whatever we have
+            }
           }
+
           set({ displayName, coverImageUid: cover });
-        })
-        .catch(() => set({ displayName: 'Game', coverImageUid: imageUid }));
+        } catch {
+          set({ displayName: 'Game', coverImageUid: imageUid });
+        }
+      })();
       return () => {
         cancelled = true;
       };

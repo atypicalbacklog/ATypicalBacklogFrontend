@@ -1,5 +1,5 @@
-import { Box, IconButton, Stack, Typography } from '@mui/material';
-import SmartImage from '../../shared/SmartImage';
+import { IconButton, Stack, Typography } from '@mui/material';
+import SmartImage from './SmartImage';
 
 interface Props {
   label: string;

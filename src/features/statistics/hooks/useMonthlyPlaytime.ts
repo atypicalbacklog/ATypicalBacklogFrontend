@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import {
   fetchMonthlyPlaytime,
   type MonthlyPlaytimeDto,
@@ -51,8 +52,10 @@ export function useMonthlyPlaytime(): {
   }, [yearRange]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `monthly-playtime-${yearRange.join(',')}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, yearRange]);
 
   return { data, isLoading, error };
 }

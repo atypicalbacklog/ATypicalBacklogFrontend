@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { initialFetchBegin, initialFetchEnd } from '../../../app/initialFetchGuard';
 import {
   fetchVariantYearActivity,
   type VariantYearActivityDto,
@@ -52,8 +53,10 @@ export function useVariantYearActivity(): {
   }, [yearRange, referenceData]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const key = `variant-year-activity-${yearRange.join(',')}`;
+    if (!initialFetchBegin(key)) return;
+    load().finally(() => initialFetchEnd(key));
+  }, [load, yearRange]);
 
   return { data, isLoading, error };
 }
