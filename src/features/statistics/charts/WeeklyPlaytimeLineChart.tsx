@@ -1,7 +1,7 @@
 import { LineChart } from '@mui/x-charts/LineChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { WeeklyPlaytimeDisplay } from '../hooks/useWeeklyPlaytime';
-import { getYearColor } from '../chartColors';
+import { chartMargins, getYearColor } from '../chartColors';
 
 interface Props {
   data: WeeklyPlaytimeDisplay[];
@@ -48,7 +48,7 @@ export default function WeeklyPlaytimeLineChart({ data, height = 320 }: Props) {
             ]}
             series={series}
             height={height}
-            margin={{ top: 20, right: 20, bottom: 60, left: 50 }}
+            margin={{ ...chartMargins.barVerticalWideBottom }}
             hideLegend
           />
         </Box>

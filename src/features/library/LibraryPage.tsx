@@ -1,17 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
   CircularProgress,
+  Fab,
   FormControlLabel,
   IconButton,
   Stack,
   Switch,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { LibraryFilterState } from './types';
 import { useLibraryQuery } from './useLibraryQuery';
 import LibraryFilters from './LibraryFilters';
@@ -36,11 +41,15 @@ const initialFilters: LibraryFilterState = {
 };
 
 export default function LibraryPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState(() =>
     searchParamsToFilters(searchParams, initialFilters)
   );
   const [viewMode, setViewMode] = useState<LibraryViewMode>('extended');
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const filtersContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setFilters(searchParamsToFilters(searchParams, initialFilters));
@@ -53,8 +62,32 @@ export default function LibraryPage() {
     });
   }, [filters, setSearchParams]);
 
-  const { data, isLoading, error } = useLibraryQuery(filters);
+  const { data, counts, isLoading, error } = useLibraryQuery(filters);
   const filtersApplied = hasActiveFilters(filters, initialFilters);
+  const instanceCountLabel = `${counts?.gameInstanceCount ?? 0} Instances found`;
+  const countsTooltip = counts
+    ? `Games: ${counts.gameCount}
+Game Instances: ${counts.gameInstanceCount}
+DLC: ${counts.dlcCount}`
+    : 'Counts unavailable';
+
+  useEffect(() => {
+    const el = filtersContainerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowBackToTop(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const handleBackToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <Box>
@@ -78,9 +111,36 @@ export default function LibraryPage() {
             <AddIcon />
           </IconButton>
         </Tooltip>
+        {isMobile && showBackToTop && (
+          <Tooltip title="Back to Top">
+            <IconButton
+              aria-label="Back to Top"
+              onClick={handleBackToTop}
+              size="small"
+              sx={(theme) => ({
+                ml: 'auto',
+                bgcolor: theme.palette.action.hover,
+                border: 1,
+                borderColor: 'divider',
+                position: 'fixed',
+                top: `calc(${theme.spacing(0.5)} + env(safe-area-inset-top))`,
+                right: theme.spacing(0.5),
+                p: 0.625,
+                zIndex: theme.zIndex.appBar + 2,
+                '&:hover': {
+                  bgcolor: theme.palette.action.selected,
+                },
+              })}
+            >
+              <KeyboardArrowUpIcon />
+            </IconButton>
+          </Tooltip>
+        )}
       </Stack>
 
-      <LibraryFilters value={filters} onChange={setFilters} />
+      <Box ref={filtersContainerRef}>
+        <LibraryFilters value={filters} onChange={setFilters} />
+      </Box>
 
       <FormControlLabel
         control={
@@ -99,6 +159,30 @@ export default function LibraryPage() {
             <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
               Minimized
             </Typography>
+            <Tooltip title={<Typography variant="caption" component="div" sx={{ whiteSpace: 'pre-line' }}>{countsTooltip}</Typography>}>
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  ml: 3,
+                  pl: 1.5,
+                  borderLeft: 2,
+                  borderColor: (theme) =>
+                    alpha(
+                      theme.palette.mode === 'dark'
+                        ? theme.palette.common.white
+                        : theme.palette.common.black,
+                      theme.palette.mode === 'dark' ? 0.58 : 0.38
+                    ),
+                  minHeight: 22,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {instanceCountLabel}
+                </Typography>
+              </Box>
+            </Tooltip>
           </Stack>
         }
         sx={{ mb: 0 }}
@@ -123,6 +207,29 @@ export default function LibraryPage() {
           hasActiveFilters={filtersApplied}
           onClearFilters={() => setFilters(initialFilters)}
         />
+      )}
+
+      {!isMobile && showBackToTop && (
+        <Tooltip title="Back to Top">
+          <Fab
+            color="primary"
+            variant="extended"
+            aria-label="Back to Top"
+            onClick={handleBackToTop}
+            sx={{
+              position: 'fixed',
+              left: { md: 16, lg: 24 },
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: (t) => t.zIndex.speedDial,
+            }}
+          >
+            <KeyboardArrowUpIcon />
+            <Typography variant="button" sx={{ ml: 0.75 }}>
+              Back to Top
+            </Typography>
+          </Fab>
+        </Tooltip>
       )}
     </Box>
   );

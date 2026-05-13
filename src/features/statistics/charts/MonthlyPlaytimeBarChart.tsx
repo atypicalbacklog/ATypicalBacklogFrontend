@@ -1,7 +1,13 @@
 import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { MonthlyPlaytimeDisplay } from '../hooks/useMonthlyPlaytime';
-import { getYearColor, formatPlaytimeHours, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import {
+  chartMargins,
+  contrastBarLabelSlotProps,
+  formatChartHoursOnly,
+  getYearColor,
+  MIN_BAR_LABEL_PX,
+} from '../chartColors';
 
 interface Props {
   data: MonthlyPlaytimeDisplay[];
@@ -46,10 +52,10 @@ export default function MonthlyPlaytimeBarChart({ data, height = 320 }: Props) {
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
               if (context.bar.width < MIN_BAR_LABEL_PX) return null;
-              return formatPlaytimeHours(item.value);
+              return formatChartHoursOnly(item.value);
             }}
             height={height}
-            margin={{ top: 20, right: 20, bottom: 20, left: 60 }}
+            margin={{ ...chartMargins.barHorizontal }}
             hideLegend
             slotProps={contrastBarLabelSlotProps}
           />

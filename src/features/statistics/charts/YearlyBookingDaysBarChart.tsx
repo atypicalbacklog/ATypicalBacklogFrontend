@@ -1,7 +1,12 @@
 import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { YearlyActivityDisplay } from '../hooks/useYearlyActivityStats';
-import { yearOrdinalColorMap, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import {
+  chartMargins,
+  contrastBarLabelSlotProps,
+  MIN_BAR_LABEL_PX,
+  yearOrdinalColorMap,
+} from '../chartColors';
 
 interface Props {
   data: YearlyActivityDisplay[];
@@ -36,7 +41,7 @@ export default function YearlyBookingDaysBarChart({ data, height = 320 }: Props)
               return String(item.value);
             }}
             height={height}
-            margin={{ top: 20, right: 20, bottom: 40, left: 50 }}
+            margin={{ ...chartMargins.barVertical }}
             hideLegend
             slotProps={contrastBarLabelSlotProps}
           />

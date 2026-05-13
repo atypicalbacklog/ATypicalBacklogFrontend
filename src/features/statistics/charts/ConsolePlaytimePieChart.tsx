@@ -4,6 +4,7 @@ import type { ConsoleYearDisplay } from '../hooks/useConsoleYearActivity';
 import {
   getConsoleColorByIndex,
   getContrastTextColor,
+  formatPercentChartLabel,
   MIN_PIE_ARC_LABEL_ANGLE,
 } from '../chartColors';
 
@@ -62,7 +63,7 @@ export default function ConsolePlaytimePieChart({ data, year, height = 320 }: Pr
               {
                 data: items,
                 arcLabel: (item) =>
-                  item.value > 0 ? `${Number(item.value).toFixed(2)}%` : '',
+                  item.value > 0 ? formatPercentChartLabel(Number(item.value)) : '',
                 arcLabelMinAngle: MIN_PIE_ARC_LABEL_ANGLE,
               },
             ]}

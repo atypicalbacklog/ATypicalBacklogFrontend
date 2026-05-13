@@ -1,6 +1,12 @@
 import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
-import { getVariantColor, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import {
+  chartMargins,
+  contrastBarLabelSlotProps,
+  formatPercentChartLabel,
+  getVariantColor,
+  MIN_BAR_LABEL_PX,
+} from '../chartColors';
 
 export interface ConsoleVariantPlaytimeRow {
   consoleName: string;
@@ -76,15 +82,15 @@ export default function ConsoleVariantPlaytimeStackedBarChart({
         <Box sx={{ width: '100%' }}>
           <BarChart
             xAxis={[{ scaleType: 'band', data: xAxisData }]}
-            yAxis={[{ min: 0, max: 100, valueFormatter: (v: number) => `${v}%` }]}
+            yAxis={[{ min: 0, max: 100, valueFormatter: (v: number) => formatPercentChartLabel(v) }]}
             series={series}
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
               if (context.bar.height < MIN_BAR_LABEL_PX) return null;
-              return `${Number(item.value).toFixed(2)}%`;
+              return formatPercentChartLabel(Number(item.value));
             }}
             height={height}
-            margin={{ top: 50, right: 20, bottom: 40, left: 50 }}
+            margin={{ ...chartMargins.stackedVertical }}
             slotProps={{
               ...contrastBarLabelSlotProps,
               legend: { position: { vertical: 'top', horizontal: 'center' } },

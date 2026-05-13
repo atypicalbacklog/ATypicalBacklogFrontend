@@ -15,11 +15,49 @@ export function formatPlaytimeHours(hours: number): string {
   return `${h}h:${String(m).padStart(2, '0')}m`;
 }
 
+/**
+ * Compact hours-only label for bar charts (avoids long "Xh:XXm" overflow).
+ * Whole hours → "12h"; otherwise one decimal → "12.5h".
+ */
+export function formatChartHoursOnly(hours: number): string {
+  const rounded = Math.round(hours * 10) / 10;
+  if (Number.isInteger(rounded) || Math.abs(rounded - Math.round(rounded)) < 1e-9) {
+    return `${Math.round(rounded)}h`;
+  }
+  return `${rounded.toFixed(1)}h`;
+}
+
+/** Percent for stacked charts: no decimals if whole number, else one decimal. */
+export function formatPercentChartLabel(pct: number): string {
+  const rounded = Math.round(pct * 10) / 10;
+  if (Number.isInteger(rounded) || Math.abs(rounded - Math.round(rounded)) < 1e-9) {
+    return `${Math.round(rounded)}%`;
+  }
+  return `${rounded.toFixed(1)}%`;
+}
+
 /** Minimum bar dimension (px) to show a label; avoids cramped/overlapping labels on small segments. */
 export const MIN_BAR_LABEL_PX = 18;
 
 /** Minimum pie slice angle (degrees) to show an arc label; hides labels on very small slices. */
 export const MIN_PIE_ARC_LABEL_ANGLE = 8;
+
+/**
+ * Default MUI X Charts outer margins. Extra `margin.left` widens empty space before the plot;
+ * the Y-axis already reserves space for tick labels, so keep left small.
+ */
+export const chartMargins = {
+  /** Vertical bars, numeric Y (e.g. years on X). */
+  barVertical: { top: 20, right: 20, bottom: 0, left: 0 } as const,
+  /** Vertical bars with more bottom room (angled X labels). */
+  barVerticalWideBottom: { top: 20, right: 20, bottom: 0, left: 0 } as const,
+  /** Horizontal bar layout (category labels on Y). */
+  barHorizontal: { top: 20, right: 20, bottom: 0, left: 10 } as const,
+  /** Stacked % charts, legend top, vertical bars. */
+  stackedVertical: { top: 10, right: 20, bottom: 0, left: 0 } as const,
+  /** Stacked % charts, horizontal bars (years / short labels on Y). */
+  stackedHorizontal: { top: 10, right: 20, bottom: 0, left: 0 } as const,
+} as const;
 
 /**
  * Returns a text color (#000000 or #ffffff) that contrasts with the given background color.

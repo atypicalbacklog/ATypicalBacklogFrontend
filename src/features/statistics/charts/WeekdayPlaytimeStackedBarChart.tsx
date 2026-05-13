@@ -1,7 +1,13 @@
 import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { WeekdayPlaytimeDisplay } from '../hooks/useWeekdayPlaytime';
-import { getWeekdayColor, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import {
+  chartMargins,
+  contrastBarLabelSlotProps,
+  formatPercentChartLabel,
+  getWeekdayColor,
+  MIN_BAR_LABEL_PX,
+} from '../chartColors';
 
 interface Props {
   data: WeekdayPlaytimeDisplay[];
@@ -58,15 +64,15 @@ export default function WeekdayPlaytimeStackedBarChart({ data, height = 320 }: P
           <BarChart
             layout="horizontal"
             yAxis={[{ scaleType: 'band', data: xAxisData }]}
-            xAxis={[{ min: 0, max: 100, valueFormatter: (v: number) => `${v}%` }]}
+            xAxis={[{ min: 0, max: 100, valueFormatter: (v: number) => formatPercentChartLabel(v) }]}
             series={series}
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
               if (context.bar.width < MIN_BAR_LABEL_PX) return null;
-              return `${Number(item.value).toFixed(2)}%`;
+              return formatPercentChartLabel(Number(item.value));
             }}
             height={height}
-            margin={{ top: 50, right: 20, bottom: 40, left: 60 }}
+            margin={{ ...chartMargins.stackedHorizontal }}
             slotProps={{ ...contrastBarLabelSlotProps, legend: { position: { vertical: 'top', horizontal: 'center' } } }}
           />
         </Box>

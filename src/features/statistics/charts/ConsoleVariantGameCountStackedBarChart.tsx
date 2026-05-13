@@ -1,6 +1,11 @@
 import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
-import { getVariantColor, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import {
+  chartMargins,
+  contrastBarLabelSlotProps,
+  getVariantColor,
+  MIN_BAR_LABEL_PX,
+} from '../chartColors';
 import type { ConsoleVariantPlaytimeRow } from './ConsoleVariantPlaytimeStackedBarChart';
 
 interface Props {
@@ -77,7 +82,7 @@ export default function ConsoleVariantGameCountStackedBarChart({
               return String(item.value);
             }}
             height={height}
-            margin={{ top: 50, right: 20, bottom: 40, left: 50 }}
+            margin={{ ...chartMargins.stackedVertical }}
             slotProps={{
               ...contrastBarLabelSlotProps,
               legend: { position: { vertical: 'top', horizontal: 'center' } },

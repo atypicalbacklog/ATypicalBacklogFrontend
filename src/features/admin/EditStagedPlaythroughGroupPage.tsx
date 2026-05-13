@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
@@ -27,14 +27,16 @@ import { AdminImportApi } from '../../services/adminImportApi';
 import type {
   StagedGameDetailDto,
   StagedPlaythroughGroupDetailDto,
+  StagedPlaythroughGroupInDetailDto,
+  StagedPlaythroughGroupSummaryDto,
   UpdateStagedPlaythroughGroupRequest,
 } from '../../types/adminImport';
-import type { StagedPlaythroughGroupInDetailDto } from '../../types/adminImport';
 
 export default function EditStagedPlaythroughGroupPage() {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
   const { referenceData } = useReferenceData();
+  const initialUnmappedRef = useRef<boolean | null>(null);
   const [detail, setDetail] = useState<StagedPlaythroughGroupDetailDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +71,14 @@ export default function EditStagedPlaythroughGroupPage() {
     if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
+    setSaveSuccess(false);
+    setSearchResults([]);
     AdminImportApi.getStagedPlaythroughGroup(uid)
       .then((d) => {
         setDetail(d);
+        if (initialUnmappedRef.current === null) {
+          initialUnmappedRef.current = d.stagedGameUid == null;
+        }
         const displayName = d.importedPlaythroughName ?? d.importedName ?? '';
         setName(displayName);
         setStagedGameUid(d.stagedGameUid ?? null);
@@ -182,13 +189,53 @@ export default function EditStagedPlaythroughGroupPage() {
   }
 
   const handleNext = async () => {
-    const list = await AdminImportApi.listStagedPlaythroughGroups(true);
-    const idx = list.findIndex((g) => g.uid === uid);
-    if (idx >= 0 && idx < list.length - 1) {
-      navigate(`/admin/import/staged-playthrough-groups/${list[idx + 1].uid}`);
-    } else {
-      navigate('/admin/import/staging');
+    // Clear any previous UI state when moving to another item
+    setSaveSuccess(false);
+    setSearchResults([]);
+    setSearchQuery('');
+
+    const currentUid = uid ?? null;
+    const initialUnmapped =
+      initialUnmappedRef.current ?? (detail ? detail.stagedGameUid == null : true);
+
+    const navigateFromList = (list: StagedPlaythroughGroupSummaryDto[] | null | undefined) => {
+      if (!list || list.length === 0) {
+        return false;
+      }
+
+      const idx = currentUid ? list.findIndex((g) => g.uid === currentUid) : -1;
+
+      // Prefer the next item after the current one if possible
+      if (idx >= 0 && idx < list.length - 1) {
+        navigate(`/admin/import/staged-playthrough-groups/${list[idx + 1].uid}`);
+        return true;
+      }
+
+      // Otherwise, pick the first different item in the list
+      const candidates = list.filter((g) => g.uid !== currentUid);
+      if (candidates.length > 0) {
+        navigate(`/admin/import/staged-playthrough-groups/${candidates[0].uid}`);
+        return true;
+      }
+
+      return false;
+    };
+
+    // First, try within the same "bucket" (unmapped vs mapped) the user started from
+    const primaryList = await AdminImportApi.listStagedPlaythroughGroups(initialUnmapped);
+    if (navigateFromList(primaryList)) {
+      return;
     }
+
+    // If nothing else is available there, fall back to the opposite bucket so "Next"
+    // still progresses through remaining staged groups.
+    const secondaryList = await AdminImportApi.listStagedPlaythroughGroups(!initialUnmapped);
+    if (navigateFromList(secondaryList)) {
+      return;
+    }
+
+    // No more staged groups anywhere – go back to staging overview.
+    navigate('/admin/import/staging');
   };
 
   if (!uid) return <Typography color="error">Missing UID</Typography>;
@@ -228,7 +275,7 @@ export default function EditStagedPlaythroughGroupPage() {
         </Alert>
       )}
 
-      <Stack direction="row" spacing={3} alignItems="flex-start">
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="flex-start">
         <Box sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: 720 }}>
           <Stack spacing={3}>
             <Stack spacing={2}>
@@ -323,6 +370,73 @@ export default function EditStagedPlaythroughGroupPage() {
               )}
             </Stack>
 
+            {/* On small screens, show linked staged game above "Other metadata" instead of in a side column */}
+            {linkedStagedGame && (
+              <Box
+                sx={{
+                  display: { xs: 'block', md: 'none' },
+                  mt: 1,
+                }}
+              >
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Linked staged game
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+                    <Typography variant="body2" fontWeight="medium" gutterBottom>
+                      {linkedStagedGame.proposedName || linkedStagedGame.uid}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Platform: {platformName(linkedStagedGame.proposedPlatformUid)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Release: {linkedStagedGame.proposedReleaseDate ?? '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Received: {linkedStagedGame.proposedReceivedDate ?? '—'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Backlog: {linkedStagedGame.backlogStartDate ?? '—'} –{' '}
+                      {linkedStagedGame.backlogEndDate ?? '—'}
+                      {linkedStagedGame.backlogReason ? ` · ${linkedStagedGame.backlogReason}` : ''}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Completion: {completionStateName(linkedStagedGame.proposedCompletionStateUid)}
+                    </Typography>
+                    {linkedStagedGame.playthroughGroups &&
+                      linkedStagedGame.playthroughGroups.length > 0 && (
+                        <Box sx={{ mt: 1 }}>
+                          <Typography
+                            variant="caption"
+                            fontWeight="medium"
+                            display="block"
+                            gutterBottom
+                          >
+                            Linked groups (by year desc):
+                          </Typography>
+                          <Stack spacing={0.5}>
+                            {linkedGroupsDesc(linkedStagedGame.playthroughGroups).map((pg) => (
+                              <Typography
+                                key={pg.uid}
+                                variant="caption"
+                                color="text.secondary"
+                                display="block"
+                              >
+                                {pg.importedName ?? pg.uid} ({pg.inferredYear ?? '?'})
+                              </Typography>
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+                    <Button size="small" sx={{ mt: 2 }} onClick={() => setStagedGameUid(null)}>
+                      Unlink
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Box>
+            )}
+
             <Stack spacing={2}>
               <Typography variant="subtitle2" color="text.secondary">
                 Other metadata
@@ -392,7 +506,16 @@ export default function EditStagedPlaythroughGroupPage() {
         </Box>
 
         {linkedStagedGame && (
-          <Box sx={{ flexShrink: 0, width: 320, ml: 3, position: 'relative', zIndex: 0 }}>
+          <Box
+            sx={{
+              flexShrink: 0,
+              width: 320,
+              ml: 3,
+              position: 'relative',
+              zIndex: 0,
+              display: { xs: 'none', md: 'block' },
+            }}
+          >
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>

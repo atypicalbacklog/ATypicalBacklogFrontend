@@ -3,16 +3,38 @@ import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { GamePlaytimeDisplay } from '../hooks/useGamePlaytimeRanking';
 import { formatPlaytimeHours, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
 
+/** Max bars shown; exported so callers (e.g. yearly review) resolve names for the same slice. */
+export const GAME_PLAYTIME_RANKING_MAX_BARS = 30;
+
+/** Default cap on rows shown (was 15). */
+const DEFAULT_MAX_BARS = GAME_PLAYTIME_RANKING_MAX_BARS;
+/** Target pixels per bar row (horizontal layout); scales chart with bar count. */
+const DEFAULT_HEIGHT_PER_BAR = 30;
+/** BarChart top+bottom margin (see margin below). */
+const CHART_VERTICAL_MARGIN = 40;
+const DEFAULT_MIN_CHART_HEIGHT = 260;
+const DEFAULT_MAX_CHART_HEIGHT = 960;
+
 interface Props {
   data: GamePlaytimeDisplay[];
   maxBars?: number;
+  /**
+   * Fixed chart height (px). When omitted, height is derived from how many bars are shown
+   * (clamped between minChartHeight and maxChartHeight).
+   */
   height?: number;
+  minChartHeight?: number;
+  maxChartHeight?: number;
+  heightPerBar?: number;
 }
 
 export default function GamePlaytimeRankingBarChart({
   data,
-  maxBars = 15,
-  height = 400,
+  maxBars = DEFAULT_MAX_BARS,
+  height: heightProp,
+  minChartHeight = DEFAULT_MIN_CHART_HEIGHT,
+  maxChartHeight = DEFAULT_MAX_CHART_HEIGHT,
+  heightPerBar = DEFAULT_HEIGHT_PER_BAR,
 }: Props) {
   if (data.length === 0) {
     return (
@@ -35,8 +57,17 @@ export default function GamePlaytimeRankingBarChart({
   }
 
   const slice = data.slice(0, maxBars);
+  const barCount = slice.length;
   const yAxisData = slice.map((d) => formatAxisLabel(d.gameName));
   const seriesData = slice.map((d) => Math.round(d.totalHours * 10) / 10);
+
+  const chartHeight =
+    heightProp ??
+    Math.min(
+      maxChartHeight,
+      Math.max(minChartHeight, CHART_VERTICAL_MARGIN + barCount * heightPerBar)
+    );
+
   return (
     <Card variant="outlined">
       <CardContent>
@@ -72,8 +103,8 @@ export default function GamePlaytimeRankingBarChart({
                 },
               },
             ]}
-            height={height}
-            margin={{ top: 20, right: 20, bottom: 20, left: -100 }}
+            height={chartHeight}
+            margin={{ top: 20, right: 20, bottom: 20, left: -90 }}
             hideLegend
             slotProps={contrastBarLabelSlotProps}
           />

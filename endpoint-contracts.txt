@@ -1,9 +1,28 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 30
+Version: 31
 Base URL: http://localhost:8080
 API Prefix: /api
+
+================================================================================
+0. APP CONFIG
+================================================================================
+Base Path: /api/app-config
+
+--------------------------------------------------------------------------------
+0.1 Get App Config
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/app-config
+
+Response: 200 OK
+{
+  "mode": "MANAGEMENT" | "PUBLIC"
+}
+
+Notes:
+- Value is from application.yml (app.mode). Allowed values: MANAGEMENT, PUBLIC. Default (if unset or invalid): PUBLIC.
 
 ================================================================================
 1. GAME ENDPOINTS
@@ -386,7 +405,16 @@ Request Body:
   "playthroughTypeUids": [ "string" ] | null,   // optional; filter by playthrough type UIDs
   "includeDlc": true | false | null,       // optional; when true, include DLC as own records
   "onlyGamesWithDlc": true | false | null, // optional; when true, only games that have DLC
-  "sortMode": "NAME_ASC" | "NAME_DESC" | "PLAYTIME_DESC" | "LAST_PLAYED_DESC" | "NEWEST_CREATED" | "RELEASE_DATE"
+  "sortMode": "NAME_ASC" | "NAME_DESC" | "PLAYTIME_DESC" | "LAST_PLAYED_DESC" | "NEWEST_CREATED" | "RELEASE_DATE",
+
+  "pageSize": 1..500 | null,               // optional; limits returned rows (keyset page size)
+  "cursorGameName": "string" | null,       // optional keyset cursor for NAME_ASC
+  "cursorInstanceName": "string" | null,   // optional keyset cursor for NAME_ASC
+  "cursorDlcName": "string" | null,        // optional keyset cursor for NAME_ASC
+  "cursorGameUid": "string" | null,        // optional keyset cursor for NAME_ASC
+  "cursorGameInstanceUid": "string" | null,// optional keyset cursor for NAME_ASC
+  "cursorDlcUid": "string" | null,         // optional keyset cursor for NAME_ASC
+  "cursorIsDlc": true | false | null       // optional keyset cursor for NAME_ASC
 }
 
 SortMode enum:
@@ -398,45 +426,52 @@ SortMode enum:
 - RELEASE_DATE        // sort by release date (instance if set, else game) descending
 
 Response: 200 OK
-Array of GameOverviewRowDto (each row is either an instance or a DLC):
-[
-  {
-    "isDlc": true | false,                 // true = DLC row, false = instance row
+{
+  "rows": [
+    {
+      "isDlc": true | false,                 // true = DLC row, false = instance row
 
-    "gameUid": "string",
-    "gameInstanceUid": "string" | null,    // null if no instance exists
-    "dlcUid": "string" | null,             // non-null when isDlc is true
-    "hasInstance": true | false,
+      "gameUid": "string",
+      "gameInstanceUid": "string" | null,    // null if no instance exists
+      "dlcUid": "string" | null,             // non-null when isDlc is true
+      "hasInstance": true | false,
 
-    "gameName": "string",
-    "gameReleaseDate": "YYYY-MM-DD" | null,
+      "gameName": "string",
+      "gameReleaseDate": "YYYY-MM-DD" | null,
 
-    "instanceName": "string" | null,
-    "instanceReleaseDate": "YYYY-MM-DD" | null,
-    "instanceReceivedDate": "YYYY-MM-DD" | null,
-    "inPossession": true | false,
+      "instanceName": "string" | null,
+      "instanceReleaseDate": "YYYY-MM-DD" | null,
+      "instanceReceivedDate": "YYYY-MM-DD" | null,
+      "inPossession": true | false,
 
-    "platformUid": "string" | null,
-    "platformName": "string" | null,
-    "variantUid": "string" | null,
-    "variantName": "string" | null,
+      "platformUid": "string" | null,
+      "platformName": "string" | null,
+      "variantUid": "string" | null,
+      "variantName": "string" | null,
 
-    "gameCoverImageUid": "string" | null,      // game-level cover (owner_type GAME)
-    "instanceCoverImageUid": "string" | null,  // game instance cover (owner_type GAME_INSTANCE)
-    "dlcCoverImageUid": "string" | null,       // DLC cover (owner_type DLC); non-null only when isDlc and DLC has cover
+      "gameCoverImageUid": "string" | null,      // game-level cover (owner_type GAME)
+      "instanceCoverImageUid": "string" | null,  // game instance cover (owner_type GAME_INSTANCE)
+      "dlcCoverImageUid": "string" | null,       // DLC cover (owner_type DLC); non-null only when isDlc and DLC has cover
 
-    "dlcName": "string" | null,            // non-null when isDlc is true
-    "dlcReleaseDate": "YYYY-MM-DD" | null,    // non-null when isDlc is true
+      "dlcName": "string" | null,            // non-null when isDlc is true
+      "dlcReleaseDate": "YYYY-MM-DD" | null,    // non-null when isDlc is true
 
-    "inBacklog": true | false,
-    "hasActivePlaythrough": true | false | null,  // null when DLC not linked to playthrough
-    "completionStateUid": "string" | null,
+      "inBacklog": true | false,
+      "hasActivePlaythrough": true | false | null,  // null when DLC not linked to playthrough
+      "completionStateUid": "string" | null,
 
-    "totalPlaytimeSeconds": 0 | null,      // null when DLC not linked to playthrough
+      "totalPlaytimeSeconds": 0 | null,      // null when DLC not linked to playthrough
 
-    "hasDlc": true | false                 // instance has at least one DLC
-  }
-]
+      "hasDlc": true | false                 // instance has at least one DLC
+    }
+  ],
+  "gameCount": 0,                            // total distinct games for full filtered query (before pagination)
+  "gameInstanceCount": 0,                    // total distinct game instances for full filtered query (before pagination)
+  "dlcCount": 0,                             // total DLC rows for full filtered query (before pagination)
+  "returnedGameCount": 0,                    // distinct games in this page
+  "returnedGameInstanceCount": 0,            // distinct game instances in this page
+  "returnedDlcCount": 0                      // DLC rows in this page
+}
 
 Notes:
 - DLC rows (isDlc=true) have playthrough/completion data from the DLC's linked playthrough;
@@ -444,6 +479,7 @@ Notes:
 - Instance rows (isDlc=false) always have playthrough/completion data from instance
 - Covers are separate: gameCoverImageUid (game), instanceCoverImageUid (instance), dlcCoverImageUid (DLC when isDlc). Client may choose which to display (e.g. prefer dlcCoverImageUid when isDlc, else instanceCoverImageUid, else gameCoverImageUid).
 - searchText filters on game name, instance name, and (for DLC rows) DLC name
+- Keyset pagination is optional and currently supported for sortMode=NAME_ASC.
 
 ================================================================================
 6. PLAYTHROUGH ENDPOINTS
@@ -1116,7 +1152,7 @@ Content-Type: application/json
 Path Parameters:
 - uid (string): Unique identifier of the image
 
-Request Body (all fields optional; only non-null applied; source, filename, mimetype are not updatable):
+Request Body (all fields optional; source, filename, mimetype are not updatable):
 {
   "ownerType": "GAME" | "GAME_INSTANCE" | "DLC",
   "gameUid": "string" | null,
@@ -1126,6 +1162,12 @@ Request Body (all fields optional; only non-null applied; source, filename, mime
   "aspectHint": "VERTICAL" | "HORIZONTAL" | "SQUARE" | "FREE",
   "primaryImage": true | false
 }
+
+Notes:
+- For `gameUid`, `gameInstanceUid`, and `dlcUid`:
+  - field omitted => value is unchanged
+  - field set to a string => value is updated
+  - field set to `null` => value is cleared (set to null)
 
 Response: 200 OK
 (no body)
@@ -2033,5 +2075,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-25  |  Document version: 30
+Generated: 2026-02-27  |  Document version: 31
 ================================================================================

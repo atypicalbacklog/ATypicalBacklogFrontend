@@ -44,6 +44,11 @@ export default function EditImagePage() {
   const [gameUid, setGameUid] = useState('');
   const [gameInstanceUid, setGameInstanceUid] = useState('');
   const [dlcUid, setDlcUid] = useState('');
+  const [initialLinks, setInitialLinks] = useState<{
+    gameUid: string | null;
+    gameInstanceUid: string | null;
+    dlcUid: string | null;
+  } | null>(null);
   const [type, setType] = useState<ImageMetadataDto['type']>('COVER');
   const [aspectHint, setAspectHint] = useState<ImageMetadataDto['aspectHint']>('VERTICAL');
   const [primaryImage, setPrimaryImage] = useState(false);
@@ -64,11 +69,17 @@ export default function EditImagePage() {
         setGameUid(found.gameUid ?? '');
         setGameInstanceUid(found.gameInstanceUid ?? '');
         setDlcUid(found.dlcUid ?? '');
+        setInitialLinks({
+          gameUid: found.gameUid ?? null,
+          gameInstanceUid: found.gameInstanceUid ?? null,
+          dlcUid: found.dlcUid ?? null,
+        });
         setType(found.type);
         setAspectHint(found.aspectHint);
         setPrimaryImage(found.primaryImage);
       } else if (instanceUid) {
         setGameInstanceUid(instanceUid);
+        setInitialLinks(null);
       }
     };
 
@@ -98,27 +109,46 @@ export default function EditImagePage() {
     setSaving(true);
     setError(null);
     try {
+      const gameUidTrimmed = gameUid.trim();
+      const gameInstanceUidTrimmed = gameInstanceUid.trim();
+      const dlcUidTrimmed = dlcUid.trim();
+
       const data: UpdateImageMetadataRequest = {
         ownerType,
-        gameUid: gameUid.trim() || null,
-        gameInstanceUid: gameInstanceUid.trim() || null,
-        dlcUid: dlcUid.trim() || null,
         type,
         aspectHint,
         primaryImage,
       };
+
+      if (gameUidTrimmed) data.gameUid = gameUidTrimmed;
+      else if (initialLinks?.gameUid) data.gameUid = null;
+
+      if (gameInstanceUidTrimmed) data.gameInstanceUid = gameInstanceUidTrimmed;
+      else if (initialLinks?.gameInstanceUid) data.gameInstanceUid = null;
+
+      if (dlcUidTrimmed) data.dlcUid = dlcUidTrimmed;
+      else if (initialLinks?.dlcUid) data.dlcUid = null;
+
       await ImageApi.updateMetadata(imageUid, data);
       setMetadata((prev) =>
         prev
           ? {
               ...prev,
               ...data,
-              gameUid: data.gameUid ?? null,
-              gameInstanceUid: data.gameInstanceUid ?? null,
-              dlcUid: data.dlcUid ?? null,
+              gameUid: data.gameUid !== undefined ? data.gameUid : prev.gameUid,
+              gameInstanceUid: data.gameInstanceUid !== undefined ? data.gameInstanceUid : prev.gameInstanceUid,
+              dlcUid: data.dlcUid !== undefined ? data.dlcUid : prev.dlcUid,
             }
           : null
       );
+      setInitialLinks((prev) => ({
+        gameUid: data.gameUid !== undefined ? data.gameUid : (prev?.gameUid ?? null),
+        gameInstanceUid:
+          data.gameInstanceUid !== undefined
+            ? data.gameInstanceUid
+            : (prev?.gameInstanceUid ?? null),
+        dlcUid: data.dlcUid !== undefined ? data.dlcUid : (prev?.dlcUid ?? null),
+      }));
     } catch {
       setError('Failed to update image metadata.');
     } finally {

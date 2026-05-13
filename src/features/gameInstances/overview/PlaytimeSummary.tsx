@@ -1,6 +1,7 @@
 import { Box, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { formatPlaytime } from '../../library/formatPlaytime';
 import CompletionBar from '../../shared/CompletionBar';
+import DateWithIcon from '../../shared/DateWithIcon';
 import type { GameCompletionDTO } from '../../../types/dto';
 
 interface Props {
@@ -22,6 +23,8 @@ export default function PlaytimeSummary({
   const completionState = main[0]
     ? completionStateName(main[0].completionStateUid)
     : 'Backlog';
+  const finishedDate = main[0]?.finishedDate ?? null;
+  const completedDate = main[0]?.completedDate ?? null;
 
   return (
     <Box
@@ -52,7 +55,23 @@ export default function PlaytimeSummary({
           {formatPlaytime(totalSeconds)}
         </Typography>
       </Box>
-      <Box sx={{ mt: 'auto', alignSelf: 'flex-start' }}>
+      <Box sx={{ mt: 'auto', alignSelf: 'stretch', width: '100%' }}>
+        {(finishedDate || completedDate) && (
+          <Box sx={{ mb: 0.5, display: 'flex', alignItems: 'center', width: '100%' }}>
+            {finishedDate && (
+              <DateWithIcon date={finishedDate} tooltip="Finished Date" variant="caption" iconSize={14} />
+            )}
+            {completedDate && (
+              <DateWithIcon
+                date={completedDate}
+                tooltip="Completed Date"
+                variant="caption"
+                iconSize={14}
+                sx={{ ml: 'auto' }}
+              />
+            )}
+          </Box>
+        )}
         <CompletionBar
           completionState={completionState}
           playthroughState={playthroughState}

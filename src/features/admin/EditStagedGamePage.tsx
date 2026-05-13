@@ -29,7 +29,12 @@ import { AdminImportApi } from '../../services/adminImportApi';
 import { GameApi } from '../../services/gameApi';
 import { IgdbApi } from '../../services/igdbApi';
 import { searchGames } from '../../services/gameSearchApi';
-import type { StagedGameDetailDto, StagedResolutionStatus, UpdateStagedGameRequest } from '../../types/adminImport';
+import type {
+  StagedGameDetailDto,
+  StagedGameSummaryDto,
+  StagedResolutionStatus,
+  UpdateStagedGameRequest,
+} from '../../types/adminImport';
 import type { GameQueryResultDto } from '../../types/dto';
 import type { IgdbGameSearchResultDto } from '../../services/igdbApi';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
@@ -80,8 +85,6 @@ export default function EditStagedGamePage() {
   const [directExternalError, setDirectExternalError] = useState<string | null>(null);
   const [directExternalSelectedActions, setDirectExternalSelectedActions] = useState<string[]>(['name']);
 
-  const autoMatchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const variants = referenceData?.data?.variants ?? [];
   const completionStates = referenceData?.data?.completionStates ?? [];
   const playthroughTypes = referenceData?.data?.playthroughTypes ?? [];
@@ -95,6 +98,7 @@ export default function EditStagedGamePage() {
     if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
+    setSaveSuccess(false);
     AdminImportApi.getStagedGame(uid)
       .then((d) => {
         setDetail(d);
@@ -162,76 +166,6 @@ export default function EditStagedGamePage() {
       )
       .catch(() => {});
   }, [detail?.matchedGameUid, selectedInternalGame?.gameUid]);
-
-  // Auto-match internal game when name changes (debounced)
-  useEffect(() => {
-    if (!proposedName.trim() || proposedName.length < 2 || matchedGameUid) {
-      return;
-    }
-    if (autoMatchTimeoutRef.current) {
-      clearTimeout(autoMatchTimeoutRef.current);
-    }
-    autoMatchTimeoutRef.current = setTimeout(() => {
-      searchGames(proposedName)
-        .then((results) => {
-          // Auto-match if exactly one result and name matches closely
-          if (results.length === 1) {
-            const match = results[0];
-            const normalizedName = proposedName.trim().toLowerCase();
-            const normalizedMatch = match.name.toLowerCase();
-            // Match if names are very similar (exact match or one contains the other)
-            if (
-              normalizedName === normalizedMatch ||
-              normalizedName.includes(normalizedMatch) ||
-              normalizedMatch.includes(normalizedName)
-            ) {
-              setMatchedGameUid(match.gameUid);
-              setSelectedInternalGame({
-                gameUid: match.gameUid,
-                name: match.name,
-                releaseDate: match.releaseDate,
-                coverImageUid: match.coverImageUid,
-              });
-            }
-          }
-        })
-        .catch(() => {});
-    }, 800);
-    return () => {
-      if (autoMatchTimeoutRef.current) {
-        clearTimeout(autoMatchTimeoutRef.current);
-      }
-    };
-  }, [proposedName, matchedGameUid]);
-
-  // Auto-match internal game when external game is selected
-  useEffect(() => {
-    if (!selectedExternalGame || matchedGameUid) return;
-    const externalName = selectedExternalGame.name.trim();
-    if (!externalName || externalName.length < 2) return;
-    searchGames(externalName)
-      .then((results) => {
-        if (results.length === 1) {
-          const match = results[0];
-          const normalizedExternal = externalName.toLowerCase();
-          const normalizedMatch = match.name.toLowerCase();
-          if (
-            normalizedExternal === normalizedMatch ||
-            normalizedExternal.includes(normalizedMatch) ||
-            normalizedMatch.includes(normalizedExternal)
-          ) {
-            setMatchedGameUid(match.gameUid);
-            setSelectedInternalGame({
-              gameUid: match.gameUid,
-              name: match.name,
-              releaseDate: match.releaseDate,
-              coverImageUid: match.coverImageUid,
-            });
-          }
-        }
-      })
-      .catch(() => {});
-  }, [selectedExternalGame, matchedGameUid]);
 
   const handleSelectInternalGame = (item: SearchResultItem) => {
     setMatchedGameUid(item.id);
@@ -405,14 +339,51 @@ export default function EditStagedGamePage() {
     stateUid ? playthroughStates.find((s) => s.uid === stateUid)?.name ?? stateUid : '—';
 
   const handleNext = async () => {
+    // Clear any previous success message when moving to another item
+    setSaveSuccess(false);
+
     const status = initialResolutionStatusRef.current ?? undefined;
-    const list = await AdminImportApi.listStagedGames(status);
-    const idx = list.findIndex((g) => g.uid === uid);
-    if (idx >= 0 && idx < list.length - 1) {
-      navigate(`/admin/import/staged-games/${list[idx + 1].uid}`);
-    } else {
-      navigate('/admin/import/staging');
+    const currentUid = uid ?? null;
+
+    const navigateFromList = (list: StagedGameSummaryDto[] | null | undefined) => {
+      if (!list || list.length === 0) {
+        return false;
+      }
+
+      const idx = currentUid ? list.findIndex((g) => g.uid === currentUid) : -1;
+
+      // Prefer the next item after the current one if possible
+      if (idx >= 0 && idx < list.length - 1) {
+        navigate(`/admin/import/staged-games/${list[idx + 1].uid}`);
+        return true;
+      }
+
+      // Otherwise, pick the first different item in the list
+      const candidates = list.filter((g) => g.uid !== currentUid);
+      if (candidates.length > 0) {
+        navigate(`/admin/import/staged-games/${candidates[0].uid}`);
+        return true;
+      }
+
+      return false;
+    };
+
+    // First, try within the same status bucket the user started from
+    const primaryList = await AdminImportApi.listStagedGames(status);
+    if (navigateFromList(primaryList)) {
+      return;
     }
+
+    // If we had a specific status and there's nothing else there, fall back to all statuses
+    if (status) {
+      const allList = await AdminImportApi.listStagedGames(undefined);
+      if (navigateFromList(allList)) {
+        return;
+      }
+    }
+
+    // No more staged games – go back to staging overview.
+    navigate('/admin/import/staging');
   };
 
   if (!uid) return <Typography color="error">Missing UID</Typography>;
@@ -447,7 +418,7 @@ export default function EditStagedGamePage() {
         </Alert>
       )}
 
-      <Stack direction="row" spacing={3} alignItems="flex-start">
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="flex-start">
         <Box sx={{ flex: '1 1 auto', minWidth: 0, maxWidth: 720 }}>
           <Stack spacing={3}>
         <Stack spacing={2}>
@@ -692,6 +663,88 @@ export default function EditStagedGamePage() {
           </FormControl>
         </Stack>
 
+        {/* On small screens, show external game details above "Variant & platform" instead of in a side column */}
+        {confirmedExternalGame && (
+          <Box
+            sx={{
+              display: { xs: 'block', md: 'none' },
+              mt: 2,
+            }}
+          >
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  External Game Details
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                {confirmedExternalGame.coverImageUrl && (
+                  <Box
+                    component="img"
+                    src={confirmedExternalGame.coverImageUrl}
+                    alt=""
+                    sx={{
+                      width: '100%',
+                      maxHeight: 200,
+                      objectFit: 'contain',
+                      borderRadius: 1,
+                      mb: 2,
+                    }}
+                  />
+                )}
+                <Typography variant="body2" fontWeight="medium" gutterBottom>
+                  {confirmedExternalGame.name}
+                </Typography>
+                {confirmedExternalGame.releaseDate && (
+                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                    Release: {confirmedExternalGame.releaseDate}
+                  </Typography>
+                )}
+                {confirmedExternalGame.category && (
+                  <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                    Category: {confirmedExternalGame.category}
+                  </Typography>
+                )}
+                {confirmedExternalGame.releaseDates && confirmedExternalGame.releaseDates.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="caption" fontWeight="medium" display="block" gutterBottom>
+                      Platforms:
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {confirmedExternalGame.releaseDates
+                        .filter((rd) => rd.platformAbbreviation != null && rd.platformAbbreviation.trim() !== '')
+                        .sort((a, b) => {
+                          const da = a.date ?? '';
+                          const db = b.date ?? '';
+                          if (da && db) return da.localeCompare(db);
+                          if (da) return -1;
+                          if (db) return 1;
+                          return 0;
+                        })
+                        .map((rd, idx) => (
+                          <Typography key={idx} variant="caption" color="text.secondary" display="block">
+                            {rd.platformAbbreviation}
+                            {rd.date && ` (${rd.date})`}
+                            {rd.region != null && ` [Region: ${rd.region}]`}
+                          </Typography>
+                        ))}
+                    </Stack>
+                  </Box>
+                )}
+                {confirmedExternalGame.releasedPlatforms &&
+                  confirmedExternalGame.releasedPlatforms.length > 0 &&
+                  (!confirmedExternalGame.releaseDates || confirmedExternalGame.releaseDates.length === 0) && (
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                      Platforms: {confirmedExternalGame.releasedPlatforms.join(', ')}
+                    </Typography>
+                  )}
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
+                  IGDB ID: {confirmedExternalGame.externalId}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
         <FormControl size="small" sx={{ minWidth: 200 }}>
           <InputLabel>Completion state</InputLabel>
           <Select
@@ -838,7 +891,16 @@ export default function EditStagedGamePage() {
         </Box>
 
         {confirmedExternalGame && (
-          <Box sx={{ flexShrink: 0, width: 320, ml: 3, position: 'relative', zIndex: 0 }}>
+          <Box
+            sx={{
+              flexShrink: 0,
+              width: 320,
+              ml: 3,
+              position: 'relative',
+              zIndex: 0,
+              display: { xs: 'none', md: 'block' },
+            }}
+          >
             <Card variant="outlined">
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>

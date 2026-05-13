@@ -10,6 +10,7 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import BacklogFilters from './BacklogFilters';
 import BacklogList, { type BacklogViewMode } from './BacklogList';
 import { useBacklogQuery } from './useBacklogQuery';
@@ -45,6 +46,10 @@ export default function BacklogPage() {
 
   const { data, isLoading, error } = useBacklogQuery(filters);
   const filtersApplied = hasActiveFilters(filters, initialFilters);
+  const gameCount =
+    !isLoading && !error
+      ? `${data.length} ${data.length === 1 ? 'Game' : 'Games'} in Backlog`
+      : null;
 
   return (
     <Box>
@@ -81,6 +86,30 @@ export default function BacklogPage() {
             <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
               Minimized
             </Typography>
+            {gameCount != null && (
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  ml: 3,
+                  pl: 1.5,
+                  borderLeft: 2,
+                  borderColor: (theme) =>
+                    alpha(
+                      theme.palette.mode === 'dark'
+                        ? theme.palette.common.white
+                        : theme.palette.common.black,
+                      theme.palette.mode === 'dark' ? 0.58 : 0.38
+                    ),
+                  minHeight: 22,
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  {gameCount}
+                </Typography>
+              </Box>
+            )}
           </Stack>
         }
         sx={{ mb: 0 }}

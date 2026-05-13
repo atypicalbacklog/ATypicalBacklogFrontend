@@ -57,3 +57,13 @@ export interface GameOverviewRowDto {
 
   hasDlc?: boolean;
 }
+
+export interface GameOverviewQueryResponseDto {
+  rows: GameOverviewRowDto[];
+  gameCount: number;
+  gameInstanceCount: number;
+  dlcCount: number;
+  returnedGameCount: number;
+  returnedGameInstanceCount: number;
+  returnedDlcCount: number;
+}

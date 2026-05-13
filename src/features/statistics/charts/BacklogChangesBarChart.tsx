@@ -2,7 +2,12 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { BacklogChangesByYearRow } from '../backlogChangesUtils';
 import { BACKLOG_CHANGES_GROUP_LABELS } from '../backlogChangesUtils';
-import { getYearColor, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import {
+  chartMargins,
+  contrastBarLabelSlotProps,
+  getYearColor,
+  MIN_BAR_LABEL_PX,
+} from '../chartColors';
 
 interface Props {
   data: BacklogChangesByYearRow[];
@@ -49,7 +54,7 @@ export default function BacklogChangesBarChart({ data, height = 320 }: Props) {
               return String(item.value);
             }}
             height={height}
-            margin={{ top: 20, right: 20, bottom: 40, left: 50 }}
+            margin={{ ...chartMargins.barVertical }}
             hideLegend
             slotProps={contrastBarLabelSlotProps}
           />

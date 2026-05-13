@@ -30,7 +30,9 @@ import type { ConsoleYearDisplay } from '../statistics/hooks/useConsoleYearActiv
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { getTierColorByIndex } from '../../constants/tierColors';
 import type { SimpleLookupDto } from '../../types/referenceData';
-import GamePlaytimeRankingBarChart from '../statistics/charts/GamePlaytimeRankingBarChart';
+import GamePlaytimeRankingBarChart, {
+  GAME_PLAYTIME_RANKING_MAX_BARS,
+} from '../statistics/charts/GamePlaytimeRankingBarChart';
 import ConsolePlaytimePieChart from '../statistics/charts/ConsolePlaytimePieChart';
 import PcInputVariantsPieChart from '../statistics/charts/PcInputVariantsPieChart';
 import ConsoleVariantPlaytimeStackedBarChart from '../statistics/charts/ConsoleVariantPlaytimeStackedBarChart';
@@ -116,10 +118,12 @@ export default function YearlyReviewPage() {
         }))
         .sort((a, b) => b.totalHours - a.totalHours);
 
-      // Resolve display names for top games by gameUid only.
-      // This avoids an extra /instances call per game; we rely on GameApi.get
-      // (which is cached) for the display name.
-      const topGameUids = [...new Set(sortedRanking.slice(0, 20).map((r) => r.gameUid))];
+      // Resolve display names for games shown in the ranking chart (same row cap as the chart).
+      const topGameUids = [
+        ...new Set(
+          sortedRanking.slice(0, GAME_PLAYTIME_RANKING_MAX_BARS).map((r) => r.gameUid)
+        ),
+      ];
       const nameMap = new Map<string, string>();
       await Promise.all(
         topGameUids.map(async (uid) => {
@@ -246,7 +250,7 @@ export default function YearlyReviewPage() {
           )}
 
           <Box>
-            <GamePlaytimeRankingBarChart data={gameRankingData} maxBars={15} />
+            <GamePlaytimeRankingBarChart data={gameRankingData} />
           </Box>
 
           <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { http } from '../../services/httpClient';
-import { GameOverviewRowDto, LibraryFilterState } from './types';
+import { GameOverviewQueryResponseDto, GameOverviewRowDto, LibraryFilterState } from './types';
 
 /** Map UI filter state to API request body (empty arrays → null for "no filter"). If platform is set, console filter is ignored. */
 function toQueryRequestBody(f: LibraryFilterState) {
@@ -25,6 +25,7 @@ function toQueryRequestBody(f: LibraryFilterState) {
 
 export function useLibraryQuery(filters: LibraryFilterState) {
   const [data, setData] = useState<GameOverviewRowDto[]>([]);
+  const [counts, setCounts] = useState<Omit<GameOverviewQueryResponseDto, 'rows'> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +46,7 @@ export function useLibraryQuery(filters: LibraryFilterState) {
       setError(null);
       setIsLoading(true);
       try {
-        const result = await http<GameOverviewRowDto[]>(
+        const result = await http<GameOverviewQueryResponseDto>(
           '/api/query/game-overview',
           {
             method: 'POST',
@@ -53,7 +54,15 @@ export function useLibraryQuery(filters: LibraryFilterState) {
             signal: controller.signal,
           }
         );
-        setData(result);
+        setData(result.rows ?? []);
+        setCounts({
+          gameCount: result.gameCount ?? 0,
+          gameInstanceCount: result.gameInstanceCount ?? 0,
+          dlcCount: result.dlcCount ?? 0,
+          returnedGameCount: result.returnedGameCount ?? 0,
+          returnedGameInstanceCount: result.returnedGameInstanceCount ?? 0,
+          returnedDlcCount: result.returnedDlcCount ?? 0,
+        });
       } catch (e) {
         if ((e as Error).name !== 'AbortError') {
           setError((e as Error).message || 'Failed to load library.');
@@ -72,5 +81,5 @@ export function useLibraryQuery(filters: LibraryFilterState) {
     };
   }, [filters]);
 
-  return { data, isLoading, error };
+  return { data, counts, isLoading, error };
 }
