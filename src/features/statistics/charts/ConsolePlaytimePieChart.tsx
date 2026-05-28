@@ -21,6 +21,8 @@ interface Props {
   height?: number;
 }
 
+const ARC_LABEL_RADIUS = '78%';
+
 export default function ConsolePlaytimePieChart({ data, year, height = 320 }: Props) {
   const forYear = data.filter((d) => d.year === year);
   if (forYear.length === 0) {
@@ -65,6 +67,7 @@ export default function ConsolePlaytimePieChart({ data, year, height = 320 }: Pr
                 arcLabel: (item) =>
                   item.value > 0 ? formatPercentChartLabel(Number(item.value)) : '',
                 arcLabelMinAngle: MIN_PIE_ARC_LABEL_ANGLE,
+                arcLabelRadius: ARC_LABEL_RADIUS,
               },
             ]}
             height={height}

@@ -1,4 +1,4 @@
-import { LibraryFilterState } from './types';
+import { CompletionFilterIntent, LibraryFilterState } from './types';
 
 /** True if any filter differs from initial. */
 export function hasActiveFilters(
@@ -9,8 +9,10 @@ export function hasActiveFilters(
     filters.searchText !== initial.searchText ||
     filters.platformUids.length > 0 ||
     filters.consoleUids.length > 0 ||
+    filters.ignorePorts ||
     filters.inBacklog !== null ||
     filters.hasActivePlaythrough !== null ||
+    filters.completionFilterIntents.length > 0 ||
     filters.completionStateUids.length > 0 ||
     filters.playthroughTypeUids.length > 0 ||
     filters.includeDlc !== initial.includeDlc ||
@@ -25,9 +27,12 @@ export function filtersToSearchParams(f: LibraryFilterState) {
   if (f.searchText) p.set('q', f.searchText);
   if (f.platformUids.length) p.set('platforms', f.platformUids.join(','));
   if (f.consoleUids.length) p.set('consoles', f.consoleUids.join(','));
+  if (f.ignorePorts) p.set('ignorePorts', 'true');
   if (f.inBacklog !== null) p.set('backlog', String(f.inBacklog));
   if (f.hasActivePlaythrough !== null)
     p.set('active', String(f.hasActivePlaythrough));
+  if (f.completionFilterIntents.length)
+    p.set('completionIntents', f.completionFilterIntents.join(','));
   if (f.completionStateUids.length)
     p.set('completion', f.completionStateUids.join(','));
   if (f.playthroughTypeUids.length)
@@ -48,12 +53,18 @@ export function searchParamsToFilters(
     searchText: p.get('q') ?? fallback.searchText,
     platformUids: p.get('platforms')?.split(',') ?? [],
     consoleUids: p.get('consoles')?.split(',') ?? [],
+    ignorePorts: p.get('ignorePorts') === 'true',
     inBacklog: p.has('backlog')
       ? p.get('backlog') === 'true'
       : null,
     hasActivePlaythrough: p.has('active')
       ? p.get('active') === 'true'
       : null,
+    completionFilterIntents:
+      (p
+        .get('completionIntents')
+        ?.split(',')
+        .filter(Boolean) ?? []) as CompletionFilterIntent[],
     completionStateUids: p.get('completion')?.split(',') ?? [],
     playthroughTypeUids: p.get('playthroughTypes')?.split(',').filter(Boolean) ?? [],
     includeDlc: p.has('includeDlc')

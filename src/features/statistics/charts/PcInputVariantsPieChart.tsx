@@ -24,6 +24,8 @@ export interface PcInputVariantsPieChartProps {
   height?: number;
 }
 
+const ARC_LABEL_RADIUS = '78%';
+
 /**
  * Pie chart of PC playtime by input variant (e.g. Controller, Keyboard/Mouse).
  * Use data from fetchConsoleInputStylePlaytime(year) filtered by PC consoleUid.
@@ -86,6 +88,7 @@ export default function PcInputVariantsPieChart({
                 arcLabel: (item) =>
                   item.value > 0 ? formatPercentChartLabel(Number(item.value)) : '',
                 arcLabelMinAngle: MIN_PIE_ARC_LABEL_ANGLE,
+                arcLabelRadius: ARC_LABEL_RADIUS,
               },
             ]}
             height={height}

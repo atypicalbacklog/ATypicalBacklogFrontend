@@ -50,6 +50,7 @@ export default function GameInstanceOverviewPage() {
   const [instance, setInstance] = useState<GameInstanceDetailDTO | null>(null);
   const [game, setGame] = useState<GameDTO | null>(null);
   const [instances, setInstances] = useState<GameInstanceSummaryDto[]>([]);
+  const [instancePlatformUidByUid, setInstancePlatformUidByUid] = useState<Record<string, string>>({});
   const [dlcs, setDlcs] = useState<DlcDto[]>([]);
   const [playthroughsWithTime, setPlaythroughsWithTime] = useState<
     PlaythroughWithTime[]
@@ -72,9 +73,25 @@ export default function GameInstanceOverviewPage() {
       setGame(gameData);
       const list = await GameApi.getInstances(inst.gameUid);
       setInstances(list);
+      const platformEntries = await Promise.all(
+        list.map(async (item) => {
+          try {
+            const detail = await GameInstanceApi.get(item.uid);
+            return [item.uid, detail.platformUid] as const;
+          } catch {
+            return [item.uid, null] as const;
+          }
+        })
+      );
+      setInstancePlatformUidByUid(
+        Object.fromEntries(
+          platformEntries.filter((e): e is readonly [string, string] => !!e[1])
+        )
+      );
     } else {
       setGame(null);
       setInstances([]);
+      setInstancePlatformUidByUid({});
     }
 
     const [dlcList, playthroughList] = await Promise.all([
@@ -206,6 +223,46 @@ export default function GameInstanceOverviewPage() {
     return getTierColorByIndex(idx >= 0 ? idx : 0);
   };
 
+  const instanceTabLabelByUid = (() => {
+    const normalize = (s: string | null | undefined) => (s ?? '').trim().toLowerCase();
+    const gameNameNorm = normalize(game?.name);
+    const counts = new Map<string, number>();
+    instances.forEach((inst) => {
+      const key = normalize(inst.name);
+      if (!key) return;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+
+    const labels = new Map<string, string>();
+    instances.forEach((inst) => {
+      const name = (inst.name ?? '').trim();
+      const key = normalize(name);
+      const isDuplicateOrGameName = !!key && ((counts.get(key) ?? 0) > 1 || key === gameNameNorm);
+      const withPlatform = inst as GameInstanceSummaryDto & {
+        platformName?: string | null;
+        platformUid?: string | null;
+      };
+      const resolvedPlatformUid = instancePlatformUidByUid[inst.uid] ?? null;
+      const resolvedPlatformName =
+        resolvedPlatformUid
+          ? (platforms.find((p) => p.uid === resolvedPlatformUid)?.name ?? resolvedPlatformUid)
+          : '';
+      const platformLabel =
+        resolvedPlatformName ||
+        (withPlatform.platformName ?? '').trim() ||
+        (withPlatform.platformUid ?? '').trim() ||
+        '';
+
+      let label = name;
+      if (isDuplicateOrGameName && platformLabel) label = platformLabel;
+      else if (!label && platformLabel) label = platformLabel;
+      else if (!label && inst.uid === instance.uid) label = variantName;
+      else if (!label) label = inst.uid;
+      labels.set(inst.uid, label);
+    });
+    return labels;
+  })();
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, width: '100%' }}>
       <Box display="flex" alignItems="center" gap={2} mb={2}>
@@ -293,7 +350,7 @@ export default function GameInstanceOverviewPage() {
               instances={instances}
               currentUid={instance.uid}
               getInstanceLabel={(inst) =>
-                inst.name || (inst.uid === instance.uid ? variantName : inst.uid)
+                instanceTabLabelByUid.get(inst.uid) ?? inst.uid
               }
             />
           ) : (

@@ -9,6 +9,7 @@ function toQueryRequestBody(f: LibraryFilterState) {
     searchText: f.searchText || null,
     platformUids: platformSet ? f.platformUids : null,
     consoleUids: platformSet ? null : (f.consoleUids.length ? f.consoleUids : null),
+    ignorePorts: f.ignorePorts,
     inBacklog: f.inBacklog,
     hasActivePlaythrough: f.hasActivePlaythrough,
     completionStateUids: f.completionStateUids.length

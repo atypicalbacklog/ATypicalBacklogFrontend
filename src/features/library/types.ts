@@ -6,12 +6,22 @@ export type SortMode =
   | 'NEWEST_CREATED'
   | 'RELEASE_DATE';
 
+export type CompletionFilterIntent =
+  | 'COMPLETED'
+  | 'FINISHED'
+  | 'PLAYING'
+  | 'PLAYED'
+  | 'BACKLOG'
+  | 'UNPLAYED';
+
 export interface LibraryFilterState {
   searchText: string;
   platformUids: string[];
   consoleUids: string[];
+  ignorePorts: boolean;
   inBacklog: boolean | null;
   hasActivePlaythrough: boolean | null;
+  completionFilterIntents: CompletionFilterIntent[];
   completionStateUids: string[];
   playthroughTypeUids: string[];
   includeDlc: boolean | null;

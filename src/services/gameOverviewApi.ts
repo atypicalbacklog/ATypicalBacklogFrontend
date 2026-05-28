@@ -5,6 +5,7 @@ export interface GameOverviewQueryPayload {
   searchText?: string | null;
   platformUids?: string[] | null;
   consoleUids?: string[] | null;
+  ignorePorts?: boolean | null;
   inBacklog?: boolean | null;
   hasActivePlaythrough?: boolean | null;
   completionStateUids?: string[] | null;
@@ -22,6 +23,7 @@ export function queryGameOverview(payload: GameOverviewQueryPayload) {
       searchText: payload.searchText ?? null,
       platformUids: payload.platformUids ?? null,
       consoleUids: payload.consoleUids ?? null,
+      ignorePorts: payload.ignorePorts ?? null,
       inBacklog: payload.inBacklog ?? null,
       hasActivePlaythrough: payload.hasActivePlaythrough ?? null,
       completionStateUids: payload.completionStateUids ?? null,
@@ -39,6 +41,7 @@ export function searchGameOverview(searchText: string) {
     searchText: searchText || null,
     platformUids: null,
     consoleUids: null,
+    ignorePorts: null,
     inBacklog: null,
     hasActivePlaythrough: null,
     completionStateUids: null,
@@ -55,6 +58,7 @@ export function searchGameOverviewForPlaythrough(searchText: string) {
     searchText: searchText || null,
     platformUids: null,
     consoleUids: null,
+    ignorePorts: null,
     inBacklog: null,
     hasActivePlaythrough: null,
     completionStateUids: null,

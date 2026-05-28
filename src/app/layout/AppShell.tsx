@@ -3,6 +3,7 @@ import { AppBar, Box, Drawer, IconButton, Toolbar, Typography, useMediaQuery } f
 import MenuIcon from '@mui/icons-material/Menu';
 import { useLocation } from 'react-router-dom';
 import Navigation from './Navigation';
+import AppFooter from './AppFooter';
 import patternController from '../../assets/pattern_controller.svg';
 import { getAppConfig } from '../AppConfig';
 
@@ -25,6 +26,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/game-instances') && pathname.endsWith('/edit')) return 'Edit game instance';
   if (pathname.startsWith('/game-instances')) return 'Game instance';
   if (pathname.startsWith('/statistics')) return 'Statistics';
+  if (pathname.startsWith('/impressum')) return 'Impressum';
+  if (pathname.startsWith('/faq-glossar')) return 'FAQ & Glossar';
   return 'Atypical Backlog';
 }
 
@@ -96,15 +99,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Navigation onNavigate={handleDrawerToggle} />
           </Drawer>
 
-          <Box component="main" flexGrow={1} p={2} sx={{ mt: 7, minWidth: 0, overflowX: 'hidden' }}>
-            {children}
+          <Box component="main" flexGrow={1} sx={{ mt: 7, minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <Box p={2}>
+              {children}
+            </Box>
+            <AppFooter />
           </Box>
         </>
       ) : (
         <>
           <Navigation />
-          <Box component="main" flexGrow={1} p={2} sx={{ minWidth: 0, overflowX: 'hidden' }}>
-            {children}
+          <Box component="main" flexGrow={1} sx={{ minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <Box p={2}>
+              {children}
+            </Box>
+            <AppFooter />
           </Box>
         </>
       )}

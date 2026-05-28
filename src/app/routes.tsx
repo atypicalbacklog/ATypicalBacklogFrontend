@@ -18,6 +18,8 @@ import EditStagedPlaythroughGroupPage from '../features/admin/EditStagedPlaythro
 import StatisticsDashboardPage from '../features/statistics/StatisticsDashboardPage';
 import BacklogCompletionOverviewPage from '../features/backlogCompletion/BacklogCompletionOverviewPage';
 import ReviewsPage from '../features/reviews/ReviewsPage';
+import ImpressumPage from '../features/static/ImpressumPage';
+import FaqGlossarPage from '../features/static/FaqGlossarPage';
 import ModeAwareHome from './ModeAwareHome';
 import ManagementOnly from './ManagementOnly';
 
@@ -47,6 +49,8 @@ export const appRoutes = [
   { path: '/reviews/edit', element: <ManagementOnly><EditReviewPage /></ManagementOnly> },
   { path: '/statistics', element: <StatisticsDashboardPage /> },
   { path: '/backlog-completion-overview', element: <BacklogCompletionOverviewPage /> },
+  { path: '/impressum', element: <ImpressumPage /> },
+  { path: '/faq-glossar', element: <FaqGlossarPage /> },
   { path: '/admin/import/staging', element: <ManagementOnly><AdminImportStagingPage /></ManagementOnly> },
   {
     path: '/admin/import/staged-games/:uid',

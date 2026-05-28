@@ -5,8 +5,10 @@ import {
   Box,
   CircularProgress,
   Fab,
-  FormControlLabel,
+  FormControl,
   IconButton,
+  MenuItem,
+  Select,
   Stack,
   Switch,
   Tooltip,
@@ -17,7 +19,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { LibraryFilterState } from './types';
+import { LibraryFilterState, SortMode } from './types';
 import { useLibraryQuery } from './useLibraryQuery';
 import LibraryFilters from './LibraryFilters';
 import LibraryList, { type LibraryViewMode } from './LibraryList';
@@ -31,8 +33,10 @@ const initialFilters: LibraryFilterState = {
   searchText: '',
   platformUids: [],
   consoleUids: [],
+  ignorePorts: false,
   inBacklog: null,
   hasActivePlaythrough: null,
+  completionFilterIntents: [],
   completionStateUids: [],
   playthroughTypeUids: [],
   includeDlc: true,
@@ -142,51 +146,90 @@ DLC: ${counts.dlcCount}`
         <LibraryFilters value={filters} onChange={setFilters} />
       </Box>
 
-      <FormControlLabel
-        control={
-          <Switch
-            checked={viewMode === 'minimized'}
-            onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}
-            color="primary"
-          />
-        }
-        label={
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Typography variant="body2" color={viewMode === 'extended' ? 'text.primary' : 'text.secondary'}>
-              Extended
-            </Typography>
-            <Typography variant="body2">/</Typography>
-            <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
-              Minimized
-            </Typography>
-            <Tooltip title={<Typography variant="caption" component="div" sx={{ whiteSpace: 'pre-line' }}>{countsTooltip}</Typography>}>
-              <Box
-                component="span"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  ml: 3,
-                  pl: 1.5,
-                  borderLeft: 2,
-                  borderColor: (theme) =>
-                    alpha(
-                      theme.palette.mode === 'dark'
-                        ? theme.palette.common.white
-                        : theme.palette.common.black,
-                      theme.palette.mode === 'dark' ? 0.58 : 0.38
-                    ),
-                  minHeight: 22,
-                }}
+      <Stack direction="row" alignItems="center" sx={{ width: '100%', mb: 0.5 }}>
+        <Switch
+          checked={viewMode === 'minimized'}
+          onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}
+          color="primary"
+        />
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ minWidth: 0, flexWrap: 'wrap' }}>
+          <Typography variant="body2" color={viewMode === 'extended' ? 'text.primary' : 'text.secondary'}>
+            Extended
+          </Typography>
+          <Typography variant="body2">/</Typography>
+          <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
+            Minimized
+          </Typography>
+          <Tooltip title={<Typography variant="caption" component="div" sx={{ whiteSpace: 'pre-line' }}>{countsTooltip}</Typography>}>
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                ml: 3,
+                pl: 1.5,
+                borderLeft: 2,
+                borderColor: (theme) =>
+                  alpha(
+                    theme.palette.mode === 'dark'
+                      ? theme.palette.common.white
+                      : theme.palette.common.black,
+                    theme.palette.mode === 'dark' ? 0.58 : 0.38
+                  ),
+                minHeight: 22,
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                {instanceCountLabel}
+              </Typography>
+            </Box>
+          </Tooltip>
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              ml: 2,
+              pl: 1.5,
+              borderLeft: 2,
+              borderColor: (theme) =>
+                alpha(
+                  theme.palette.mode === 'dark'
+                    ? theme.palette.common.white
+                    : theme.palette.common.black,
+                  theme.palette.mode === 'dark' ? 0.58 : 0.38
+                ),
+              minHeight: 22,
+            }}
+          >
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: 130,
+                '& .MuiSelect-select': { py: 0.5, fontSize: '0.875rem' },
+              }}
+            >
+              <Select
+                displayEmpty
+                value={filters.sortMode}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    sortMode: e.target.value as SortMode,
+                  }))
+                }
               >
-                <Typography variant="body2" color="text.secondary">
-                  {instanceCountLabel}
-                </Typography>
-              </Box>
-            </Tooltip>
-          </Stack>
-        }
-        sx={{ mb: 0 }}
-      />
+                <MenuItem value="NAME_ASC">Name ↑</MenuItem>
+                <MenuItem value="NAME_DESC">Name ↓</MenuItem>
+                <MenuItem value="PLAYTIME_DESC">Playtime</MenuItem>
+                <MenuItem value="LAST_PLAYED_DESC">Last Played</MenuItem>
+                <MenuItem value="NEWEST_CREATED">Newest created</MenuItem>
+                <MenuItem value="RELEASE_DATE">Release date</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Stack>
+      </Stack>
 
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>

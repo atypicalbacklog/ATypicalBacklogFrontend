@@ -190,7 +190,7 @@ export default function PlatformSelect({
           id="platform-select-input"
           readOnly
           value={displayValue()}
-          placeholder={`Select ${label.toLowerCase()}…`}
+          placeholder={label}
           onClick={() => setOpen(true)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -240,7 +240,7 @@ export default function PlatformSelect({
                 control={<Checkbox checked={showAll} onChange={(e) => setShowAll(e.target.checked)} size="small" />}
                 label={
                   <Typography variant="caption" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
-                    show unused
+                    show hidden
                     <br />
                     platforms
                   </Typography>

@@ -399,6 +399,7 @@ Request Body:
   "searchText": "string" | null,           // optional; LIKE %text% on game/instance/dlc name
   "platformUids": [ "string" ] | null,     // optional; filter by platform UIDs
   "consoleUids": [ "string" ] | null,      // optional; filter by console UIDs
+  "ignorePorts": true | false | null,      // optional; null/false = consoleUids match instance original console OR platform console; true = match platform console only
   "inBacklog": true | false | null,        // optional; filter by backlog state
   "hasActivePlaythrough": true | false | null,  // optional
   "completionStateUids": [ "string" ] | null,   // optional; filter by completion
