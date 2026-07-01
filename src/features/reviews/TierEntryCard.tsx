@@ -4,6 +4,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import NotesIcon from '@mui/icons-material/Notes';
 import ListIcon from '@mui/icons-material/List';
 import SmartImage from '../shared/SmartImage';
+import ReviewDetailModal from './ReviewDetailModal';
 import type { ReviewSearchResultDto, ReviewSearchPlaythroughDto } from '../../types/dto';
 import type { EditReviewLocationState } from './EditReviewPage';
 
@@ -50,16 +51,24 @@ export default function TierEntryCard({
   onMoveToTier,
 }: TierEntryCardProps) {
   const [moveAnchor, setMoveAnchor] = useState<null | HTMLElement>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const types = [...new Set(card.playthroughs.map((p) => p.playthroughTypeUid).filter(Boolean))];
   const typeLabels = types.map((uid) => playthroughTypeNames(uid)).filter(Boolean).join(', ') || '—';
   const preferredForEdit = pickReviewPlaythroughForEdit(card, playthroughTypeNames);
   const hasTextReview = card.playthroughs.some((p) => p.hasTextReview);
 
+  // Use a review's preferred image when set, falling back to the default thumbnail.
+  const displayImageUid =
+    preferredForEdit?.preferredImageUid ??
+    card.playthroughs.find((p) => p.preferredImageUid)?.preferredImageUid ??
+    card.thumbnailImageUid;
+
   const cardWidth = compact ? 100 : 155;
   const imageHeight = compact ? 135 : 210;
 
   return (
+    <>
     <Box
       draggable={!compact}
       onDragStart={
@@ -72,6 +81,7 @@ export default function TierEntryCard({
           : undefined
       }
       onDragEnd={!compact ? () => onDragStart(null) : undefined}
+      onClick={() => setDetailOpen(true)}
       title={card.displayName}
       sx={{
         flexShrink: 0,
@@ -98,7 +108,7 @@ export default function TierEntryCard({
       }}
     >
       <SmartImage
-        imageUid={card.thumbnailImageUid}
+        imageUid={displayImageUid}
         thumbnail
         alt=""
         aspectRatio={2 / 3}
@@ -207,6 +217,14 @@ export default function TierEntryCard({
         </Box>
       )}
     </Box>
+    {detailOpen && (
+      <ReviewDetailModal
+        card={card}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
+    )}
+    </>
   );
 }
 

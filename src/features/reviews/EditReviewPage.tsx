@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
 import { ReviewsApi } from '../../services/reviewsApi';
+import { ImageApi } from '../../services/imageApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import DateField from '../shared/DateField';
 import type { ReviewByUidDto } from '../../types/dto';
@@ -43,6 +44,8 @@ export default function EditReviewPage() {
     () => new Date().toISOString().slice(0, 10)
   );
   const [text, setText] = useState<string>('');
+  const [preferredImageUid, setPreferredImageUid] = useState<string | null>(null);
+  const [gameImages, setGameImages] = useState<{ uid: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -59,6 +62,7 @@ export default function EditReviewPage() {
         setTierUid(data.tierUid ?? '');
         setReviewDate(data.reviewDate ?? new Date().toISOString().slice(0, 10));
         setText(data.text ?? '');
+        setPreferredImageUid(data.preferredImageUid ?? null);
       })
       .catch(() => setError('Failed to load review.'))
       .finally(() => {
@@ -66,6 +70,16 @@ export default function EditReviewPage() {
         initialFetchEnd(key);
       });
   }, [state?.reviewUid]);
+
+  useEffect(() => {
+    if (!review?.gameUid) {
+      setGameImages([]);
+      return;
+    }
+    ImageApi.listByGame(review.gameUid)
+      .then((list) => setGameImages(list.map((im) => ({ uid: im.uid }))))
+      .catch(() => setGameImages([]));
+  }, [review?.gameUid]);
 
   const tiers = (referenceData?.data?.tiers ?? []).slice().sort(
     (a, b) => (a.order ?? 0) - (b.order ?? 0)
@@ -83,6 +97,7 @@ export default function EditReviewPage() {
         reviewDate: reviewDate || null,
         tierUid: tierUid || null,
         text: text.trim() || null,
+        preferredImageUid: preferredImageUid,
       });
       setSuccess(true);
     } catch {
@@ -90,7 +105,7 @@ export default function EditReviewPage() {
     } finally {
       setSaving(false);
     }
-  }, [state?.reviewUid, reviewDate, tierUid, text]);
+  }, [state?.reviewUid, reviewDate, tierUid, text, preferredImageUid]);
 
   if (!isLoaded) return null;
 
@@ -202,6 +217,44 @@ export default function EditReviewPage() {
           onChange={setReviewDate}
         />
       </Stack>
+
+      {/* Preferred image (optional) */}
+      {gameImages.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Preferred image (optional)
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+            {gameImages.map((im) => (
+              <Box
+                key={im.uid}
+                onClick={() =>
+                  setPreferredImageUid(preferredImageUid === im.uid ? null : im.uid)
+                }
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 1,
+                  border: 2,
+                  borderColor:
+                    preferredImageUid === im.uid ? 'primary.main' : 'divider',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                }}
+              >
+                <SmartImage
+                  imageUid={im.uid}
+                  thumbnail
+                  alt=""
+                  aspectRatio={1}
+                  fit="contain"
+                  sx={{ width: '100%', height: '100%' }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
 
       {/* Multiline textarea: auto-growing, large width, minimal chrome */}
       <TextField

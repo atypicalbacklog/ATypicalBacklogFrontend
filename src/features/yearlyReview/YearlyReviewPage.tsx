@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
+import { getAppConfig } from '../../app/AppConfig';
 import { GameApi } from '../../services/gameApi';
 import { YearlyReviewApi, type YearlyReviewDto } from '../../services/yearlyReviewApi';
 import { ReviewsApi } from '../../services/reviewsApi';
@@ -45,10 +46,12 @@ import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
 const MIN_YEAR = 2017;
 const CURRENT_YEAR = new Date().getFullYear();
 const LAST_YEAR = CURRENT_YEAR - 1;
-const YEARS = Array.from(
-  { length: LAST_YEAR - MIN_YEAR + 1 },
-  (_, i) => LAST_YEAR - i
-);
+
+/** Selectable years; current year is only included in MANAGEMENT mode. */
+function getSelectableYears(): number[] {
+  const maxYear = getAppConfig().mode === 'MANAGEMENT' ? CURRENT_YEAR : LAST_YEAR;
+  return Array.from({ length: maxYear - MIN_YEAR + 1 }, (_, i) => maxYear - i);
+}
 
 function chunkGames<T>(items: T[], maxPerRow: number = 6): T[][] {
   if (items.length === 0) return [];
@@ -78,6 +81,7 @@ function cardTierUid(card: ReviewSearchResultDto): string | null {
 
 export default function YearlyReviewPage() {
   const { referenceData, isLoaded } = useReferenceData();
+  const years = getSelectableYears();
   const [year, setYear] = useState(LAST_YEAR);
   const [yearlyReview, setYearlyReview] = useState<YearlyReviewDto | null>(null);
   const [tierlistResults, setTierlistResults] = useState<ReviewSearchResultDto[]>([]);
@@ -213,7 +217,7 @@ export default function YearlyReviewPage() {
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
           >
-            {YEARS.map((y) => (
+            {years.map((y) => (
               <MenuItem key={y} value={y}>{y}</MenuItem>
             ))}
           </Select>

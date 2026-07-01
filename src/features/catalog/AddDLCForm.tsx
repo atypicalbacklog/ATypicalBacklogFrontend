@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Alert,
   Box,
@@ -26,6 +26,8 @@ import DateField from '../shared/DateField';
 import SelectedItemChip from '../shared/SelectedItemChip';
 import CompletionBar from '../shared/CompletionBar';
 import ExternalDlcSearch from '../shared/ExternalDlcSearch';
+import ExternalGameSearch from '../shared/ExternalGameSearch';
+import DirectExternalIdBlock from '../shared/DirectExternalIdBlock';
 import { IgdbApi } from '../../services/igdbApi';
 import type { GameInstanceDetailDTO, PlaythroughQueryResultDto } from '../../types/dto';
 import type { GameOverviewRowDto } from '../library/types';
@@ -68,6 +70,12 @@ export default function AddDLCForm() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingDlcCoverImport, setPendingDlcCoverImport] = useState<number | null>(null);
+  const [savingInstanceIgdb, setSavingInstanceIgdb] = useState(false);
+  const pendingInstanceIgdbUpdateRef = useRef<{
+    name?: string;
+    releaseDate?: string;
+    coverExternalId?: number;
+  }>({});
 
   const completionStates = referenceData?.data.completionStates ?? [];
   const selectedDlcCompletionStateName = dlcCompletionStateUid
@@ -127,9 +135,46 @@ export default function AddDLCForm() {
     setSelectedInstance(row);
     setInstanceSearchQuery('');
     setInstanceSearchResults([]);
+    pendingInstanceIgdbUpdateRef.current = {};
   }, []);
 
+  const applyInstanceExternalIgdb = useCallback(
+    async (
+      externalId: string,
+      options?: { name?: string; releaseDate?: string; coverExternalId?: number }
+    ) => {
+      if (!selectedInstance?.gameInstanceUid) return;
+      setSavingInstanceIgdb(true);
+      setError(null);
+      try {
+        await GameInstanceApi.update(selectedInstance.gameInstanceUid, {
+          externalIgdbId: externalId,
+          ...(options?.name != null ? { name: options.name } : {}),
+          ...(options?.releaseDate != null ? { releaseDate: options.releaseDate } : {}),
+        });
+        if (options?.coverExternalId != null) {
+          await IgdbApi.importCover({
+            externalId: options.coverExternalId,
+            ownerType: 'GAME_INSTANCE',
+            gameInstanceUid: selectedInstance.gameInstanceUid,
+          });
+        }
+        const updated = await GameInstanceApi.get(selectedInstance.gameInstanceUid);
+        setInstanceDetail(updated);
+      } catch (e) {
+        setError((e as Error).message || 'Failed to set instance IGDB ID.');
+      } finally {
+        setSavingInstanceIgdb(false);
+      }
+    },
+    [selectedInstance?.gameInstanceUid]
+  );
+
   const instanceMainCompletion = instanceDetail?.completions?.find((c) => !c.dlcUid);
+  const instanceExternalIgdbId = instanceDetail?.externalIgdbId?.trim() || null;
+  const instanceSearchName =
+    instanceDetail?.name ?? (selectedInstance ? displayName(selectedInstance) : '');
+  const instanceSearchReleaseDate = instanceDetail?.releaseDate ?? '';
   const instanceCompletionStateName = instanceMainCompletion
     ? (referenceData?.data.completionStates.find(
         (c) => c.uid === instanceMainCompletion.completionStateUid
@@ -334,8 +379,57 @@ export default function AddDLCForm() {
               size="small"
               placeholder={selectedInstance ? displayName(selectedInstance) : 'Game name'}
             />
+            {selectedInstance && instanceDetail && !instanceExternalIgdbId && (
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  This game instance has no IGDB ID. Set one to search for related DLCs.
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <ExternalGameSearch
+                    gameName={instanceSearchName}
+                    releaseDate={instanceSearchReleaseDate}
+                    onOverwriteName={(name) => {
+                      pendingInstanceIgdbUpdateRef.current.name = name;
+                    }}
+                    onOverwriteDate={(date) => {
+                      pendingInstanceIgdbUpdateRef.current.releaseDate = date;
+                    }}
+                    onMarkCoverImport={(externalId) => {
+                      pendingInstanceIgdbUpdateRef.current.coverExternalId = externalId;
+                    }}
+                    onSetExternalId={(id) => {
+                      const pending = pendingInstanceIgdbUpdateRef.current;
+                      pendingInstanceIgdbUpdateRef.current = {};
+                      void applyInstanceExternalIgdb(id, {
+                        name: pending.name,
+                        releaseDate: pending.releaseDate,
+                        coverExternalId: pending.coverExternalId,
+                      });
+                    }}
+                    ownerType="GAME_INSTANCE"
+                    ownerUid={selectedInstance.gameInstanceUid}
+                  />
+                  <DirectExternalIdBlock
+                    onConfirm={(res, actions) => {
+                      void applyInstanceExternalIgdb(String(res.externalId), {
+                        name: actions.name ? res.name : undefined,
+                        releaseDate: actions.date && res.releaseDate ? res.releaseDate : undefined,
+                        coverExternalId: actions.image ? res.externalId : undefined,
+                      });
+                    }}
+                  />
+                  {savingInstanceIgdb && <CircularProgress size={20} />}
+                </Stack>
+              </Box>
+            )}
+            {instanceExternalIgdbId && (
+              <Typography variant="body2" color="text.secondary">
+                Instance IGDB ID: {instanceExternalIgdbId}
+              </Typography>
+            )}
             <ExternalDlcSearch
-              gameInstanceExternalIgdbId={instanceDetail?.externalIgdbId ?? null}
+              gameInstanceExternalIgdbId={instanceExternalIgdbId}
+              gameInstanceUid={selectedInstance?.gameInstanceUid ?? null}
               dlcName={dlcName}
               releaseDate={releaseDate}
               onOverwriteName={setDlcName}

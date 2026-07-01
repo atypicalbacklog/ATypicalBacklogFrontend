@@ -154,7 +154,7 @@ export default function PlaythroughCard({
         <Stack direction="row" alignItems="center" spacing={0.5}>
           <Link
             component={RouterLink}
-            to={`/playthroughs/${row.playthroughUid}`}
+            to={`/playthroughs/${row.playthroughUid}/complete`}
             sx={{
               color: 'text.secondary',
               fontSize: 24,

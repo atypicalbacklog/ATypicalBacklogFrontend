@@ -29,9 +29,11 @@ interface Props {
   /** Callback when cover should be marked for import. */
   onMarkCoverImport: (externalId: number) => void;
   /** Owner type for cover import. */
-  ownerType: 'GAME' | 'GAME_INSTANCE';
-  /** Owner UID (gameUid or gameInstanceUid) for cover import. */
+  ownerType: 'GAME' | 'GAME_INSTANCE' | 'DLC';
+  /** Owner UID (gameUid, gameInstanceUid, or dlcUid) for cover import. */
   ownerUid: string | null;
+  /** Required when ownerType is DLC (for import-cover context). */
+  gameInstanceUid?: string | null;
   /** Optional: when an external game is committed, set external ID (e.g. IGDB id as string). */
   onSetExternalId?: (externalId: string) => void;
   /** Optional: callback when selected result changes (for displaying details). */
@@ -49,6 +51,7 @@ export default function ExternalGameSearch({
   onMarkCoverImport,
   ownerType,
   ownerUid,
+  gameInstanceUid,
   onSetExternalId,
   onSelectedResultChange,
 }: Props) {
@@ -178,7 +181,12 @@ export default function ExternalGameSearch({
         ownerType,
         ...(ownerType === 'GAME'
           ? { gameUid: ownerUid }
-          : { gameInstanceUid: ownerUid }),
+          : ownerType === 'GAME_INSTANCE'
+            ? { gameInstanceUid: ownerUid }
+            : {
+                dlcUid: ownerUid,
+                gameInstanceUid: gameInstanceUid ?? undefined,
+              }),
       });
       setSelectedResult(null);
     } catch {

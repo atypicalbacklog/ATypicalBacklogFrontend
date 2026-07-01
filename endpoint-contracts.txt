@@ -562,6 +562,63 @@ Response: 200 OK
   "playthroughStateUid": "string"
 }
 
+--------------------------------------------------------------------------------
+6.4 Update Playthrough Completion
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/playthroughs/{uid}/playthrough-completion
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the playthrough
+
+Request Body:
+{
+  "playthrough": {                                  // optional; reuses UpdatePlaythroughRequest
+    "playthroughTypeUid": "string" | null,
+    "inputUid": "string" | null,
+    "startedAt": "YYYY-MM-DD" | null,               // LocalDate
+    "playthroughStateUid": "string" | null
+  },
+  "gameCompletions": [                              // optional; multiple allowed
+    {
+      "uid": "string",                              // game_completion uid (identifies the row to update)
+      "dlcUid": "string" | null,
+      "completionStateUid": "string" | null,
+      "info": "string" | null,
+      "finishedDate": "YYYY-MM-DD" | null,          // LocalDate
+      "completedDate": "YYYY-MM-DD" | null          // LocalDate
+    }
+  ],
+  "dlcUids": [ "string" ] | null,                   // optional; each DLC's playthrough_uid is set to {uid}
+  "backlog": {                                      // optional
+    "uid": "string",
+    "removedDate": "YYYY-MM-DD" | null,             // LocalDate
+    "reason": "string" | null
+  }
+}
+
+Response: 200 OK
+{
+  "uid": "string",
+  "gameInstanceUid": "string",
+  "playthroughTypeUid": "string",
+  "inputUid": "string",
+  "startedAt": "YYYY-MM-DD",              // LocalDate
+  "playthroughStateUid": "string"
+}
+
+Behavior:
+- All updates run in a single transaction; any missing referenced entity aborts and rolls back the whole request (404 / IllegalArgument).
+- Partial update semantics: only non-null fields are applied. A null field keeps the existing value (e.g. info can be set while completionStateUid stays null/unchanged).
+- "playthrough" (optional): updates playthrough metadata (same null-guarded rules as 6.3).
+- "gameCompletions" (optional): each entry is looked up by its own "uid" and partially updated. Multiple completions per request are supported.
+- "dlcUids" (optional): for each uid, the DLC's playthrough_uid is set to the current path {uid}.
+- "backlog" (optional): looked up by "uid"; removedDate and reason are partially updated.
+
+Response: 404 Not Found
+When the playthrough, a referenced game completion, DLC, or backlog entry does not exist.
+
 ================================================================================
 7. QUERY ENDPOINTS – ACTIVE PLAYTHROUGHS
 ================================================================================
@@ -1228,6 +1285,7 @@ Response: 200 OK
   "reviewDate": "YYYY-MM-DD" | null,
   "tierUid": "string" | null,
   "text": "string" | null,
+  "preferredImageUid": "string" | null,  // game_image uid chosen as preferred image for the review
 
   "linkedPlaythrough": {
     "uid": "string",
@@ -1235,6 +1293,8 @@ Response: 200 OK
     "playthroughStateUid": "string"
   },
 
+  "gameInstanceUid": "string",       // game instance of the linked playthrough
+  "gameUid": "string",               // game of the linked playthrough's instance
   "displayName": "string",           // game instance name or game name
   "coverImageUid": "string" | null,  // instance cover or game cover
 
@@ -1264,6 +1324,7 @@ Array of ReviewDetailDto (same structure as 18.1):
     "reviewDate": "YYYY-MM-DD" | null,
     "tierUid": "string" | null,
     "text": "string" | null,
+    "preferredImageUid": "string" | null,
 
     "linkedPlaythrough": {
       "uid": "string",
@@ -1271,6 +1332,8 @@ Array of ReviewDetailDto (same structure as 18.1):
       "playthroughStateUid": "string"
     },
 
+    "gameInstanceUid": "string",
+    "gameUid": "string",
     "displayName": "string",
     "coverImageUid": "string" | null,
 
@@ -1305,10 +1368,29 @@ Array of ReviewSearchResultDto:
         "playthroughTypeUid": "string" | null,
         "playthroughStateUid": "string",
         "startedAt": "YYYY-MM-DD" | null,
+        "gameInstanceUid": "string",
+        "inputUid": "string" | null,
+        "totalPlaytimeSeconds": 0,               // sum of completed time bookings for the playthrough
+        "coverImageUid": "string" | null,        // game instance cover, or game cover when the instance has none
         "reviewUid": "string" | null,
         "reviewDate": "YYYY-MM-DD" | null,
         "tierUid": "string" | null,
-        "hasTextReview": true | false       // true when reviewUid is non-null and review text is not blank
+        "preferredImageUid": "string" | null,   // review's preferred image; null when no review or not set
+        "hasTextReview": true | false,      // true when reviewUid is non-null and review text is not blank
+        "linkedDlcs": [                          // DLCs linked to this playthrough
+          { "uid": "string", "name": "string" }
+        ],
+        "completions": [                         // game instance completion + linked DLC completions
+          {
+            "uid": "string",
+            "gameInstanceUid": "string",
+            "dlcUid": "string" | null,           // null for the base game completion; set for a DLC completion
+            "completionStateUid": "string",
+            "info": "string" | null,
+            "finishedDate": "YYYY-MM-DD" | null,
+            "completedDate": "YYYY-MM-DD" | null
+          }
+        ]
       }
     ]
   }
@@ -1343,11 +1425,14 @@ Request Body:
   "reviewUid": "string",
   "reviewDate": "YYYY-MM-DD" | null,    // LocalDate
   "tierUid": "string" | null,
-  "text": "string" | null
+  "text": "string" | null,
+  "preferredImageUid": "string" | null  // game_image uid; only applied when non-null
 }
 
 Response: 200 OK
 Body: empty
+
+Note: partial update — only non-null fields are applied (reviewDate, tierUid, text, preferredImageUid).
 
 ================================================================================
 19. ADMIN IMPORT – STAGING ENDPOINTS
@@ -1402,7 +1487,7 @@ StagedGame entity (full entity as persisted):
   "backlogReason": "string" | null,
   "proposedFinishedDate": "YYYY-MM-DD" | null,
   "matchedGameInstanceUid": "string" | null,
-  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
+  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED" | "REJECTED"
 }
 
 --------------------------------------------------------------------------------
@@ -1435,7 +1520,7 @@ StagedPlaythroughGroup entity:
   "inferredTypeUid": "string" | null,
   "inferredYear": 0 | null,
   "proposedPlaythroughStateUid": "string" | null,
-  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
+  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED" | "REJECTED"
 }
 
 --------------------------------------------------------------------------------
@@ -1466,7 +1551,7 @@ StagedGameDetailDto:
   "backlogReason": "string" | null,
   "proposedFinishedDate": "YYYY-MM-DD" | null,
   "matchedGameInstanceUid": "string" | null,
-  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED",
+  "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED" | "REJECTED",
   "playthroughGroups": [
     {
       "uid": "string",
@@ -1510,7 +1595,7 @@ Array of StagedGameDetailDto (same shape as 19.3), ordered by proposedName. Empt
     "backlogReason": "string" | null,
     "proposedFinishedDate": "YYYY-MM-DD" | null,
     "matchedGameInstanceUid": "string" | null,
-    "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED",
+    "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED" | "REJECTED",
     "playthroughGroups": [ ... ]
   }
 ]
@@ -1522,7 +1607,7 @@ Method: GET
 Path: /api/admin/import/staged-games?status={status}
 
 Query Parameters:
-- status (optional): CREATED | UPDATED | CURATED | FINALIZED | IMPORTED – filter by resolution status; omit to return all
+- status (optional): CREATED | UPDATED | CURATED | FINALIZED | IMPORTED | REJECTED – filter by resolution status; omit to return all
 
 Response: 200 OK
 Array of StagedGameSummaryDto (uid + name + status):
@@ -1530,7 +1615,7 @@ Array of StagedGameSummaryDto (uid + name + status):
   {
     "uid": "string",
     "proposedName": "string",
-    "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED"
+    "resolutionStatus": "CREATED" | "UPDATED" | "CURATED" | "FINALIZED" | "IMPORTED" | "REJECTED"
   }
 ]
 
@@ -1547,7 +1632,8 @@ Map of resolution status name (string) -> count (int). All statuses included.
   "UPDATED": 5,
   "CURATED": 2,
   "FINALIZED": 1,
-  "IMPORTED": 0
+  "IMPORTED": 0,
+  "REJECTED": 0
 }
 
 --------------------------------------------------------------------------------

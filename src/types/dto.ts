@@ -149,6 +149,40 @@ export interface UpdatePlaythroughRequest {
   playthroughStateUid: string;
 }
 
+/** Partial playthrough metadata for the combined completion update (6.4). */
+export interface UpdatePlaythroughCompletionPlaythrough {
+  playthroughTypeUid?: string | null;
+  inputUid?: string | null;
+  startedAt?: string | null; // YYYY-MM-DD
+  playthroughStateUid?: string | null;
+}
+
+/** One game_completion row (instance or DLC) to partially update via 6.4. */
+export interface UpdatePlaythroughCompletionGameCompletion {
+  uid: string; // game_completion uid
+  dlcUid?: string | null;
+  completionStateUid?: string | null;
+  info?: string | null;
+  finishedDate?: string | null; // YYYY-MM-DD
+  completedDate?: string | null; // YYYY-MM-DD
+}
+
+/** Backlog entry partial update via 6.4. */
+export interface UpdatePlaythroughCompletionBacklog {
+  uid: string;
+  removedDate?: string | null; // YYYY-MM-DD
+  reason?: string | null;
+}
+
+/** Request body for PUT /api/playthroughs/{uid}/playthrough-completion (6.4). */
+export interface UpdatePlaythroughCompletionRequest {
+  playthrough?: UpdatePlaythroughCompletionPlaythrough;
+  gameCompletions?: UpdatePlaythroughCompletionGameCompletion[];
+  /** Each DLC's playthrough_uid is set to the path {uid}. */
+  dlcUids?: string[] | null;
+  backlog?: UpdatePlaythroughCompletionBacklog;
+}
+
 // ---------------------------------------------------------------------------
 // Query results (search / list)
 // ---------------------------------------------------------------------------
@@ -188,16 +222,33 @@ export interface TimeBookingQueryDto {
 // Reviews (year tierlist)
 // ---------------------------------------------------------------------------
 
+export interface ReviewSearchLinkedDlcDto {
+  uid: string;
+  name: string;
+}
+
 export interface ReviewSearchPlaythroughDto {
   playthroughUid: string;
   playthroughTypeUid: string | null;
   playthroughStateUid: string;
   startedAt: string | null; // YYYY-MM-DD
+  gameInstanceUid: string;
+  inputUid: string | null;
+  /** Sum of completed time bookings for the playthrough. */
+  totalPlaytimeSeconds: number;
+  /** Game instance cover, or game cover when the instance has none. */
+  coverImageUid: string | null;
   reviewUid: string | null;
   reviewDate: string | null; // YYYY-MM-DD
   tierUid: string | null;
+  /** Review's preferred image; null when no review or not set. */
+  preferredImageUid: string | null;
   /** true when reviewUid is non-null and review text is not blank. */
   hasTextReview: boolean;
+  /** DLCs linked to this playthrough. */
+  linkedDlcs: ReviewSearchLinkedDlcDto[];
+  /** Game instance completion + linked DLC completions. */
+  completions: GameCompletionDTO[];
 }
 
 export interface ReviewSearchResultDto {
@@ -222,6 +273,8 @@ export interface ReviewUpdateRequest {
   reviewDate: string | null; // YYYY-MM-DD
   tierUid: string | null;
   text: string | null;
+  /** Selected preferred image for this review; null clears it. */
+  preferredImageUid?: string | null;
 }
 
 /** Response of GET /api/reviews/{uid}. */
@@ -237,6 +290,9 @@ export interface ReviewByUidDto {
   };
   displayName: string;
   coverImageUid: string | null;
+  gameInstanceUid: string;
+  gameUid: string;
+  preferredImageUid: string | null;
   otherPlaythroughs: Array<{
     uid: string;
     playthroughTypeUid: string | null;

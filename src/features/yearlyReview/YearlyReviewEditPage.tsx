@@ -29,6 +29,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
+import { getAppConfig } from '../../app/AppConfig';
 import { ImageApi } from '../../services/imageApi';
 import { queryGameOverview } from '../../services/gameOverviewApi';
 import type { GameOverviewQueryPayload } from '../../services/gameOverviewApi';
@@ -45,7 +46,12 @@ import SmartImage from '../shared/SmartImage';
 const CURRENT_YEAR = new Date().getFullYear();
 const LAST_YEAR = CURRENT_YEAR - 1;
 const MIN_YEAR = 2017;
-const YEARS = Array.from({ length: LAST_YEAR - MIN_YEAR + 1 }, (_, i) => LAST_YEAR - i);
+
+/** Selectable years; current year is only included in MANAGEMENT mode. */
+function getSelectableYears(): number[] {
+  const maxYear = getAppConfig().mode === 'MANAGEMENT' ? CURRENT_YEAR : LAST_YEAR;
+  return Array.from({ length: maxYear - MIN_YEAR + 1 }, (_, i) => maxYear - i);
+}
 
 /** Chunk games into rows with max 6 per row, balanced (e.g. 13 -> 5, 4, 4). */
 function chunkGames<T>(items: T[], maxPerRow: number = 6): T[][] {
@@ -71,6 +77,7 @@ function displayCoverUid(row: GameOverviewRowDto): string | null {
 }
 
 export default function YearlyReviewEditPage() {
+  const years = getSelectableYears();
   const [year, setYear] = useState(LAST_YEAR);
   const [data, setData] = useState<YearlyReviewDto | null>(null);
   const [loading, setLoading] = useState(false);
@@ -385,7 +392,7 @@ export default function YearlyReviewEditPage() {
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
           >
-            {YEARS.map((y) => (
+            {years.map((y) => (
               <MenuItem key={y} value={y}>{y}</MenuItem>
             ))}
           </Select>
@@ -765,7 +772,14 @@ export default function YearlyReviewEditPage() {
                         imgSx={{ borderRadius: 0.5 }}
                       />
                     )}
-                    <Typography variant="body2">{displayName(r)}</Typography>
+                    <Typography variant="body2">
+                      {displayName(r)}
+                      {r.platformName ? (
+                        <Box component="span" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                          {` - ${r.platformName}`}
+                        </Box>
+                      ) : ''}
+                    </Typography>
                   </Box>
                 ))}
               </Box>

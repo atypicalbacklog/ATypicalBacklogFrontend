@@ -1,5 +1,8 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Paper, Stack, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { Link as RouterLink } from 'react-router-dom';
+import TrackingCoverageBar from '../shared/TrackingCoverageBar';
+import { TRACKING_COVERAGE_ENTRIES } from './trackingCoverageData';
 
 export default function FaqGlossarPage() {
   return (
@@ -30,31 +33,81 @@ export default function FaqGlossarPage() {
             </Box>
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                What data is tracked
+                What is tracked &amp; how complete it is
               </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Games, game instances, DLC, console/platform context, variant type, playthroughs,
-                tracked sessions (time bookings), backlog entries, completion states, and review/tier
-                context. The stats/charts are derived from these core entities.
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                This tracks playtime, game possession, backlog entries, and completion context per game
+                instance (including DLC where it matters). Free games and playing the same title on
+                multiple consoles/platforms can lead to duplicate-looking entries — that is intentional,
+                because each instance is tracked separately. How completion states work is described in
+                the{' '}
+                <MuiLink
+                  component={RouterLink}
+                  to="/faq-glossar#glossary-completion-states"
+                  underline="hover"
+                >
+                  glossary
+                </MuiLink>
+                .
               </Typography>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                What games are tracked
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Mainly what I own, play, or intentionally keep in backlog scope. This includes base
-                games and selected DLCs when they matter for progress or review context.
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                How much is still missing
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Always something. Recent data is usually near-complete; older history can be patchy
-                and gets improved over time whenever I revisit it.
-              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  width: '100%',
+                  mt: 0.5,
+                }}
+              >
+                <Stack
+                  spacing={0.5}
+                  sx={{
+                    width: '100%',
+                    maxWidth: 720,
+                    mx: 'auto',
+                  }}
+                >
+                  {TRACKING_COVERAGE_ENTRIES.map((entry) => (
+                    <Stack
+                      key={entry.label}
+                      direction="row"
+                      alignItems="flex-start"
+                      spacing={1}
+                      sx={{ width: '100%', py: 0 }}
+                    >
+                      <Box sx={{ width: 96, flexShrink: 0, pt: 0.125 }}>
+                        <TrackingCoverageBar percent={entry.percent} />
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          flex: 1,
+                          minWidth: 0,
+                          lineHeight: 1.3,
+                          overflowWrap: 'anywhere',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {entry.label}
+                        {entry.hint ? (
+                          <>
+                            {' '}
+                            <Box
+                              component="span"
+                              sx={{
+                                color: 'text.secondary',
+                                fontSize: '0.6875rem',
+                                lineHeight: 1.2,
+                              }}
+                            >
+                              ({entry.hint})
+                            </Box>
+                          </>
+                        ) : null}
+                      </Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
             </Box>
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
@@ -196,7 +249,7 @@ export default function FaqGlossarPage() {
           </Accordion>
         </Paper>
 
-        <Paper variant="outlined" sx={{ p: 2 }}>
+        <Paper variant="outlined" sx={{ p: 2 }} id="glossary">
           <Typography variant="h6" sx={{ mb: 1 }}>
             Glossary
           </Typography>
@@ -293,7 +346,7 @@ export default function FaqGlossarPage() {
             </Stack>
 
             <Stack spacing={2}>
-            <Box>
+            <Box id="glossary-completion-states">
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
                 Completion States (Played)
               </Typography>

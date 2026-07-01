@@ -1,5 +1,8 @@
 import { http } from './httpClient';
-import type { GameOverviewRowDto } from '../features/library/types';
+import type {
+  GameOverviewQueryResponseDto,
+  GameOverviewRowDto,
+} from '../features/library/types';
 
 export interface GameOverviewQueryPayload {
   searchText?: string | null;
@@ -15,9 +18,11 @@ export interface GameOverviewQueryPayload {
   sortMode?: string;
 }
 
-/** Game overview query (library, filters, sort). */
-export function queryGameOverview(payload: GameOverviewQueryPayload) {
-  return http<GameOverviewRowDto[]>('/api/query/game-overview', {
+/** Game overview query (library, filters, sort). Returns result rows only. */
+export function queryGameOverview(
+  payload: GameOverviewQueryPayload
+): Promise<GameOverviewRowDto[]> {
+  return http<GameOverviewQueryResponseDto>('/api/query/game-overview', {
     method: 'POST',
     body: JSON.stringify({
       searchText: payload.searchText ?? null,
@@ -32,7 +37,7 @@ export function queryGameOverview(payload: GameOverviewQueryPayload) {
       onlyGamesWithDlc: payload.onlyGamesWithDlc ?? null,
       sortMode: payload.sortMode ?? 'NAME_ASC',
     }),
-  });
+  }).then((result) => result.rows ?? []);
 }
 
 /** Lightweight search for game instances (uses game-overview query). */

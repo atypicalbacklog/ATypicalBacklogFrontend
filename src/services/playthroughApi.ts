@@ -4,6 +4,7 @@ import {
   PlaythroughDTO,
   PlaythroughQueryResultDto,
   UpdatePlaythroughRequest,
+  UpdatePlaythroughCompletionRequest,
 } from '../types/dto';
 
 const BASE = '/api/playthroughs';
@@ -25,6 +26,13 @@ export const PlaythroughApi = {
 
   update: (uid: string, data: UpdatePlaythroughRequest) =>
     http<PlaythroughDTO>(`${BASE}/${uid}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  /** Combined update: playthrough metadata + game completions + DLC links + backlog (6.4). */
+  updateCompletion: (uid: string, data: UpdatePlaythroughCompletionRequest) =>
+    http<PlaythroughDTO>(`${BASE}/${uid}/playthrough-completion`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),

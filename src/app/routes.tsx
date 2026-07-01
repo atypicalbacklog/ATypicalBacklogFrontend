@@ -8,6 +8,7 @@ import BacklogPage from '../features/backlog/BacklogPage';
 import ActivePlaythroughsPage from '../features/playthroughs/ActivePlaythroughsPage';
 import AddPlaythroughPage from '../features/playthroughs/AddPlaythroughPage';
 import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPage';
+import EditPlaythroughCompletionPage from '../features/playthroughs/EditPlaythroughCompletionPage';
 import ManageYearTierlistPage from '../features/reviews/ManageYearTierlistPage';
 import YearlyReviewPage from '../features/yearlyReview/YearlyReviewPage';
 import YearlyReviewEditPage from '../features/yearlyReview/YearlyReviewEditPage';
@@ -42,6 +43,7 @@ export const appRoutes = [
   { path: '/play-activity/active', element: <ManagementOnly><ActivePlaythroughsPage /></ManagementOnly> },
   { path: '/playthroughs/new', element: <ManagementOnly><AddPlaythroughPage /></ManagementOnly> },
   { path: '/playthroughs/:uid', element: <ManagementOnly><PlaythroughDetailPage /></ManagementOnly> },
+  { path: '/playthroughs/:uid/complete', element: <ManagementOnly><EditPlaythroughCompletionPage /></ManagementOnly> },
   { path: '/reviews/year-tierlist', element: <ManagementOnly><ManageYearTierlistPage /></ManagementOnly> },
   { path: '/reviews', element: <ReviewsPage /> },
   { path: '/reviews/yearly', element: <YearlyReviewPage /> },

@@ -17,9 +17,11 @@ import ImageIcon from '@mui/icons-material/Image';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { IgdbApi, type IgdbGameSearchResultDto } from '../../services/igdbApi';
+import ExternalGameSearch from './ExternalGameSearch';
+import DirectExternalIdBlock from './DirectExternalIdBlock';
 
 interface Props {
-  /** Game instance external IGDB ID (from instance.externalIgdbId). When null/empty, search is disabled. */
+  /** Game instance external IGDB ID. Enables related-DLC search when set. */
   gameInstanceExternalIgdbId: string | null;
   /** Current DLC name (used as optional filter for related content). */
   dlcName: string;
@@ -31,17 +33,27 @@ interface Props {
   onMarkCoverImport: (externalId: number) => void;
   /** When set (edit DLC), "Import cover now" is available. */
   dlcUid?: string | null;
-  /** When dlcUid set, pass gameInstanceUid for import-cover context. */
+  /** Parent game instance; used for DLC cover import context. */
   gameInstanceUid?: string | null;
 }
 
+function applyIgdbResultToDlc(
+  result: IgdbGameSearchResultDto,
+  actions: { name: boolean; date: boolean; image: boolean },
+  callbacks: Pick<Props, 'onOverwriteName' | 'onOverwriteDate' | 'onMarkCoverImport'>
+) {
+  if (actions.name) callbacks.onOverwriteName(result.name);
+  if (actions.date && result.releaseDate) callbacks.onOverwriteDate(result.releaseDate);
+  if (actions.image && result.externalId) callbacks.onMarkCoverImport(result.externalId);
+}
+
 /**
- * Search IGDB related content (DLCs, expansions) for a game instance by its external IGDB ID.
- * Same options as ExternalGameSearch: name, date, image toggles; confirm or cancel.
+ * IGDB helpers for DLC: related content (when instance has IGDB ID), name search, and direct ID lookup.
  */
 export default function ExternalDlcSearch({
   gameInstanceExternalIgdbId,
   dlcName,
+  releaseDate,
   onOverwriteName,
   onOverwriteDate,
   onMarkCoverImport,
@@ -54,14 +66,16 @@ export default function ExternalDlcSearch({
   const [importing, setImporting] = useState(false);
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
 
+  const dlcCallbacks = { onOverwriteName, onOverwriteDate, onMarkCoverImport };
+
   const externalIdNum =
     gameInstanceExternalIgdbId != null && gameInstanceExternalIgdbId.trim() !== ''
       ? parseInt(gameInstanceExternalIgdbId.trim(), 10)
       : NaN;
-  const canSearch = !Number.isNaN(externalIdNum);
+  const canSearchRelated = !Number.isNaN(externalIdNum);
 
-  const handleSearch = async () => {
-    if (!canSearch) return;
+  const handleSearchRelated = async () => {
+    if (!canSearchRelated) return;
     setSearching(true);
     setResults([]);
     setSelectedResult(null);
@@ -112,15 +126,15 @@ export default function ExternalDlcSearch({
 
   const handleCommit = () => {
     if (!selectedResult) return;
-    if (selectedActions.includes('all') || selectedActions.includes('name')) {
-      onOverwriteName(selectedResult.name);
-    }
-    if (selectedActions.includes('all') || selectedActions.includes('date')) {
-      if (selectedResult.releaseDate) onOverwriteDate(selectedResult.releaseDate);
-    }
-    if (selectedActions.includes('all') || selectedActions.includes('image')) {
-      if (selectedResult.externalId) onMarkCoverImport(selectedResult.externalId);
-    }
+    applyIgdbResultToDlc(
+      selectedResult,
+      {
+        name: selectedActions.includes('all') || selectedActions.includes('name'),
+        date: selectedActions.includes('all') || selectedActions.includes('date'),
+        image: selectedActions.includes('all') || selectedActions.includes('image'),
+      },
+      dlcCallbacks
+    );
     setSelectedResult(null);
     setSelectedActions([]);
     setResults([]);
@@ -325,7 +339,7 @@ export default function ExternalDlcSearch({
       </Stack>
     ) : null;
 
-  const searchResults = useMemo(() => {
+  const relatedSearchResults = useMemo(() => {
     if (searching) {
       return (
         <Box display="flex" justifyContent="center" py={1}>
@@ -374,20 +388,42 @@ export default function ExternalDlcSearch({
     );
   }, [searching, results, selectedResult, selectedActions, dlcUid, importing]);
 
-  if (!canSearch) return null;
-
   return (
-    <Box sx={{ mt: 1, maxWidth: { xs: 'min(100%, 300px)', sm: 'none' } }}>
-      <Button
-        size="small"
-        variant="outlined"
-        startIcon={searching ? <CircularProgress size={16} /> : <SearchIcon />}
-        onClick={handleSearch}
-        disabled={searching}
-      >
-        Search DLC
-      </Button>
-      {searchResults}
+    <Box sx={{ mt: 1 }}>
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+        {canSearchRelated && (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={searching ? <CircularProgress size={16} /> : <SearchIcon />}
+            onClick={handleSearchRelated}
+            disabled={searching}
+          >
+            Search related DLC
+          </Button>
+        )}
+        <ExternalGameSearch
+          gameName={dlcName}
+          releaseDate={releaseDate}
+          onOverwriteName={onOverwriteName}
+          onOverwriteDate={onOverwriteDate}
+          onMarkCoverImport={onMarkCoverImport}
+          ownerType="DLC"
+          ownerUid={dlcUid ?? null}
+          gameInstanceUid={gameInstanceUid}
+        />
+        <DirectExternalIdBlock
+          onConfirm={(res, actions) => {
+            applyIgdbResultToDlc(res, actions, dlcCallbacks);
+          }}
+        />
+      </Stack>
+      {!canSearchRelated && (
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
+          Related DLC search needs an instance IGDB ID. Use IGDB search or set external ID directly.
+        </Typography>
+      )}
+      {canSearchRelated && relatedSearchResults}
     </Box>
   );
 }

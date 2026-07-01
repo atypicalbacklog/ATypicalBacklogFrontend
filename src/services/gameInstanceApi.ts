@@ -37,4 +37,9 @@ export const GameInstanceApi = {
     }
     return cached;
   },
+
+  /** Drop cached detail so the next get() hits the API (e.g. after DLC/completion changes). */
+  invalidateCache: (uid: string) => {
+    instanceCache.delete(uid);
+  },
 };

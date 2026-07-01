@@ -64,6 +64,7 @@ export default function GameInstanceOverviewPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadData = useCallback(async (instanceUid: string) => {
+    GameInstanceApi.invalidateCache(instanceUid);
     const inst = await GameInstanceApi.get(instanceUid);
     setInstance(inst);
 
@@ -163,6 +164,8 @@ export default function GameInstanceOverviewPage() {
     if (!initialFetchBegin(key)) return;
     setLoading(true);
     setError(null);
+    setInstance(null);
+    setDlcs([]);
     loadData(uid)
       .catch(() => setError('Failed to load game instance'))
       .finally(() => {
@@ -384,21 +387,40 @@ export default function GameInstanceOverviewPage() {
                 boxSizing: 'border-box',
               }}
             >
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'center', sm: 'stretch' }} sx={{ minHeight: { xs: 'auto', sm: 280 } }}>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={2}
+                alignItems={{ xs: 'center', sm: 'stretch' }}
+                sx={{
+                  minHeight: {
+                    xs: 'auto',
+                    sm: 280,
+                  },
+                  maxHeight: { xs: 'none', sm: 320 },
+                }}
+              >
                 <CoverWithTabs instance={instance} game={game} instances={instances} />
                 <Stack
                   direction="column"
                   spacing={2}
-                  sx={{ minWidth: 0, flex: 1, justifyContent: 'space-between' }}
+                  sx={{
+                    minWidth: 0,
+                    flex: 1,
+                    alignSelf: { sm: 'stretch' },
+                    maxHeight: { sm: '100%' },
+                    overflow: 'hidden',
+                  }}
                 >
-                  <InstanceDetailsCard
-                    instance={instance}
-                    variantName={variantName}
-                    platformName={platformName}
-                    platformConsoleName={platformConsoleName}
-                    originalConsoleName={originalConsoleName}
-                    leftSection
-                  />
+                  <Box sx={{ flexShrink: 0 }}>
+                    <InstanceDetailsCard
+                      instance={instance}
+                      variantName={variantName}
+                      platformName={platformName}
+                      platformConsoleName={platformConsoleName}
+                      originalConsoleName={originalConsoleName}
+                      leftSection
+                    />
+                  </Box>
                   <DlcOverviewBlock
                     dlcs={dlcs}
                     completions={instance.completions}

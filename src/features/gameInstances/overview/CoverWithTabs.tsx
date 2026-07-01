@@ -41,7 +41,7 @@ export default function CoverWithTabs({ instance, game, instances }: Props) {
   const selected = sources[coverTab] ?? sources[0];
 
   const coverWidth = { xs: 120, sm: 200 };
-  const coverHeight = { xs: 168, sm: 280 };
+  const coverHeight = { xs: 188, sm: 300 };
 
   if (sources.length === 0) {
     return (

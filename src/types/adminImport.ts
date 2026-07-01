@@ -4,7 +4,8 @@ export type StagedResolutionStatus =
   | 'UPDATED'
   | 'CURATED'
   | 'FINALIZED'
-  | 'IMPORTED';
+  | 'IMPORTED'
+  | 'REJECTED';
 
 /** Summary of a staged game (list by status). */
 export interface StagedGameSummaryDto {
