@@ -39,6 +39,7 @@ interface Props {
   stateName: (uid: string) => string;
   tierName: (uid: string | null) => string;
   getTierColor: (tierUid: string | null) => string;
+  readOnly?: boolean;
 }
 
 /** Sort by reviewDate desc (newest first); null dates last. */
@@ -98,6 +99,7 @@ export default function ReviewOverviewBlock({
   stateName,
   tierName,
   getTierColor,
+  readOnly = false,
 }: Props) {
   const cardRows = useMemo(() => buildCardRows(reviews, typeName), [reviews, typeName]);
 
@@ -150,6 +152,7 @@ export default function ReviewOverviewBlock({
             stateName={stateName}
             tierName={tierName}
             getTierColor={getTierColor}
+            readOnly={readOnly}
           />
         ))}
       </Box>
@@ -165,6 +168,7 @@ interface ReviewCardProps {
   stateName: (uid: string) => string;
   tierName: (uid: string | null) => string;
   getTierColor: (tierUid: string | null) => string;
+  readOnly?: boolean;
 }
 
 function ReviewCard({
@@ -175,6 +179,7 @@ function ReviewCard({
   stateName,
   tierName,
   getTierColor,
+  readOnly = false,
 }: ReviewCardProps) {
   const [expanded, setExpanded] = useState(false);
   const tierUid = primary.tierUid;
@@ -277,22 +282,24 @@ function ReviewCard({
             </Typography>
           </Box>
         )}
-        <Tooltip title="Edit review">
-          <IconButton
-            component={Link}
-            to="/reviews/edit"
-            state={{
-              reviewUid: primary.reviewUid,
-              from: 'game-instance' as const,
-              gameInstanceUid,
-            }}
-            size="small"
-            aria-label="Edit review"
-            sx={{ mt: 0.25 }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        {!readOnly ? (
+          <Tooltip title="Edit review">
+            <IconButton
+              component={Link}
+              to="/reviews/edit"
+              state={{
+                reviewUid: primary.reviewUid,
+                from: 'game-instance' as const,
+                gameInstanceUid,
+              }}
+              size="small"
+              aria-label="Edit review"
+              sx={{ mt: 0.25 }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </CardContent>
     </Card>
   );

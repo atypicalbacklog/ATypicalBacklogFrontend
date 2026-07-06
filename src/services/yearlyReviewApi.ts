@@ -1,4 +1,5 @@
 import { http } from './httpClient';
+import type { YearlyReviewGamePresentationType } from '../types/dto';
 
 export interface YearlyReviewGameDto {
   uid: string;
@@ -7,6 +8,7 @@ export interface YearlyReviewGameDto {
   preferredImageUid: string | null;
   text: string | null;
   order: number;
+  presentationType: YearlyReviewGamePresentationType;
 }
 
 export interface YearlyReviewCategoryDto {
@@ -45,6 +47,7 @@ export interface UpsertYearlyReviewGameRequest {
   preferredImageUid: string | null;
   text: string | null;
   order: number;
+  presentationType?: YearlyReviewGamePresentationType | null;
 }
 
 const BASE = '/api/yearly-review';

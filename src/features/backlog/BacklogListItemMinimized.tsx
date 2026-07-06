@@ -60,16 +60,13 @@ export default function BacklogListItemMinimized({
         {item.backlogScore}
       </TableCell>
       <TableCell sx={baseCellSx({ width: 36 })}>
-        {item.coverImageUid ? (
-          <SmartImage
-            imageUid={item.coverImageUid}
-            alt=""
-            thumbnail
-            sx={thumbSx}
-          />
-        ) : (
-          <span style={{ display: 'inline-block', width: 20, height: 28 }} />
-        )}
+        <SmartImage
+          imageUid={item.coverImageUid}
+          alt=""
+          thumbnail
+          compactPlaceholder
+          sx={thumbSx}
+        />
       </TableCell>
       <TableCell sx={baseCellSx()}>
         <Typography variant="body2" fontWeight="medium" noWrap sx={{ maxWidth: compactColumns ? 120 : 180 }}>

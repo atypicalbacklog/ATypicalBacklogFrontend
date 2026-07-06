@@ -39,41 +39,53 @@ export function useLibraryQuery(filters: LibraryFilterState) {
       debounceRef.current = null;
     }
 
-    debounceRef.current = setTimeout(async () => {
+    let cancelled = false;
+
+    debounceRef.current = setTimeout(() => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
+      const body = toQueryRequestBody(filters);
+
       setError(null);
       setIsLoading(true);
-      try {
-        const result = await http<GameOverviewQueryResponseDto>(
-          '/api/query/game-overview',
-          {
-            method: 'POST',
-            body: JSON.stringify(toQueryRequestBody(filters)),
-            signal: controller.signal,
+
+      void (async () => {
+        try {
+          const result = await http<GameOverviewQueryResponseDto>(
+            '/api/query/game-overview',
+            {
+              method: 'POST',
+              body: JSON.stringify(body),
+              signal: controller.signal,
+            }
+          );
+          if (cancelled) return;
+          setData(result.rows ?? []);
+          setCounts({
+            gameCount: result.gameCount ?? 0,
+            gameInstanceCount: result.gameInstanceCount ?? 0,
+            dlcCount: result.dlcCount ?? 0,
+            returnedGameCount: result.returnedGameCount ?? 0,
+            returnedGameInstanceCount: result.returnedGameInstanceCount ?? 0,
+            returnedDlcCount: result.returnedDlcCount ?? 0,
+          });
+        } catch (e) {
+          if (cancelled) return;
+          if ((e as Error).name !== 'AbortError') {
+            setError((e as Error).message || 'Failed to load library.');
           }
-        );
-        setData(result.rows ?? []);
-        setCounts({
-          gameCount: result.gameCount ?? 0,
-          gameInstanceCount: result.gameInstanceCount ?? 0,
-          dlcCount: result.dlcCount ?? 0,
-          returnedGameCount: result.returnedGameCount ?? 0,
-          returnedGameInstanceCount: result.returnedGameInstanceCount ?? 0,
-          returnedDlcCount: result.returnedDlcCount ?? 0,
-        });
-      } catch (e) {
-        if ((e as Error).name !== 'AbortError') {
-          setError((e as Error).message || 'Failed to load library.');
+        } finally {
+          if (!cancelled) {
+            setIsLoading(false);
+          }
         }
-      } finally {
-        setIsLoading(false);
-      }
+      })();
     }, 300);
 
     return () => {
+      cancelled = true;
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
         debounceRef.current = null;

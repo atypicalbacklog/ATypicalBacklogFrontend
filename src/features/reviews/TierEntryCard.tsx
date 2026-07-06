@@ -3,30 +3,17 @@ import { Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import NotesIcon from '@mui/icons-material/Notes';
 import ListIcon from '@mui/icons-material/List';
-import SmartImage from '../shared/SmartImage';
+import ReviewPresentationImage from '../shared/ReviewPresentationImage';
 import ReviewDetailModal from './ReviewDetailModal';
-import type { ReviewSearchResultDto, ReviewSearchPlaythroughDto } from '../../types/dto';
+import {
+  pickPrimaryReviewPlaythrough,
+  normalizeReviewPresentationType,
+  reviewCardTooltip,
+} from './reviewPresentationUtils';
+import type { ReviewSearchResultDto } from '../../types/dto';
 import type { EditReviewLocationState } from './EditReviewPage';
 
-/** Preferred playthrough type order for opening edit: Solo > Coop > Multiplayer > Casual > other. */
-const EDIT_TYPE_ORDER = ['Solo', 'Coop', 'Multiplayer', 'Casual'];
-
-function pickReviewPlaythroughForEdit(
-  card: ReviewSearchResultDto,
-  playthroughTypeName: (uid: string | null) => string
-): ReviewSearchPlaythroughDto | undefined {
-  const withReview = card.playthroughs.filter((p) => p.reviewUid);
-  if (withReview.length === 0) return undefined;
-  const typeOrderIndex = (p: ReviewSearchPlaythroughDto) => {
-    const name = playthroughTypeName(p.playthroughTypeUid);
-    const i = EDIT_TYPE_ORDER.findIndex((t) => t.toLowerCase() === name.toLowerCase());
-    return i >= 0 ? i : EDIT_TYPE_ORDER.length;
-  };
-  withReview.sort((a, b) => typeOrderIndex(a) - typeOrderIndex(b));
-  return withReview[0];
-}
-
-export interface TierEntryCardProps {
+interface Props {
   card: ReviewSearchResultDto;
   playthroughTypeNames: (uid: string | null) => string;
   onDragStart: (card: ReviewSearchResultDto | null) => void;
@@ -49,20 +36,23 @@ export default function TierEntryCard({
   compact = false,
   tiers,
   onMoveToTier,
-}: TierEntryCardProps) {
+}: Props) {
   const [moveAnchor, setMoveAnchor] = useState<null | HTMLElement>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   const types = [...new Set(card.playthroughs.map((p) => p.playthroughTypeUid).filter(Boolean))];
   const typeLabels = types.map((uid) => playthroughTypeNames(uid)).filter(Boolean).join(', ') || '—';
-  const preferredForEdit = pickReviewPlaythroughForEdit(card, playthroughTypeNames);
+  const preferredForEdit = pickPrimaryReviewPlaythrough(card.playthroughs, playthroughTypeNames);
   const hasTextReview = card.playthroughs.some((p) => p.hasTextReview);
 
-  // Use a review's preferred image when set, falling back to the default thumbnail.
   const displayImageUid =
     preferredForEdit?.preferredImageUid ??
     card.playthroughs.find((p) => p.preferredImageUid)?.preferredImageUid ??
     card.thumbnailImageUid;
+  const presentationType = normalizeReviewPresentationType(
+    preferredForEdit?.presentationType ??
+      card.playthroughs.find((p) => p.presentationType)?.presentationType
+  );
 
   const cardWidth = compact ? 100 : 155;
   const imageHeight = compact ? 135 : 210;
@@ -82,11 +72,10 @@ export default function TierEntryCard({
       }
       onDragEnd={!compact ? () => onDragStart(null) : undefined}
       onClick={() => setDetailOpen(true)}
-      title={card.displayName}
+      title={reviewCardTooltip(card.displayName, presentationType)}
       sx={{
         flexShrink: 0,
         width: cardWidth,
-        pb: 1,
         borderRadius: 1,
         overflow: 'hidden',
         bgcolor: (theme) =>
@@ -107,14 +96,34 @@ export default function TierEntryCard({
         position: 'relative',
       }}
     >
-      <SmartImage
-        imageUid={displayImageUid}
-        thumbnail
-        alt=""
-        aspectRatio={2 / 3}
-        fit="contain"
-        sx={{ width: '100%', height: imageHeight }}
-      />
+      <Box
+        sx={{
+          width: '100%',
+          height: imageHeight,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        <ReviewPresentationImage
+          imageUid={displayImageUid}
+          presentationType={presentationType}
+          thumbnail
+          alt=""
+          aspectRatio={2 / 3}
+          fit="contain"
+          sx={{ width: '100%', height: '100%', aspectRatio: 'unset', bgcolor: 'transparent' }}
+          imgSx={{
+            maxWidth: '100%',
+            maxHeight: '100%',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+            objectPosition: 'center',
+          }}
+        />
+      </Box>
       <Box sx={{ p: 1, pb: 4, textAlign: 'left' }} onClick={(e) => e.stopPropagation()}>
         <Typography variant="caption" color="text.secondary" noWrap title={typeLabels}>
           {typeLabels}

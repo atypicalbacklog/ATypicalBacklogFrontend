@@ -10,7 +10,6 @@ import AddPlaythroughPage from '../features/playthroughs/AddPlaythroughPage';
 import PlaythroughDetailPage from '../features/playthroughs/PlaythroughDetailPage';
 import EditPlaythroughCompletionPage from '../features/playthroughs/EditPlaythroughCompletionPage';
 import ManageYearTierlistPage from '../features/reviews/ManageYearTierlistPage';
-import YearlyReviewPage from '../features/yearlyReview/YearlyReviewPage';
 import YearlyReviewEditPage from '../features/yearlyReview/YearlyReviewEditPage';
 import EditReviewPage from '../features/reviews/EditReviewPage';
 import AdminImportStagingPage from '../features/admin/AdminImportStagingPage';
@@ -18,17 +17,20 @@ import EditStagedGamePage from '../features/admin/EditStagedGamePage';
 import EditStagedPlaythroughGroupPage from '../features/admin/EditStagedPlaythroughGroupPage';
 import StatisticsDashboardPage from '../features/statistics/StatisticsDashboardPage';
 import BacklogCompletionOverviewPage from '../features/backlogCompletion/BacklogCompletionOverviewPage';
+import BacklogSubmissionsPage from '../features/backlogSubmissions/BacklogSubmissionsPage';
 import ReviewsPage from '../features/reviews/ReviewsPage';
-import ImpressumPage from '../features/static/ImpressumPage';
+import ImprintPage from '../features/static/ImprintPage';
 import FaqGlossarPage from '../features/static/FaqGlossarPage';
+import LandingPage from '../features/landing/LandingPage';
 import ModeAwareHome from './ModeAwareHome';
 import ManagementOnly from './ManagementOnly';
 
 export const appRoutes = [
   { path: '/', element: <ModeAwareHome /> },
+  { path: '/public', element: <LandingPage /> },
   { path: '/games', element: <ManagementOnly><AddCatalogPage /></ManagementOnly> },
   { path: '/games/:uid', element: <ManagementOnly><GameDetailPage /></ManagementOnly> },
-  { path: '/game-instances/:uid', element: <ManagementOnly><GameInstanceOverviewPage /></ManagementOnly> },
+  { path: '/game-instances/:uid', element: <GameInstanceOverviewPage /> },
   { path: '/game-instances/:uid/edit', element: <ManagementOnly><GameInstanceDetailPage /></ManagementOnly> },
   {
     path: '/game-instances/:instanceUid/images/:imageUid/edit',
@@ -46,12 +48,13 @@ export const appRoutes = [
   { path: '/playthroughs/:uid/complete', element: <ManagementOnly><EditPlaythroughCompletionPage /></ManagementOnly> },
   { path: '/reviews/year-tierlist', element: <ManagementOnly><ManageYearTierlistPage /></ManagementOnly> },
   { path: '/reviews', element: <ReviewsPage /> },
-  { path: '/reviews/yearly', element: <YearlyReviewPage /> },
+  { path: '/reviews/yearly', element: <ReviewsPage /> },
   { path: '/reviews/yearly/edit', element: <ManagementOnly><YearlyReviewEditPage /></ManagementOnly> },
   { path: '/reviews/edit', element: <ManagementOnly><EditReviewPage /></ManagementOnly> },
   { path: '/statistics', element: <StatisticsDashboardPage /> },
   { path: '/backlog-completion-overview', element: <BacklogCompletionOverviewPage /> },
-  { path: '/impressum', element: <ImpressumPage /> },
+  { path: '/backlog-submissions', element: <BacklogSubmissionsPage /> },
+  { path: '/imprint', element: <ImprintPage /> },
   { path: '/faq-glossar', element: <FaqGlossarPage /> },
   { path: '/admin/import/staging', element: <ManagementOnly><AdminImportStagingPage /></ManagementOnly> },
   {

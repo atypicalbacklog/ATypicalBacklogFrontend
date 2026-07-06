@@ -2,17 +2,27 @@ import { Box, Link, Paper, Stack, Typography } from '@mui/material';
 
 const CONTACT_EMAIL = 'your-email@example.com';
 
-export default function ImpressumPage() {
+export default function ImprintPage() {
   return (
     <Box sx={{ width: '100%', maxWidth: 900 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Impressum
+        Imprint
       </Typography>
 
       <Stack spacing={2}>
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            Legal Notice (Impressum)
+            Purpose
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            A free, non-commercial overview of private video game consumption habits, including
+            subjective reviews of that behavior.
+          </Typography>
+        </Paper>
+
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Legal Notice
           </Typography>
           <Stack spacing={1}>
             <Typography variant="body2">
@@ -23,7 +33,7 @@ export default function ImpressumPage() {
             <Typography variant="body2">
               <strong>Location:</strong>
               <br />
-              Vienna, Austria
+              Linz, Austria
             </Typography>
           </Stack>
         </Paper>

@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
+import { isManagementMode } from '../../app/AppConfig';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { GameApi } from '../../services/gameApi';
 import { DlcApi } from '../../services/dlcApi';
@@ -46,6 +47,7 @@ import ImageGallery from './overview/ImageGallery';
 
 export default function GameInstanceOverviewPage() {
   const { uid } = useParams<{ uid: string }>();
+  const readOnly = !isManagementMode();
   const { referenceData, isLoaded } = useReferenceData();
   const [instance, setInstance] = useState<GameInstanceDetailDTO | null>(null);
   const [game, setGame] = useState<GameDTO | null>(null);
@@ -307,7 +309,7 @@ export default function GameInstanceOverviewPage() {
               No game linked
             </Typography>
           )}
-          {game && (
+          {game && !readOnly && (
             <Tooltip title="Edit Game">
               <IconButton
                 component={Link}
@@ -361,16 +363,18 @@ export default function GameInstanceOverviewPage() {
               {instance.name || instance.uid}
             </Typography>
           )}
-          <Tooltip title="Edit Instance">
-            <IconButton
-              component={Link}
-              to={`/game-instances/${uid}/edit`}
-              size="small"
-              aria-label="Edit Instance"
-            >
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {!readOnly ? (
+            <Tooltip title="Edit Instance">
+              <IconButton
+                component={Link}
+                to={`/game-instances/${uid}/edit`}
+                size="small"
+                aria-label="Edit Instance"
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : null}
         </Box>
 
         <Box sx={{ p: 2, minWidth: 0 }}>
@@ -472,6 +476,7 @@ export default function GameInstanceOverviewPage() {
                         .then(setHltbEstimate)
                         .catch(() => setHltbEstimate(null))
                     }
+                    readOnly={readOnly}
                   />
                 </Paper>
               </Stack>
@@ -505,6 +510,7 @@ export default function GameInstanceOverviewPage() {
               typeName={typeName}
               stateName={stateName}
               inputName={inputName}
+              readOnly={readOnly}
             />
           </Box>
 
@@ -517,13 +523,14 @@ export default function GameInstanceOverviewPage() {
               stateName={stateName}
               tierName={tierName}
               getTierColor={getTierColor}
+              readOnly={readOnly}
             />
           </Box>
 
           {/* Image gallery */}
           {game?.uid && (
             <Box>
-              <ImageGallery gameUid={game.uid} gameInstanceUid={uid} />
+              <ImageGallery gameUid={game.uid} gameInstanceUid={uid} readOnly={readOnly} />
             </Box>
           )}
         </Box>

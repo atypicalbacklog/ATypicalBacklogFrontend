@@ -42,6 +42,22 @@ export const MIN_BAR_LABEL_PX = 18;
 /** Minimum pie slice angle (degrees) to show an arc label; hides labels on very small slices. */
 export const MIN_PIE_ARC_LABEL_ANGLE = 8;
 
+/** Pie chart layout: legend beside chart on desktop, below on narrow viewports. */
+export function getPieChartLayout(compact: boolean) {
+  if (compact) {
+    return {
+      height: 360,
+      margin: { top: 10, right: 10, bottom: 72, left: 10 },
+      legend: { position: { vertical: 'bottom' as const, horizontal: 'center' as const } },
+    };
+  }
+  return {
+    height: 320,
+    margin: { top: 10, right: 120, bottom: 10, left: 10 },
+    legend: { position: { vertical: 'middle' as const } },
+  };
+}
+
 /**
  * Default MUI X Charts outer margins. Extra `margin.left` widens empty space before the plot;
  * the Y-axis already reserves space for tick labels, so keep left small.

@@ -218,9 +218,18 @@ export interface TimeBookingQueryDto {
   endTime: string | null; // ISO instant; null if still open
 }
 
+export interface ReduceTimeBookingDurationRequestDto {
+  uid: string;
+  durationMinutes: number;
+}
+
 // ---------------------------------------------------------------------------
 // Reviews (year tierlist)
 // ---------------------------------------------------------------------------
+
+export type ReviewPresentationType = 'DEFAULT' | 'UPDATED' | 'REPEAT' | 'REPLACED';
+
+export type YearlyReviewGamePresentationType = 'DEFAULT' | 'IMAGE_LEFT' | 'IMAGE_RIGHT';
 
 export interface ReviewSearchLinkedDlcDto {
   uid: string;
@@ -245,6 +254,8 @@ export interface ReviewSearchPlaythroughDto {
   preferredImageUid: string | null;
   /** true when reviewUid is non-null and review text is not blank. */
   hasTextReview: boolean;
+  /** Visual presentation for review cover; default DEFAULT. */
+  presentationType: ReviewPresentationType;
   /** DLCs linked to this playthrough. */
   linkedDlcs: ReviewSearchLinkedDlcDto[];
   /** Game instance completion + linked DLC completions. */
@@ -275,6 +286,7 @@ export interface ReviewUpdateRequest {
   text: string | null;
   /** Selected preferred image for this review; null clears it. */
   preferredImageUid?: string | null;
+  presentationType?: ReviewPresentationType | null;
 }
 
 /** Response of GET /api/reviews/{uid}. */
@@ -293,6 +305,7 @@ export interface ReviewByUidDto {
   gameInstanceUid: string;
   gameUid: string;
   preferredImageUid: string | null;
+  presentationType: ReviewPresentationType;
   otherPlaythroughs: Array<{
     uid: string;
     playthroughTypeUid: string | null;

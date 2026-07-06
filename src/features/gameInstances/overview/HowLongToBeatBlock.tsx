@@ -76,6 +76,7 @@ interface Props {
   instanceName?: string | null;
   estimate: HltbEstimateDto | null;
   onSaved: () => void;
+  readOnly?: boolean;
 }
 
 export default function HowLongToBeatBlock({
@@ -84,6 +85,7 @@ export default function HowLongToBeatBlock({
   instanceName,
   estimate,
   onSaved,
+  readOnly = false,
 }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [mainHours, setMainHours] = useState('');
@@ -171,13 +173,15 @@ export default function HowLongToBeatBlock({
             </Link>
           )}
         </Stack>
-        <IconButton
-          size="small"
-          onClick={openEdit}
-          aria-label="Edit HLTB estimate"
-        >
-          <EditIcon fontSize="small" />
-        </IconButton>
+        {!readOnly ? (
+          <IconButton
+            size="small"
+            onClick={openEdit}
+            aria-label="Edit HLTB estimate"
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+        ) : null}
       </Box>
 
       <Dialog open={editOpen} onClose={() => !saving && setEditOpen(false)}>

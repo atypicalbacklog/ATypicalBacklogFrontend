@@ -40,13 +40,18 @@ interface Props {
   gameUid: string | null;
   /** Optional: when on a game instance page, pass for pre-fill in add-image form. */
   gameInstanceUid?: string | null;
+  readOnly?: boolean;
 }
 
 function formatMetaValue(v: string | null | undefined): string {
   return v != null && v !== '' ? String(v) : '—';
 }
 
-export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUidProp }: Props) {
+export default function ImageGallery({
+  gameUid,
+  gameInstanceUid: gameInstanceUidProp,
+  readOnly = false,
+}: Props) {
   const [images, setImages] = useState<ImageMetadataDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
@@ -132,14 +137,16 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
         <Typography variant="subtitle2" color="text.secondary">
           Image gallery
         </Typography>
-        <IconButton
-          size="small"
-          onClick={() => setAddDialogOpen(true)}
-          sx={{ border: 1, borderColor: 'divider' }}
-          aria-label="Add picture"
-        >
-          <AddIcon fontSize="small" />
-        </IconButton>
+        {!readOnly ? (
+          <IconButton
+            size="small"
+            onClick={() => setAddDialogOpen(true)}
+            sx={{ border: 1, borderColor: 'divider' }}
+            aria-label="Add picture"
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        ) : null}
       </Stack>
       {loading ? (
         <Typography variant="body2" color="text.secondary">
@@ -168,7 +175,7 @@ export default function ImageGallery({ gameUid, gameInstanceUid: gameInstanceUid
           {images.map((im) => {
             const expanded = expandedUid === im.uid;
             const editLink =
-              im.gameInstanceUid != null
+              !readOnly && im.gameInstanceUid != null
                 ? `/game-instances/${im.gameInstanceUid}/images/${im.uid}/edit`
                 : null;
 

@@ -16,9 +16,7 @@ export function timeBookingDurationSeconds(
   nowMs: number = Date.now()
 ): number {
   const start = parseIsoToMs(b.startTime);
-  console.log('start', start);
   const end = b.endTime ? parseIsoToMs(b.endTime) : nowMs;
-  console.log('end', end);
   if (start <= 0) return 0;
   return Math.max(0, Math.floor((end - start) / 1000));
 }

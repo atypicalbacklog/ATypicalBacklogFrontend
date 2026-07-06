@@ -6,16 +6,16 @@ export interface TrackingCoverageEntry {
 
 export const TRACKING_COVERAGE_ENTRIES: TrackingCoverageEntry[] = [
   {
-    label: 'All Games played since 2017',
+    label: 'All games I played since 2017',
     hint: 'start of data tracking',
     percent: 100,
   },
   {
-    label: 'All Games I own / have digital access to',
+    label: 'All games I own / have digital access to',
     percent: 100,
   },
   {
-    label: 'All Games I played released after 12.02.2002',
+    label: 'All games I played released after 12.02.2002',
     hint: 'because of previous personal project, I have this data',
     percent: 75,
   },

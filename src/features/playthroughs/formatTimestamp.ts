@@ -26,3 +26,15 @@ export function formatTimeOnly(isoInstant: string | null | undefined): string {
     return isoInstant;
   }
 }
+
+/** Date only (e.g. "1/15/24") for booking lists. */
+export function formatDateOnly(isoInstant: string | null | undefined): string {
+  if (!isoInstant) return '—';
+  try {
+    return new Date(isoInstant).toLocaleDateString(undefined, {
+      dateStyle: 'short',
+    });
+  } catch {
+    return isoInstant;
+  }
+}

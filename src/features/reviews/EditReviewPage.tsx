@@ -6,9 +6,13 @@ import {
   Button,
   CircularProgress,
   FormControl,
+  FormControlLabel,
+  FormLabel,
   InputLabel,
   Link,
   MenuItem,
+  Radio,
+  RadioGroup,
   Select,
   Stack,
   TextField,
@@ -19,8 +23,13 @@ import { ReviewsApi } from '../../services/reviewsApi';
 import { ImageApi } from '../../services/imageApi';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import DateField from '../shared/DateField';
-import type { ReviewByUidDto } from '../../types/dto';
 import SmartImage from '../shared/SmartImage';
+import ReviewPresentationImage from '../shared/ReviewPresentationImage';
+import {
+  REVIEW_PRESENTATION_OPTIONS,
+  normalizeReviewPresentationType,
+} from './reviewPresentationUtils';
+import type { ReviewByUidDto, ReviewPresentationType } from '../../types/dto';
 
 /** Pass reviewUid to open edit; page fetches displayName + image from GET /api/reviews/{uid}. */
 export interface EditReviewLocationState {
@@ -45,6 +54,7 @@ export default function EditReviewPage() {
   );
   const [text, setText] = useState<string>('');
   const [preferredImageUid, setPreferredImageUid] = useState<string | null>(null);
+  const [presentationType, setPresentationType] = useState<ReviewPresentationType>('DEFAULT');
   const [gameImages, setGameImages] = useState<{ uid: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +73,7 @@ export default function EditReviewPage() {
         setReviewDate(data.reviewDate ?? new Date().toISOString().slice(0, 10));
         setText(data.text ?? '');
         setPreferredImageUid(data.preferredImageUid ?? null);
+        setPresentationType(normalizeReviewPresentationType(data.presentationType));
       })
       .catch(() => setError('Failed to load review.'))
       .finally(() => {
@@ -98,6 +109,7 @@ export default function EditReviewPage() {
         tierUid: tierUid || null,
         text: text.trim() || null,
         preferredImageUid: preferredImageUid,
+        presentationType,
       });
       setSuccess(true);
     } catch {
@@ -105,7 +117,7 @@ export default function EditReviewPage() {
     } finally {
       setSaving(false);
     }
-  }, [state?.reviewUid, reviewDate, tierUid, text, preferredImageUid]);
+  }, [state?.reviewUid, reviewDate, tierUid, text, preferredImageUid, presentationType]);
 
   if (!isLoaded) return null;
 
@@ -161,13 +173,14 @@ export default function EditReviewPage() {
     <Box sx={{ maxWidth: 720, mx: 'auto', px: 2, py: 3 }}>
       {/* Top: Game name & Image + playthrough Type/State */}
       <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ mb: 3 }}>
-        <SmartImage
-          imageUid={review.coverImageUid}
+        <ReviewPresentationImage
+          imageUid={preferredImageUid ?? review.coverImageUid}
+          presentationType={presentationType}
           thumbnail
           alt=""
           aspectRatio={2 / 3}
           fit="contain"
-          sx={{ width: 80, height: 80, borderRadius: 1 }}
+          sx={{ width: 80, height: 120, borderRadius: 1, flexShrink: 0 }}
           imgSx={{ borderRadius: 1 }}
         />
         <Stack spacing={0.5}>
@@ -255,6 +268,27 @@ export default function EditReviewPage() {
           </Box>
         </Box>
       )}
+
+      <FormControl sx={{ mb: 2 }}>
+        <FormLabel id="review-presentation-type-label">Presentation</FormLabel>
+        <RadioGroup
+          row
+          aria-labelledby="review-presentation-type-label"
+          value={presentationType}
+          onChange={(e) =>
+            setPresentationType(normalizeReviewPresentationType(e.target.value))
+          }
+        >
+          {REVIEW_PRESENTATION_OPTIONS.map((opt) => (
+            <FormControlLabel
+              key={opt.value}
+              value={opt.value}
+              control={<Radio size="small" />}
+              label={opt.label}
+            />
+          ))}
+        </RadioGroup>
+      </FormControl>
 
       {/* Multiline textarea: auto-growing, large width, minimal chrome */}
       <TextField

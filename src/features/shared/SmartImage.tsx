@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { getImageUrl } from '../../services/imageApi';
+import GameImageMissingPlaceholder from './GameImageMissingPlaceholder';
 
 export type SmartImageFit = 'contain' | 'cover';
 
@@ -16,6 +18,10 @@ interface Props {
   objectPosition?: string;
   /** Render a placeholder box when imageUid is null. Default: true. */
   showPlaceholder?: boolean;
+  /** Shorter missing-image label for small thumbnails. */
+  compactPlaceholder?: boolean;
+  /** Custom placeholder text when image is missing. */
+  placeholderLabel?: string;
   /** Container styles (width/height should typically be set here). */
   sx?: SxProps<Theme>;
   /** Additional styles for the <img>. */
@@ -27,7 +33,7 @@ interface Props {
  * - never overflows its box
  * - uses contain-fit by default (no cropping)
  * - solid letterbox background when aspect ratios don’t match
- * - optional placeholder when there is no image
+ * - solid grey + "no image available" when missing or failed to load
  */
 export default function SmartImage({
   imageUid,
@@ -37,12 +43,21 @@ export default function SmartImage({
   fit = 'contain',
   objectPosition = 'center',
   showPlaceholder = true,
+  compactPlaceholder = false,
+  placeholderLabel,
   sx,
   imgSx,
 }: Props) {
   const url = getImageUrl(imageUid, thumbnail);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setLoadFailed(false);
+  }, [url, imageUid]);
 
   if (!url && !showPlaceholder) return null;
+
+  const showMissing = !url || loadFailed;
 
   return (
     <Box
@@ -50,19 +65,29 @@ export default function SmartImage({
         (theme) => ({
           position: 'relative',
           overflow: 'hidden',
-          // Solid background for letterboxing / empty space.
-          bgcolor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.grey[200],
-          // Provide a sensible default aspect ratio when parent doesn't fix height.
+          bgcolor: showMissing
+            ? undefined
+            : theme.palette.mode === 'dark'
+              ? theme.palette.grey[900]
+              : theme.palette.grey[200],
           aspectRatio,
         }),
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
     >
-      {url ? (
+      {showMissing ? (
+        showPlaceholder ? (
+          <GameImageMissingPlaceholder
+            compact={compactPlaceholder}
+            label={placeholderLabel}
+          />
+        ) : null
+      ) : (
         <Box
           component="img"
           src={url}
           alt={alt}
+          onError={() => setLoadFailed(true)}
           sx={[
             {
               width: '100%',
@@ -76,8 +101,7 @@ export default function SmartImage({
             ...(Array.isArray(imgSx) ? imgSx : [imgSx]),
           ]}
         />
-      ) : null}
+      )}
     </Box>
   );
 }
-

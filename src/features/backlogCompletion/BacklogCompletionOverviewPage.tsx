@@ -6,7 +6,6 @@ import {
   AccordionSummary,
   Alert,
   Box,
-  Button,
   Card,
   CardContent,
   CircularProgress,
@@ -30,6 +29,7 @@ import type {
   GamePlayedPerYearDto,
 } from '../../services/statisticsApi';
 import SmartImage from '../shared/SmartImage';
+import { uniqueGamesByUid } from '../statistics/backlogChangesUtils';
 
 const MIN_YEAR = 2017;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -84,8 +84,8 @@ export default function BacklogCompletionOverviewPage() {
     load().finally(() => initialFetchEnd(key));
   }, [load, year]);
 
-  const addedThisYear = rows.filter((r) => isInYear(r.addedToBacklog, year));
-  const removedThisYear = rows.filter((r) => isInYear(r.removedFromBacklog, year));
+  const addedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.addedToBacklog, year));
+  const removedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.removedFromBacklog, year));
   const removedFromSameYear = removedThisYear.filter((r) =>
     isInYear(r.addedToBacklog, year)
   );
@@ -98,8 +98,8 @@ export default function BacklogCompletionOverviewPage() {
   const removedFrom2026Count = removedFromSameYear.length;
   const removedFromPastCount = removedFromPast.length;
   const conclusion = newCount - (removedFrom2026Count + removedFromPastCount);
-  const finishedThisYear = rows.filter((r) => isInYear(r.finishedDate, year));
-  const completedThisYear = rows.filter((r) => isInYear(r.completedDate, year));
+  const finishedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.finishedDate, year));
+  const completedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.completedDate, year));
   const finishedCount = finishedThisYear.length;
   const completedCount = completedThisYear.length;
   const finishedConclusion =
@@ -107,55 +107,86 @@ export default function BacklogCompletionOverviewPage() {
   const completionTotal =
     (conclusion > 0 ? -conclusion : conclusion) + finishedCount + completedCount;
 
-  const receivedThisYear = rows.filter((r) => isInYear(r.receivedDate, year));
+  const receivedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.receivedDate, year));
+  const removedGameUids = new Set(removedThisYear.map((r) => r.gameUid));
+  const finishedGameUids = new Set(finishedThisYear.map((r) => r.gameUid));
   const group3Rows = [
     ...removedThisYear,
-    ...finishedThisYear.filter(
-      (r) => !removedThisYear.some((x) => x.gameInstanceUid === r.gameInstanceUid)
-    ),
+    ...finishedThisYear.filter((r) => !removedGameUids.has(r.gameUid)),
     ...completedThisYear.filter(
-      (r) =>
-        !removedThisYear.some((x) => x.gameInstanceUid === r.gameInstanceUid) &&
-        !finishedThisYear.some((x) => x.gameInstanceUid === r.gameInstanceUid)
+      (r) => !removedGameUids.has(r.gameUid) && !finishedGameUids.has(r.gameUid)
     ),
-    ...addedThisYear.filter(
-      (r) => !isInYear(r.receivedDate, year)
-    ),
+    ...addedThisYear.filter((r) => !isInYear(r.receivedDate, year)),
   ];
   const group3Unique = Array.from(
-    new Map(group3Rows.map((r) => [r.gameInstanceUid, r])).values()
+    new Map(group3Rows.map((r) => [r.gameUid, r])).values()
   );
-  const group3Uids = new Set(group3Unique.map((r) => r.gameInstanceUid));
-  const group4Rows = receivedThisYear.filter(
-    (r) => !group3Uids.has(r.gameInstanceUid)
-  );
+  const group3GameUids = new Set(group3Unique.map((r) => r.gameUid));
+  const group4Rows = receivedThisYear.filter((r) => !group3GameUids.has(r.gameUid));
 
   const byPlatform = new Map<
     string,
     { added: number; forFree: number; removed: number; received: number; finished: number; completed: number }
   >();
-  for (const r of rows) {
-    const key = r.platform ?? '(unknown)';
-    if (!byPlatform.has(key)) {
-      byPlatform.set(key, {
-        added: 0,
-        forFree: 0,
-        removed: 0,
-        received: 0,
-        finished: 0,
-        completed: 0,
-      });
+
+  /** Increment a platform bucket once per gameUid (first matching row wins for platform attribution). */
+  const forEachUniqueGame = (
+    candidates: BacklogCompletionGameOverviewDto[],
+    apply: (
+      rec: { added: number; forFree: number; removed: number; received: number; finished: number; completed: number },
+      row: BacklogCompletionGameOverviewDto
+    ) => void
+  ) => {
+    const seen = new Set<string>();
+    for (const r of candidates) {
+      if (seen.has(r.gameUid)) continue;
+      seen.add(r.gameUid);
+      const key = r.platform ?? '(unknown)';
+      if (!byPlatform.has(key)) {
+        byPlatform.set(key, {
+          added: 0,
+          forFree: 0,
+          removed: 0,
+          received: 0,
+          finished: 0,
+          completed: 0,
+        });
+      }
+      apply(byPlatform.get(key)!, r);
     }
-    const rec = byPlatform.get(key)!;
-    if (isInYear(r.addedToBacklog, year)) {
+  };
+
+  forEachUniqueGame(
+    rows.filter((r) => isInYear(r.addedToBacklog, year)),
+    (rec, r) => {
       rec.added += 1;
       if (r.forFree) rec.forFree += 1;
     }
-    if (isInYear(r.removedFromBacklog, year)) rec.removed += 1;
-    if (isInYear(r.receivedDate, year)) rec.received += 1;
-    if (isInYear(r.finishedDate, year)) rec.finished += 1;
-    if (isInYear(r.completedDate, year)) rec.completed += 1;
-  }
+  );
+  forEachUniqueGame(
+    rows.filter((r) => isInYear(r.removedFromBacklog, year)),
+    (rec) => {
+      rec.removed += 1;
+    }
+  );
+  forEachUniqueGame(
+    rows.filter((r) => isInYear(r.receivedDate, year)),
+    (rec) => {
+      rec.received += 1;
+    }
+  );
+  forEachUniqueGame(
+    rows.filter((r) => isInYear(r.finishedDate, year)),
+    (rec) => {
+      rec.finished += 1;
+    }
+  );
+  forEachUniqueGame(
+    rows.filter((r) => isInYear(r.completedDate, year)),
+    (rec) => {
+      rec.completed += 1;
+    }
+  );
   const byPlatformSorted = [...byPlatform.entries()].sort((a, b) =>
     a[0].localeCompare(b[0])
   );
@@ -175,17 +206,7 @@ export default function BacklogCompletionOverviewPage() {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" alignItems="center" gap={2}>
-        <Typography variant="h5">Backlog & Completion Overview</Typography>
-        <Button
-          component={Link}
-          to="/backlog"
-          variant="outlined"
-          size="small"
-        >
-          Back to Backlog
-        </Button>
-      </Stack>
+      <Typography variant="h5">Backlog & Completion Overview</Typography>
 
       <FormControl size="small" sx={{ minWidth: 120, maxWidth: 160, alignSelf: 'flex-start' }}>
         <InputLabel>Year</InputLabel>
@@ -232,14 +253,13 @@ export default function BacklogCompletionOverviewPage() {
                 >
                   <TableCell>
                     <Stack direction="row" alignItems="center" spacing={1}>
-                      {r.coverImageUid && (
-                        <SmartImage
-                          imageUid={r.coverImageUid}
-                          alt=""
-                          thumbnail
-                          sx={thumbSx}
-                        />
-                      )}
+                      <SmartImage
+                        imageUid={r.coverImageUid}
+                        alt=""
+                        thumbnail
+                        compactPlaceholder
+                        sx={thumbSx}
+                      />
                       <span>{r.gameName}</span>
                     </Stack>
                   </TableCell>
@@ -479,7 +499,7 @@ export default function BacklogCompletionOverviewPage() {
                 <TableBody>
                   {group3Unique.map((r) => (
                     <TableRow
-                      key={r.gameInstanceUid}
+                      key={r.gameUid}
                       component={Link}
                       to={`/game-instances/${r.gameInstanceUid}`}
                       sx={{
@@ -490,14 +510,13 @@ export default function BacklogCompletionOverviewPage() {
                     >
                       <TableCell>
                         <Stack direction="row" alignItems="center" spacing={1}>
-                          {r.coverImageUid && (
-                            <SmartImage
-                              imageUid={r.coverImageUid}
-                              alt=""
-                              thumbnail
-                              sx={thumbSx}
-                            />
-                          )}
+                          <SmartImage
+                            imageUid={r.coverImageUid}
+                            alt=""
+                            thumbnail
+                            compactPlaceholder
+                            sx={thumbSx}
+                          />
                           <span>{r.gameName}</span>
                         </Stack>
                       </TableCell>
@@ -540,7 +559,7 @@ export default function BacklogCompletionOverviewPage() {
                 <TableBody>
                   {group4Rows.map((r) => (
                     <TableRow
-                      key={r.gameInstanceUid}
+                      key={r.gameUid}
                       component={Link}
                       to={`/game-instances/${r.gameInstanceUid}`}
                       sx={{
@@ -551,14 +570,13 @@ export default function BacklogCompletionOverviewPage() {
                     >
                       <TableCell>
                         <Stack direction="row" alignItems="center" spacing={1}>
-                          {r.coverImageUid && (
-                            <SmartImage
-                              imageUid={r.coverImageUid}
-                              alt=""
-                              thumbnail
-                              sx={thumbSx}
-                            />
-                          )}
+                          <SmartImage
+                            imageUid={r.coverImageUid}
+                            alt=""
+                            thumbnail
+                            compactPlaceholder
+                            sx={thumbSx}
+                          />
                           <span>{r.gameName}</span>
                         </Stack>
                       </TableCell>

@@ -19,6 +19,7 @@ import {
 import { alpha } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import { isManagementMode } from '../../app/AppConfig';
 import { LibraryFilterState, SortMode } from './types';
 import { useLibraryQuery } from './useLibraryQuery';
 import LibraryFilters from './LibraryFilters';
@@ -99,22 +100,24 @@ DLC: ${counts.dlcCount}`
         <Typography variant="h4">
           Library
         </Typography>
-        <Tooltip title="Add new Game/DLC">
-          <IconButton
-            component={Link}
-            to="/games"
-            aria-label="Add new Game/DLC"
-            sx={(theme) => ({
-              bgcolor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText,
-              '&:hover': {
-                bgcolor: theme.palette.primary.dark,
-              },
-            })}
-          >
-            <AddIcon />
-          </IconButton>
-        </Tooltip>
+        {isManagementMode() ? (
+          <Tooltip title="Add new Game/DLC">
+            <IconButton
+              component={Link}
+              to="/games"
+              aria-label="Add new Game/DLC"
+              sx={(theme) => ({
+                bgcolor: theme.palette.primary.main,
+                color: theme.palette.primary.contrastText,
+                '&:hover': {
+                  bgcolor: theme.palette.primary.dark,
+                },
+              })}
+            >
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
+        ) : null}
         {isMobile && showBackToTop && (
           <Tooltip title="Back to Top">
             <IconButton

@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
-import { getAppConfig } from '../../app/AppConfig';
+import { isManagementMode } from '../../app/AppConfig';
 import { GameApi } from '../../services/gameApi';
 import { YearlyReviewApi, type YearlyReviewDto } from '../../services/yearlyReviewApi';
 import { ReviewsApi } from '../../services/reviewsApi';
@@ -30,6 +28,11 @@ import type { GamePlaytimeDisplay } from '../statistics/hooks/useGamePlaytimeRan
 import type { ConsoleYearDisplay } from '../statistics/hooks/useConsoleYearActivity';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import { getTierColorByIndex } from '../../constants/tierColors';
+import {
+  TIER_LIST_CARD_GAP,
+  TIER_LIST_ROW_GAP,
+  TIER_LIST_ROW_PADDING,
+} from '../../constants/tierListLayout';
 import type { SimpleLookupDto } from '../../types/referenceData';
 import GamePlaytimeRankingBarChart, {
   GAME_PLAYTIME_RANKING_MAX_BARS,
@@ -41,30 +44,17 @@ import ConsoleVariantGameCountStackedBarChart from '../statistics/charts/Console
 import type { ConsoleVariantPlaytimeRow } from '../statistics/charts/ConsoleVariantPlaytimeStackedBarChart';
 import TierEntryCardView from '../reviews/TierEntryCardView';
 import YearlyReviewGameCard from './YearlyReviewGameCard';
+import YearlyReviewYearSelector from './YearlyReviewYearSelector';
+import {
+  getSelectableReviewYears,
+  LAST_CALENDAR_YEAR,
+} from './yearlyReviewYearUtils';
+import { chunkYearlyReviewGames, isSideImagePresentation } from './yearlyReviewGamePresentationUtils';
+import {
+  yearlyReviewBlurredPanelSx,
+  yearlyReviewSolidTextPanelSx,
+} from './yearlyReviewPanelStyles';
 import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
-
-const MIN_YEAR = 2017;
-const CURRENT_YEAR = new Date().getFullYear();
-const LAST_YEAR = CURRENT_YEAR - 1;
-
-/** Selectable years; current year is only included in MANAGEMENT mode. */
-function getSelectableYears(): number[] {
-  const maxYear = getAppConfig().mode === 'MANAGEMENT' ? CURRENT_YEAR : LAST_YEAR;
-  return Array.from({ length: maxYear - MIN_YEAR + 1 }, (_, i) => maxYear - i);
-}
-
-function chunkGames<T>(items: T[], maxPerRow: number = 6): T[][] {
-  if (items.length === 0) return [];
-  const numRows = Math.ceil(items.length / maxPerRow);
-  const rows: T[][] = [];
-  let remaining = items.length;
-  for (let i = 0; i < numRows; i++) {
-    const take = Math.ceil(remaining / (numRows - i));
-    rows.push(items.slice(rows.flat().length, rows.flat().length + take));
-    remaining -= take;
-  }
-  return rows;
-}
 
 function formatTotalPlaytime(totalPlaytimeSeconds: number): string {
   const  totalhours = Math.round(totalPlaytimeSeconds / 3600);
@@ -80,9 +70,20 @@ function cardTierUid(card: ReviewSearchResultDto): string | null {
 }
 
 export default function YearlyReviewPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { referenceData, isLoaded } = useReferenceData();
-  const years = getSelectableYears();
-  const [year, setYear] = useState(LAST_YEAR);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const years = getSelectableReviewYears();
+
+  const parseYearParam = useCallback((): number | null => {
+    const raw = searchParams.get('year');
+    if (!raw) return null;
+    const parsed = Number.parseInt(raw, 10);
+    return !Number.isNaN(parsed) && years.includes(parsed) ? parsed : null;
+  }, [searchParams, years]);
+
+  const [year, setYear] = useState(() => parseYearParam() ?? LAST_CALENDAR_YEAR);
   const [yearlyReview, setYearlyReview] = useState<YearlyReviewDto | null>(null);
   const [tierlistResults, setTierlistResults] = useState<ReviewSearchResultDto[]>([]);
   const [totalPlaytimeSeconds, setTotalPlaytimeSeconds] = useState<number | null>(null);
@@ -92,6 +93,23 @@ export default function YearlyReviewPage() {
   const [pcInputStyleData, setPcInputStyleData] = useState<ConsoleInputStyleDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromUrl = parseYearParam();
+    if (fromUrl != null && fromUrl !== year) setYear(fromUrl);
+  }, [parseYearParam, year]);
+
+  useEffect(() => {
+    if (!searchParams.get('year')) {
+      setSearchParams({ year: String(year) }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleYearChange = (newYear: number) => {
+    setYear(newYear);
+    setSearchParams({ year: String(newYear) }, { replace: true });
+  };
 
   const inputName = (inputUid: string) =>
     referenceData?.data.inputs.find((i) => i.uid === inputUid)?.name ?? inputUid;
@@ -204,25 +222,18 @@ export default function YearlyReviewPage() {
     <Box>
       <Stack direction="row" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 2 }}>
         <Typography variant="h4">Yearly review</Typography>
-        <Button component={Link} to="/reviews/yearly/edit" variant="outlined" size="small">
-          Edit yearly review
-        </Button>
+        {isManagementMode() ? (
+          <Button component={Link} to="/reviews/yearly/edit" variant="outlined" size="small">
+            Edit yearly review
+          </Button>
+        ) : null}
       </Stack>
 
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Year</InputLabel>
-          <Select
-            label="Year"
-            value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
-          >
-            {years.map((y) => (
-              <MenuItem key={y} value={y}>{y}</MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Stack>
+      <YearlyReviewYearSelector
+        years={years}
+        selectedYear={year}
+        onYearChange={handleYearChange}
+      />
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -241,9 +252,11 @@ export default function YearlyReviewPage() {
           {yearlyReview?.introText != null && yearlyReview.introText !== '' && (
             <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>Intro</Typography>
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                {yearlyReview.introText}
-              </Typography>
+              <Box sx={yearlyReviewSolidTextPanelSx}>
+                <Typography variant="body1" component="div">
+                  {yearlyReview.introText}
+                </Typography>
+              </Box>
             </Box>
           )}
 
@@ -258,14 +271,15 @@ export default function YearlyReviewPage() {
           </Box>
 
           <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
-            <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
-              <ConsolePlaytimePieChart data={consoleYearData} year={year} />
+            <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 300px', minWidth: 0, width: isMobile ? '100%' : undefined }}>
+              <ConsolePlaytimePieChart data={consoleYearData} year={year} compact={isMobile} />
             </Box>
-            <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
+            <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 300px', minWidth: 0, width: isMobile ? '100%' : undefined }}>
               <PcInputVariantsPieChart
                 data={pcInputStyleData}
                 year={year}
                 inputName={inputName}
+                compact={isMobile}
               />
             </Box>
           </Stack>
@@ -299,16 +313,16 @@ export default function YearlyReviewPage() {
                       sx={{
                         display: 'flex',
                         alignItems: 'stretch',
-                        minHeight: 120,
+                        minHeight: isMobile ? 90 : 120,
                         bgcolor: '#000000',
                         borderRadius: 1,
-                        mb: 1,
+                        mb: TIER_LIST_ROW_GAP,
                         overflow: 'hidden',
                       }}
                     >
                       <Box
                         sx={{
-                          width: 80,
+                          width: isMobile ? 48 : 80,
                           flexShrink: 0,
                           bgcolor: color,
                           color: '#000',
@@ -316,7 +330,7 @@ export default function YearlyReviewPage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 700,
-                          fontSize: '1.15rem',
+                          fontSize: isMobile ? '0.875rem' : '1.15rem',
                           fontFamily: 'sans-serif',
                           letterSpacing: 0.3,
                         }}
@@ -327,8 +341,8 @@ export default function YearlyReviewPage() {
                         sx={{
                           flex: 1,
                           display: 'flex',
-                          gap: 2,
-                          p: 2,
+                          gap: TIER_LIST_CARD_GAP,
+                          p: TIER_LIST_ROW_PADDING,
                           alignItems: 'center',
                           flexWrap: 'wrap',
                           overflowX: 'auto',
@@ -338,6 +352,7 @@ export default function YearlyReviewPage() {
                           <TierEntryCardView
                             key={`${card.displayName}-${card.playthroughs[0]?.playthroughUid ?? idx}`}
                             card={card}
+                            compact={isMobile}
                           />
                         ))}
                       </Box>
@@ -359,15 +374,30 @@ export default function YearlyReviewPage() {
               <Stack spacing={4}>
                 {sortedCategories.map((category) => {
                   const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
-                  const rows = chunkGames(gamesSorted, 6);
+                  const rows = chunkYearlyReviewGames(gamesSorted, isMobile ? 2 : 6, isMobile);
                   return (
-                    <Box key={category.uid}>
+                    <Box key={category.uid} sx={yearlyReviewBlurredPanelSx}>
                       <Typography variant="h6" sx={{ mb: 1 }}>{category.name}</Typography>
-                      <Stack spacing={2}>
+                      <Stack spacing={isMobile ? 1 : 2}>
                         {rows.map((row, rowIdx) => (
-                          <Stack key={rowIdx} direction="row" spacing={2} flexWrap="wrap">
+                          <Stack
+                            key={rowIdx}
+                            direction="row"
+                            spacing={isMobile ? 1 : 2}
+                            flexWrap="wrap"
+                            sx={{ width: '100%' }}
+                          >
                             {row.map((game: YearlyReviewGameDto) => (
-                              <YearlyReviewGameCard key={game.uid} game={game} />
+                              <Box
+                                key={game.uid}
+                                sx={
+                                  isMobile && isSideImagePresentation(game.presentationType)
+                                    ? { flex: '1 1 100%', maxWidth: '100%', minWidth: 0 }
+                                    : undefined
+                                }
+                              >
+                                <YearlyReviewGameCard game={game} compact={isMobile} />
+                              </Box>
                             ))}
                           </Stack>
                         ))}
@@ -382,9 +412,11 @@ export default function YearlyReviewPage() {
           {yearlyReview?.outroText != null && yearlyReview.outroText !== '' && (
             <Box>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>Outro</Typography>
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
-                {yearlyReview.outroText}
-              </Typography>
+              <Box sx={yearlyReviewSolidTextPanelSx}>
+                <Typography variant="body1" component="div">
+                  {yearlyReview.outroText}
+                </Typography>
+              </Box>
             </Box>
           )}
         </Stack>

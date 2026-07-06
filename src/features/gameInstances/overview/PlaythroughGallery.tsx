@@ -15,6 +15,7 @@ interface Props {
   typeName: (uid: string) => string;
   stateName: (uid: string) => string;
   inputName: (uid: string) => string;
+  readOnly?: boolean;
 }
 
 export default function PlaythroughGallery({
@@ -22,6 +23,7 @@ export default function PlaythroughGallery({
   typeName,
   stateName,
   inputName,
+  readOnly = false,
 }: Props) {
   if (items.length === 0) {
     return (
@@ -53,6 +55,7 @@ export default function PlaythroughGallery({
           totalSeconds={totalSeconds}
           dlcName={dlcName}
           sessions={sessions}
+          readOnly={readOnly}
         />
       ))}
     </Box>

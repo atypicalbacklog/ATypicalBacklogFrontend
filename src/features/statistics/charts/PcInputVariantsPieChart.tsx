@@ -5,6 +5,7 @@ import {
   getConsoleColorByIndex,
   getContrastTextColor,
   formatPercentChartLabel,
+  getPieChartLayout,
   MIN_PIE_ARC_LABEL_ANGLE,
 } from '../chartColors';
 
@@ -22,6 +23,8 @@ export interface PcInputVariantsPieChartProps {
   /** Resolve input_uid to display name (e.g. from reference data inputs). */
   inputName: (inputUid: string) => string;
   height?: number;
+  /** Narrow layout: legend below chart, full-width pie. */
+  compact?: boolean;
 }
 
 const ARC_LABEL_RADIUS = '78%';
@@ -34,8 +37,11 @@ export default function PcInputVariantsPieChart({
   data,
   year,
   inputName,
-  height = 320,
+  height: heightProp,
+  compact = false,
 }: PcInputVariantsPieChartProps) {
+  const layout = getPieChartLayout(compact);
+  const height = heightProp ?? layout.height;
   const forYear = data.filter((d) => d.year === year);
   if (forYear.length === 0) {
     return (
@@ -92,12 +98,10 @@ export default function PcInputVariantsPieChart({
               },
             ]}
             height={height}
-            margin={{ top: 10, right: 120, bottom: 10, left: 10 }}
+            margin={layout.margin}
             slots={{ pieArcLabel: ContrastPieArcLabel }}
             slotProps={{
-              legend: {
-                position: { vertical: 'middle'},
-              } as React.ComponentProps<typeof PieChart>['slotProps'] extends { legend?: infer L } ? L : never,
+              legend: layout.legend,
             }}
           />
         </Box>

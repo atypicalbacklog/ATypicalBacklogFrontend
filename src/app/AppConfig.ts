@@ -25,3 +25,7 @@ export function getAppConfig(): AppConfig {
   return appConfig;
 }
 
+export function isManagementMode(): boolean {
+  return getAppConfig().mode === 'MANAGEMENT';
+}
+

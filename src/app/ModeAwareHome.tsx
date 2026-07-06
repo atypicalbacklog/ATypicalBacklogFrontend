@@ -1,4 +1,4 @@
-import DashboardPage from '../features/dashboard/DashboardPage';
+import LandingPage from '../features/landing/LandingPage';
 import ActivePlaythroughsPage from '../features/playthroughs/ActivePlaythroughsPage';
 import { getAppConfig } from './AppConfig';
 
@@ -9,6 +9,6 @@ export default function ModeAwareHome() {
     return <ActivePlaythroughsPage />;
   }
 
-  return <DashboardPage />;
+  return <LandingPage />;
 }
 

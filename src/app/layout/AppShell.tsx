@@ -10,10 +10,12 @@ import { getAppConfig } from '../AppConfig';
 function getPageTitle(pathname: string): string {
   const { mode } = getAppConfig();
   if (pathname === '/' || pathname === '') {
-    return mode === 'MANAGEMENT' ? 'Active Playthroughs' : 'Dashboard';
+    return mode === 'MANAGEMENT' ? 'Active Playthroughs' : 'Home';
   }
+  if (pathname.startsWith('/public')) return 'Public';
   if (pathname.startsWith('/library')) return 'Library';
   if (pathname.startsWith('/backlog-completion-overview')) return 'Backlog completion overview';
+  if (pathname.startsWith('/backlog-submissions')) return 'Backlog submissions';
   if (pathname.startsWith('/backlog')) return 'Backlog';
   if (pathname.startsWith('/reviews/year-tierlist')) return 'Year tierlist';
   if (pathname.startsWith('/reviews/yearly')) return 'Yearly review';
@@ -26,8 +28,8 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/game-instances') && pathname.endsWith('/edit')) return 'Edit game instance';
   if (pathname.startsWith('/game-instances')) return 'Game instance';
   if (pathname.startsWith('/statistics')) return 'Statistics';
-  if (pathname.startsWith('/impressum')) return 'Impressum';
-  if (pathname.startsWith('/faq-glossar')) return 'FAQ & Glossar';
+  if (pathname.startsWith('/imprint')) return 'Imprint';
+  if (pathname.startsWith('/faq-glossar')) return 'FAQ & Glossary';
   return 'Atypical Backlog';
 }
 

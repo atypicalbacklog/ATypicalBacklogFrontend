@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
-  Button,
   CircularProgress,
   FormControlLabel,
   Stack,
@@ -53,19 +52,9 @@ export default function BacklogPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 2 }}>
-        <Typography variant="h4">
-          Backlog
-        </Typography>
-        <Button
-          component={Link}
-          to="/backlog-completion-overview"
-          variant="outlined"
-          size="small"
-        >
-          Completion overview
-        </Button>
-      </Stack>
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Backlog
+      </Typography>
 
       <BacklogFilters value={filters} onChange={setFilters} />
 

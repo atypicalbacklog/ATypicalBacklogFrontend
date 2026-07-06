@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -11,10 +10,10 @@ import {
   IconButton,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import SmartImage from '../shared/SmartImage';
 import CompletionBar from '../shared/CompletionBar';
 import PlaythroughTypeWithIcon from '../shared/PlaythroughTypeWithIcon';
 import DateWithIcon from '../shared/DateWithIcon';
@@ -23,8 +22,14 @@ import { getTimeBookingsByPlaythrough } from '../../services/timeBookingApi';
 import { totalDurationSeconds } from '../gameInstances/overview/timeBookingUtils';
 import { formatPlaytime } from '../library/formatPlaytime';
 import { getTierColorByIndex } from '../../constants/tierColors';
+import { getAppConfig } from '../../app/AppConfig';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { ReviewSearchResultDto, ReviewByUidDto } from '../../types/dto';
+import ReviewModalHeader from './ReviewModalHeader';
+import {
+  normalizeReviewPresentationType,
+  pickPrimaryReviewPlaythrough,
+} from './reviewPresentationUtils';
 
 interface Props {
   card: ReviewSearchResultDto;
@@ -37,7 +42,10 @@ const TYPE_PRIORITY_ORDER = ['Solo', 'Coop', 'Multiplayer', 'Casual'];
 
 export default function ReviewDetailModal({ card, open, onClose }: Props) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { referenceData } = useReferenceData();
+  const isManagement = getAppConfig().mode === 'MANAGEMENT';
 
   const [reviewsByUid, setReviewsByUid] = useState<Record<string, ReviewByUidDto>>({});
   const [history, setHistory] = useState<ReviewByUidDto[]>([]);
@@ -45,6 +53,12 @@ export default function ReviewDetailModal({ card, open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
 
   const gameInstanceUid = card.playthroughs[0]?.gameInstanceUid ?? null;
+
+  const goToGameDetail = () => {
+    if (!gameInstanceUid) return;
+    onClose();
+    navigate(`/game-instances/${gameInstanceUid}`);
+  };
 
   const data = referenceData?.data;
   const typeName = (u: string | null) =>
@@ -177,72 +191,33 @@ export default function ReviewDetailModal({ card, open, onClose }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card, reviewsByUid, data]);
 
+  const primaryPlaythrough = pickPrimaryReviewPlaythrough(card.playthroughs, typeName);
+  const headerPresentationType = normalizeReviewPresentationType(
+    primaryPlaythrough?.presentationType ??
+      card.playthroughs.find((p) => p.presentationType)?.presentationType
+  );
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper">
       <DialogTitle sx={{ pr: 6 }}>
-        <Stack direction="row" spacing={2} alignItems="stretch">
-          {/* Tier block on the left (tierlist look) */}
-          {topTierUid && (
-            <Box
-              sx={{
-                width: 56,
-                flexShrink: 0,
-                bgcolor: tierColor(topTierUid),
-                color: '#000',
-                borderRadius: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '1.15rem',
-                fontFamily: 'sans-serif',
-                letterSpacing: 0.3,
-                textAlign: 'center',
-                p: 0.5,
-              }}
-            >
-              {tierName(topTierUid)}
-            </Box>
-          )}
-          {/* Cover image (larger) */}
-          <SmartImage
-            imageUid={headerImageUid}
-            thumbnail
-            alt=""
-            aspectRatio={2 / 3}
-            fit="contain"
-            sx={{ width: 100, height: 150, borderRadius: 1, flexShrink: 0 }}
-            imgSx={{ borderRadius: 1 }}
-          />
-          {/* Title + completion bar */}
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h6" sx={{ lineHeight: 1.2 }}>
-              {card.displayName}
-            </Typography>
-            {baseCompletion && (
-              <Box sx={{ mt: 1 }}>
-                <CompletionBar
-                  completionState={completionStateName(baseCompletion.completionStateUid)}
-                  playthroughState={anyActive ? 'Active' : null}
-                />
-              </Box>
-            )}
-          </Box>
-          {/* Detail button floats right */}
-          <Box sx={{ flexShrink: 0, alignSelf: 'flex-start' }}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<OpenInNewIcon fontSize="small" />}
-              disabled={!gameInstanceUid}
-              onClick={() => {
-                if (gameInstanceUid) navigate(`/game-instances/${gameInstanceUid}`);
-              }}
-            >
-              Game instance detail
-            </Button>
-          </Box>
-        </Stack>
+        <ReviewModalHeader
+          tierUid={topTierUid}
+          displayName={card.displayName}
+          imageUid={headerImageUid}
+          presentationType={headerPresentationType}
+          belowTitle={
+            baseCompletion ? (
+              <CompletionBar
+                size={isMobile ? 'small' : undefined}
+                completionState={completionStateName(baseCompletion.completionStateUid)}
+                playthroughState={anyActive ? 'Active' : null}
+              />
+            ) : undefined
+          }
+          showGameDetailButton={isManagement}
+          gameInstanceUid={gameInstanceUid}
+          onGameDetail={goToGameDetail}
+        />
         <IconButton
           onClick={onClose}
           aria-label="Close"
@@ -265,10 +240,14 @@ export default function ReviewDetailModal({ card, open, onClose }: Props) {
           <Stack spacing={1.5}>
             {writtenReviewGroups.map((group) => (
               <Box key={group.text}>
-                <Typography variant="caption" color="text.secondary">
-                  {group.typeUids.map((u) => typeName(u)).join(', ')}
-                  {group.date ? ` · ${group.date}` : ''}
-                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                  <Typography variant="caption" color="text.secondary">
+                    {group.typeUids.map((u) => typeName(u)).join(', ')}
+                  </Typography>
+                  {group.date ? (
+                    <DateWithIcon date={group.date} tooltip="Review Date" variant="caption" />
+                  ) : null}
+                </Stack>
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mt: 0.25 }}>
                   {group.text}
                 </Typography>
@@ -404,9 +383,11 @@ export default function ReviewDetailModal({ card, open, onClose }: Props) {
                   {tierName(r.tierUid) || '—'}
                 </Box>
                 <Box sx={{ p: 1, minWidth: 0 }}>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {r.reviewDate ?? '—'}
-                  </Typography>
+                  <DateWithIcon
+                    date={r.reviewDate}
+                    tooltip="Review Date"
+                    variant="caption"
+                  />
                   <Typography variant="body2" noWrap>
                     {typeName(r.linkedPlaythrough.playthroughTypeUid)} –{' '}
                     {stateName(r.linkedPlaythrough.playthroughStateUid)}

@@ -21,6 +21,11 @@ import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { ReviewSearchResultDto } from '../../types/dto';
 import type { SimpleLookupDto } from '../../types/referenceData';
 import { getTierColorByIndex } from '../../constants/tierColors';
+import {
+  TIER_LIST_CARD_GAP,
+  TIER_LIST_ROW_GAP,
+  TIER_LIST_ROW_PADDING,
+} from '../../constants/tierListLayout';
 import TierEntryCard from './TierEntryCard';
 
 /** Single card tier (if all playthroughs share same tier). */
@@ -257,7 +262,7 @@ export default function ManageYearTierlistPage() {
           <Box
             sx={{
               display: 'flex',
-              gap: isMobile ? 1 : 2,
+              gap: TIER_LIST_CARD_GAP,
               overflowX: 'auto',
               pb: 2,
               mb: 3,
@@ -305,7 +310,7 @@ export default function ManageYearTierlistPage() {
                     minHeight: isMobile ? 90 : 120,
                     bgcolor: '#000000',
                     borderRadius: 1,
-                    mb: 1,
+                    mb: TIER_LIST_ROW_GAP,
                     overflow: 'hidden',
                   }}
                 >
@@ -332,8 +337,8 @@ export default function ManageYearTierlistPage() {
                     sx={{
                       flex: 1,
                       display: 'flex',
-                      gap: isMobile ? 1 : 2,
-                      p: isMobile ? 1 : 2,
+                      gap: TIER_LIST_CARD_GAP,
+                      p: TIER_LIST_ROW_PADDING,
                       alignItems: 'center',
                       flexWrap: 'wrap',
                       overflowX: 'auto',

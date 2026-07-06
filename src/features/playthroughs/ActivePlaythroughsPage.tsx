@@ -56,6 +56,11 @@ export default function ActivePlaythroughsPage() {
       });
   }, []);
 
+  const refreshRows = useCallback(async () => {
+    const next = await fetchActivePlaythroughs();
+    setRows(next);
+  }, []);
+
   const handleStart = async (playthroughUid: string) => {
     setActionUid(playthroughUid);
     setError(null);
@@ -313,6 +318,7 @@ export default function ActivePlaythroughsPage() {
                         onStart={handleStart}
                         onStop={handleStop}
                         onAddRetroactive={handleAddRetroactive}
+                        onBookingsChanged={refreshRows}
                         isActionDisabled={actionUid === row.playthroughUid}
                       />
                     </Grid>
@@ -339,6 +345,7 @@ export default function ActivePlaythroughsPage() {
                   onStart={handleStart}
                   onStop={handleStop}
                   onAddRetroactive={handleAddRetroactive}
+                  onBookingsChanged={refreshRows}
                   isActionDisabled={actionUid === row.playthroughUid}
                 />
               </Grid>

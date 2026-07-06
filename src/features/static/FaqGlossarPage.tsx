@@ -1,4 +1,4 @@
-import { Accordion, AccordionDetails, AccordionSummary, Box, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Divider, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Link as RouterLink } from 'react-router-dom';
 import TrackingCoverageBar from '../shared/TrackingCoverageBar';
@@ -8,132 +8,234 @@ export default function FaqGlossarPage() {
   return (
     <Box sx={{ width: '100%', maxWidth: 1200 }}>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        FAQ &amp; Glossar
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        This page is meant for first-time visitors of the public version. Short version: this is my
-        personal gaming tracker in read mode, so you can explore the data but not edit it.
+        FAQ &amp; Glossary
       </Typography>
 
       <Stack spacing={2}>
-        <Paper variant="outlined" sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            What is this Website?
-          </Typography>
-          <Stack spacing={2}>
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Why I built this
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                I wanted one place where backlog, playtime, completions, and reviews actually belong
-                together. Most tools are great at one thing, but not at the full journey from
-                “planned” to “finished” to “how did I feel about it”.
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                What is tracked &amp; how complete it is
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                This tracks playtime, game possession, backlog entries, and completion context per game
-                instance (including DLC where it matters). Free games and playing the same title on
-                multiple consoles/platforms can lead to duplicate-looking entries — that is intentional,
-                because each instance is tracked separately. How completion states work is described in
-                the{' '}
-                <MuiLink
-                  component={RouterLink}
-                  to="/faq-glossar#glossary-completion-states"
-                  underline="hover"
-                >
-                  glossary
-                </MuiLink>
-                .
-              </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  width: '100%',
-                  mt: 0.5,
-                }}
-              >
-                <Stack
-                  spacing={0.5}
-                  sx={{
-                    width: '100%',
-                    maxWidth: 720,
-                    mx: 'auto',
-                  }}
-                >
-                  {TRACKING_COVERAGE_ENTRIES.map((entry) => (
-                    <Stack
-                      key={entry.label}
-                      direction="row"
-                      alignItems="flex-start"
-                      spacing={1}
-                      sx={{ width: '100%', py: 0 }}
+        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+          <Accordion
+            defaultExpanded
+            disableGutters
+            sx={{
+              boxShadow: 'none',
+              '&:before': { display: 'none' },
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
+              <Typography variant="h5">What is this Website?</Typography>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
+              <Stack spacing={2}>
+                <Typography variant="body2" color="text.secondary">
+                  Atypical Backlog is a free, non-commercial overview of my personal, private video game consumption habits, including
+                  subjective reviews of that behavior.
+                </Typography>
+
+                <Box>
+                  <Divider sx={{ mb: 1.5 }} />
+                  <Typography variant="subtitle1" sx={{ mb: 0.75 }}>
+                    Why I built this
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    To unify my video game collection overview with my time tracking and end-of-year
+                    review generation in one application. I host it online to make reviews shareable
+                    and to provide potential community services in the future.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Divider sx={{ mb: 1.5 }} />
+                  <Typography variant="subtitle1" sx={{ mb: 0.75 }}>
+                    What is tracked &amp; how complete it is
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                    This tracks playtime, game possession, backlog entries, and completion context per game
+                    instance (including DLC where it matters). Free games and playing the same title on
+                    multiple consoles/platforms can lead to duplicate-looking entries — that is intentional,
+                    because each instance is tracked separately. How completion states work is described in
+                    the{' '}
+                    <MuiLink
+                      component={RouterLink}
+                      to="/faq-glossar#glossary-completion-states"
+                      underline="hover"
                     >
-                      <Box sx={{ width: 96, flexShrink: 0, pt: 0.125 }}>
-                        <TrackingCoverageBar percent={entry.percent} />
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          flex: 1,
-                          minWidth: 0,
-                          lineHeight: 1.3,
-                          overflowWrap: 'anywhere',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {entry.label}
-                        {entry.hint ? (
-                          <>
-                            {' '}
-                            <Box
-                              component="span"
-                              sx={{
-                                color: 'text.secondary',
-                                fontSize: '0.6875rem',
-                                lineHeight: 1.2,
-                              }}
-                            >
-                              ({entry.hint})
-                            </Box>
-                          </>
-                        ) : null}
-                      </Typography>
+                      glossary
+                    </MuiLink>
+                    . Currently the following games are tracked on this site / will be added soon-ish:
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    <Stack
+                      spacing={0.5}
+                      sx={{
+                        width: '100%',
+                        maxWidth: 720,
+                        mx: 'auto',
+                      }}
+                    >
+                      {TRACKING_COVERAGE_ENTRIES.map((entry) => (
+                        <Stack
+                          key={entry.label}
+                          direction="row"
+                          alignItems="flex-start"
+                          spacing={1}
+                          sx={{ width: '100%', py: 0 }}
+                        >
+                          <Box sx={{ width: 96, flexShrink: 0, pt: 0.125 }}>
+                            <TrackingCoverageBar percent={entry.percent} />
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              flex: 1,
+                              minWidth: 0,
+                              lineHeight: 1.3,
+                              overflowWrap: 'anywhere',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {entry.label}
+                            {entry.hint ? (
+                              <>
+                                {' '}
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    color: 'text.secondary',
+                                    fontSize: '0.6875rem',
+                                    lineHeight: 1.2,
+                                  }}
+                                >
+                                  ({entry.hint})
+                                </Box>
+                              </>
+                            ) : null}
+                          </Typography>
+                        </Stack>
+                      ))}
                     </Stack>
-                  ))}
-                </Stack>
-              </Box>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                How I manage backlog decisions
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                A game enters backlog with an added date and reason, and can later be removed with a
-                removal date. Completion/playthrough data is tracked separately, then combined in
-                backlog-completion views.
-              </Typography>
-            </Box>
-          </Stack>
+                  </Box>
+                </Box>
+
+                <Box>
+                  <Divider sx={{ mb: 1.5 }} />
+                  <Typography variant="subtitle1" sx={{ mb: 0.75 }}>
+                    What games are in the backlog?
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                    Until completion of this application, games were only part of the backlog if:
+                  </Typography>
+                  <Box component="ol" sx={{ m: 0, pl: 2.5, mb: 1 }}>
+                    <Typography component="li" variant="body2" color="text.secondary" sx={{ py: 0.75 }}>
+                      I owned them / had personal access to them
+                    </Typography>
+                    <Typography component="li" variant="body2" color="text.secondary" sx={{ py: 0.75 }}>
+                      I still wanted to try / finish / complete them
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                    Sometimes games are removed from the backlog if my tastes or opinions changed before
+                    I even tried a game. Maybe I&apos;ll also add games to the backlog as soon as I have
+                    interest now (before release even). Every few years I do a bit of &quot;house
+                    cleaning&quot; and reevaluate old entries to see if I still want to play them.
+                  </Typography>
+                </Box>
+
+                <Box>
+                  <Divider sx={{ mb: 1.5 }} />
+                  <Typography variant="subtitle1" sx={{ mb: 0.75 }}>
+                    What are the reviews / review tiers?
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                    I update/write the reviews at the end of a year/start of the following year. The
+                    played games are distributed according to my feeling at this moment. Extreme emotions
+                    during the year have time to settle and be reevaluated. This makes comparing enjoyment
+                    and experiences easier and makes it more of a retrospective of a year.
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                    The reviews tend to differ broadly depending on the game, and sometimes are more spoiler-heavy, sometimes only gloss over game mechanics.
+                    <br />
+                    They are very personal critiques and are more meant for people who played these games themselves.
+                  </Typography>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    align="center"
+                    fontWeight={700}
+                    paragraph
+                    sx={{ my: 1.5 }}
+                  >
+                    Tiers and reviews are subjective and very relative.
+                  </Typography>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    align="center"
+                    fontWeight={700}
+                    paragraph
+                    sx={{ my: 1.5 }}
+                  >
+                    They are not an indication of the quality of the game.
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                    Of course quality can influence my reviews, but I want people to make their own
+                    experiences with these games — only regard these reviews as another possible viewpoint.
+                  </Typography>
+                </Box>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Typography variant="h6" sx={{ mb: 1 }}>
-            FAQ (additional details)
+            Other Frequently Asked Questions (FAQ)
           </Typography>
+          <Box
+            sx={{
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              overflow: 'hidden',
+              '& .MuiAccordion-root': {
+                boxShadow: 'none',
+                '&:before': { display: 'none' },
+                borderBottom: 1,
+                borderColor: 'divider',
+                '&:last-of-type': { borderBottom: 0 },
+              },
+            }}
+          >
           <Accordion disableGutters>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="body2">How accurate is game data (release dates, etc.)?</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                Good overall, not perfect. Metadata is a mix of source data + curation, so edge cases
-                (region differences, weird editions, older titles) can be slightly off.
+              <Typography variant="body2" color="text.secondary" component="div">
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Data is mainly referenced from{' '}
+                  <MuiLink href="https://www.igdb.com" target="_blank" rel="noopener noreferrer" underline="hover">
+                    IGDB.com
+                  </MuiLink>{' '}
+                  and{' '}
+                  <MuiLink href="https://howlongtobeat.com" target="_blank" rel="noopener noreferrer" underline="hover">
+                    HowLongToBeat
+                  </MuiLink>
+                  .
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Release dates sometimes differ to more accurately reflect when a game was available in my
+                  region (EU, DACH).
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                  When I received the game / played / completed it is sometimes rough estimates, since I have no
+                  proof for older titles.
+                </Typography>
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -142,9 +244,17 @@ export default function FaqGlossarPage() {
               <Typography variant="body2">How correct/exact is time-tracked data?</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                It is session-based and usually quite accurate for practical use. That said, manual
-                tracking always has a little noise (late start/stop clicks, retro entries, etc.).
+              <Typography variant="body2" color="text.secondary" component="div">
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Tracking is started/stopped <strong>manually</strong> and therefore faulty. If there are major breaks
+                  during a session (15+ min), time will be reduced afterwards.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  It also happens that I forget to start tracking and add time afterwards.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                  But overall I guess there's about ~5% variance in the numbers of a given year.
+                </Typography>
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -156,9 +266,8 @@ export default function FaqGlossarPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
-                The core source of truth here is internal session tracking (time bookings on
-                playthroughs). External counters can be useful for sanity checks, but they are not the
-                primary model.
+                Not really, since these numbers vary wildly depending on system (sometimes replay / deaths will not
+                be counted, menu/pause times are counted/not counted etc.).
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -167,22 +276,40 @@ export default function FaqGlossarPage() {
               <Typography variant="body2">Why is there no achievement tracking?</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                I intentionally focus on play history and backlog progression. Achievement tracking is
-                possible in theory, but cross-platform consistency and maintenance cost are high.
+              <Typography variant="body2" color="text.secondary" component="div">
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Does not reflect my opinion on finishing/completing a game.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  There are games with completion achievements where you don&apos;t need to engage with all content.
+                  Or there are achievements that require way more playing, even after you have seen all meaningful content.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Also there are games/game systems without achievements that are tracked on this platform.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                  For more on completion states, see the{' '}
+                  <MuiLink
+                    component={RouterLink}
+                    to="/faq-glossar#glossary-completion-states"
+                    underline="hover"
+                  >
+                    glossary
+                  </MuiLink>
+                  .
+                </Typography>
               </Typography>
             </AccordionDetails>
           </Accordion>
           <Accordion disableGutters>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="body2">
-                How frequent is data updated (last time since update)?
+                How often is data updated (last time since update)?
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
-                It updates whenever I add/edit data. There is currently no global public “last sync”
-                timestamp shown in the UI.
+                Infrequently, currently unknown.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -191,10 +318,18 @@ export default function FaqGlossarPage() {
               <Typography variant="body2">Why didn&apos;t you just use X instead?</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                Because this is tailored to my exact workflow (instance modeling, backlog lifecycle,
-                review context, and custom stats). Existing tools are great, just optimized for
-                different priorities.
+              <Typography variant="body2" color="text.secondary" component="div">
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Many platforms did not provide the features I wanted or were aimed at different aspects (like
+                  achievement tracking).
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  I also don&apos;t want to be a victim of enshittification and be forced to migrate my library again
+                  to something different.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                  This way I can change this platform when I want, however I want.
+                </Typography>
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -203,9 +338,22 @@ export default function FaqGlossarPage() {
               <Typography variant="body2">Will you add features?</Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                Very likely, step by step. Usually I prioritize reliability and clarity over shipping
-                lots of features fast.
+              <Typography variant="body2" color="text.secondary" component="div">
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  Maybe — some features are planned (community feedback).
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                  If you want a new feature, please add an issue on{' '}
+                  <MuiLink
+                    href="https://github.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    underline="hover"
+                  >
+                    GitHub
+                  </MuiLink>
+                  .
+                </Typography>
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -216,9 +364,23 @@ export default function FaqGlossarPage() {
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
-              <Typography variant="body2" color="text.secondary">
-                This public deployment is currently a personal read-only showcase. It is not set up as
-                a public multi-user SaaS with account onboarding/support.
+              <Typography variant="body2" color="text.secondary" component="div">
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 1 }}>
+                  If you can set up your local environment and database, you can get the frontend and backend code at
+                  the{' '}
+                  <MuiLink
+                    href="https://github.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    underline="hover"
+                  >
+                    GitHub
+                  </MuiLink>{' '}
+                  linked below.
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
+                  For now this online site is not intended for community tracking.
+                </Typography>
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -230,7 +392,11 @@ export default function FaqGlossarPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
-                Yes. Use the contact details in Impressum and I&apos;ll respond when possible.
+                Yes! You can send an email to{' '}
+                <MuiLink href="mailto:atypicalbacklog@gmail.com" underline="hover">
+                  atypicalbacklog@gmail.com
+                </MuiLink>{' '}
+                or use Bluesky.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -242,11 +408,12 @@ export default function FaqGlossarPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
-                Fair game. Opinions are subjective. If you want to disagree, do it passionately but
-                kindly and we&apos;ll probably have a fun conversation.
+                Sorry to disappoint. Opinions are subjective — if you want to talk about it, contact me via email or
+                use Bluesky.
               </Typography>
             </AccordionDetails>
           </Accordion>
+          </Box>
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 2 }} id="glossary">
@@ -267,8 +434,8 @@ export default function FaqGlossarPage() {
                 Console &amp; Platform
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
-                Console is the hardware ecosystem; platform is the concrete target under that
-                ecosystem. In short: console = family, platform = specific lane.
+                Console is the hardware ecosystem; platform is the concrete version or store under that
+                ecosystem. Sometimes stuff is grouped in rough consoles (Mobile, Arcade, etc.).
               </Typography>
               <Box
                 sx={{
@@ -279,39 +446,39 @@ export default function FaqGlossarPage() {
                 }}
               >
                 <Typography variant="body2"><strong>PC</strong> = Personal Computer</Typography>
+                <Typography variant="body2"><strong>DOS</strong> = PC-DOS / MS-DOS</Typography>
+                <Typography variant="body2"><strong>C64</strong> = Commodore C64</Typography>
+                <Typography variant="body2"><strong>Mac</strong> = Macintosh</Typography>
+                <Typography variant="body2"><strong>Mobile</strong> = Android Mobile</Typography>
+                <Typography variant="body2"><strong>iOS</strong> = Apple Mobile</Typography>
                 <Typography variant="body2"><strong>PS</strong> = PlayStation</Typography>
                 <Typography variant="body2"><strong>PS2</strong> = PlayStation 2</Typography>
                 <Typography variant="body2"><strong>PS3</strong> = PlayStation 3</Typography>
                 <Typography variant="body2"><strong>PS4</strong> = PlayStation 4</Typography>
                 <Typography variant="body2"><strong>PS5</strong> = PlayStation 5</Typography>
                 <Typography variant="body2"><strong>PSP</strong> = PlayStation Portable</Typography>
-                <Typography variant="body2"><strong>Switch</strong> = Nintendo Switch</Typography>
-                <Typography variant="body2"><strong>3DS</strong> = Nintendo 3DS</Typography>
-                <Typography variant="body2"><strong>WiiU</strong> = Nintendo Wii U</Typography>
-                <Typography variant="body2"><strong>NDS</strong> = Nintendo DS</Typography>
-                <Typography variant="body2"><strong>Wii</strong> = Nintendo Wii</Typography>
-                <Typography variant="body2"><strong>Xbox360</strong> = Xbox 360</Typography>
-                <Typography variant="body2"><strong>GBA</strong> = Game Boy Advance</Typography>
-                <Typography variant="body2"><strong>NGC</strong> = Nintendo GameCube</Typography>
-                <Typography variant="body2"><strong>XbOne</strong> = Xbox One</Typography>
-                <Typography variant="body2"><strong>Xbox</strong> = Xbox</Typography>
-                <Typography variant="body2"><strong>Dreamcast</strong> = Dreamcast</Typography>
-                <Typography variant="body2"><strong>GBC</strong> = Game Boy Color</Typography>
-                <Typography variant="body2"><strong>N64</strong> = Nintendo 64</Typography>
-                <Typography variant="body2"><strong>GB</strong> = Game Boy</Typography>
-                <Typography variant="body2"><strong>SNES</strong> = Super NES</Typography>
+                <Typography variant="body2"><strong>PSVita</strong> = PlayStation Vita</Typography>
                 <Typography variant="body2"><strong>SMD</strong> = Sega Mega Drive/Genesis</Typography>
-                <Typography variant="body2"><strong>NES</strong> = Nintendo Entertaiment System</Typography>
-                <Typography variant="body2"><strong>Mobile</strong> = Android Mobile</Typography>
-                <Typography variant="body2"><strong>IOS</strong> = Apple Mobile</Typography>
-                <Typography variant="body2"><strong>Arcade</strong> = Arcade Cabinets</Typography>
-                <Typography variant="body2"><strong>DOS</strong> = PC DOS / MS DOS</Typography>
-                <Typography variant="body2"><strong>C64</strong> = Commodore C64</Typography>
-                <Typography variant="body2"><strong>Mac</strong> = Macintosh</Typography>
-                <Typography variant="body2"><strong>PSVita</strong> = Playstation Vita</Typography>
-                <Typography variant="body2"><strong>XboxXS</strong> = Xbox Series X/S</Typography>
-                <Typography variant="body2"><strong>VR</strong> = Virtual Reality</Typography>
+                <Typography variant="body2"><strong>Dreamcast</strong> = Dreamcast</Typography>
+                <Typography variant="body2"><strong>NES</strong> = Nintendo Entertainment System</Typography>
+                <Typography variant="body2"><strong>SNES</strong> = Super NES</Typography>
+                <Typography variant="body2"><strong>N64</strong> = Nintendo 64</Typography>
+                <Typography variant="body2"><strong>NGC</strong> = Nintendo GameCube</Typography>
+                <Typography variant="body2"><strong>Wii</strong> = Nintendo Wii</Typography>
+                <Typography variant="body2"><strong>WiiU</strong> = Nintendo Wii U</Typography>
+                <Typography variant="body2"><strong>Switch</strong> = Nintendo Switch</Typography>
                 <Typography variant="body2"><strong>Switch2</strong> = Nintendo Switch 2</Typography>
+                <Typography variant="body2"><strong>GB</strong> = Game Boy</Typography>
+                <Typography variant="body2"><strong>GBC</strong> = Game Boy Color</Typography>
+                <Typography variant="body2"><strong>GBA</strong> = Game Boy Advance</Typography>
+                <Typography variant="body2"><strong>NDS</strong> = Nintendo DS</Typography>
+                <Typography variant="body2"><strong>3DS</strong> = Nintendo 3DS</Typography>
+                <Typography variant="body2"><strong>Xbox</strong> = Xbox</Typography>
+                <Typography variant="body2"><strong>Xbox360</strong> = Xbox 360</Typography>
+                <Typography variant="body2"><strong>XbOne</strong> = Xbox One</Typography>
+                <Typography variant="body2"><strong>XboxXS</strong> = Xbox Series X/S</Typography>
+                <Typography variant="body2"><strong>Arcade</strong> = Arcade Cabinets</Typography>
+                <Typography variant="body2"><strong>VR</strong> = Virtual Reality</Typography>
               </Box>
             </Box>
 
@@ -320,13 +487,13 @@ export default function FaqGlossarPage() {
                 Playthrough Types
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
-                Playthrough type describes the run style/context.
+                Describe the style of play for that year's game interactions.
               </Typography>
               <Stack spacing={0.5}>
                 <Typography variant="body2"><strong>Solo</strong> = played alone</Typography>
                 <Typography variant="body2"><strong>Coop</strong> = played in cooperation with the same fixed players/group</Typography>
-                <Typography variant="body2"><strong>Multiplayer</strong> = competitive/online multi context, not strict coop campaign style</Typography>
-                <Typography variant="body2"><strong>Casual</strong> = lighter/non-committed run context</Typography>
+                <Typography variant="body2"><strong>Multiplayer</strong> = played with various people I know personally, with random assortment</Typography>
+                <Typography variant="body2"><strong>Casual</strong> = No completion intention/objective for this playthrough</Typography>
               </Stack>
             </Box>
 
@@ -335,12 +502,12 @@ export default function FaqGlossarPage() {
                 Backlog + Backlog Score
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
-                Backlog is a game-level planning queue with add/remove lifecycle metadata and reason.
-                A game can be in backlog while still having playthrough/completion history.
+                If a game is part of the Backlog, i intend to play this game / play more / finish it / complete it.
+                Therefore a game can be in backlog while still having playthrough/completion history.                
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                <strong>Backlog score</strong> is a backend-provided ranking metric used for ordering
-                in backlog views. The exact formula is not exposed in the public endpoint contract.
+                <strong>Backlog score</strong> is calculated with time since game release, game acquisition and other hidden factors.
+                It exists to provide a sort of ranking and prioritization of games, even though i disregard it often.
               </Typography>
             </Box>
             </Stack>
@@ -351,23 +518,25 @@ export default function FaqGlossarPage() {
                 Completion States (Played)
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
-                Completion state describes outcome/progress of an instance or DLC, independent from
-                “was it in backlog”.
+                Completion state of an instance or DLC (independent from backlog)
               </Typography>
               <Stack spacing={0.5}>
-                <Typography variant="body2"><strong>None</strong> = no meaningful progress state assigned</Typography>
-                <Typography variant="body2"><strong>Started</strong> = run begun, still early/in progress</Typography>
-                <Typography variant="body2"><strong>In Progress</strong> = active progression</Typography>
-                <Typography variant="body2"><strong>Finished</strong> = main objective done (non-100%)</Typography>
-                <Typography variant="body2"><strong>FinishedPlus</strong> = finished with additional scope beyond base finish</Typography>
-                <Typography variant="body2"><strong>Completed</strong> = full intended completion</Typography>
-                <Typography variant="body2"><strong>Postponed</strong> = paused/deferred for now</Typography>
-                <Typography variant="body2"><strong>Abandoned</strong> = intentionally dropped</Typography>
-                <Typography variant="body2"><strong>Cancelled</strong> = tracking path intentionally cancelled/reset</Typography>
-                <Typography variant="body2"><strong>Backlog</strong> = planning state, not yet actively progressed</Typography>
+                <Typography variant="body2"><strong>None</strong> = No history with this game, no plan on playing it</Typography>
+                <Typography variant="body2"><strong>Started</strong> = Started playing this or playthrough in progress</Typography>
+                <Typography variant="body2"><strong>In Progress</strong> = savegame/progression exists and will be continued (now or soon)</Typography>
+                <Typography variant="body2"><strong>Finished</strong> = finished main game, engaged with most of main content (at time of playthrough)</Typography>
+                <Typography variant="body2"><strong>FinishedPlus</strong> = finished, but included plenty of side quests and additional content, but not everything</Typography>
+                <Typography variant="body2"><strong>Completed</strong> = Seen every meaningful content of the game, and / or got all achievements</Typography>
+                <Typography variant="body2"><strong>Postponed</strong> = paused playthrough, back in backlog</Typography>
+                <Typography variant="body2"><strong>Abandoned</strong> = was played, dropped without "finishing" it / engaging with most of it</Typography>
+                <Typography variant="body2"><strong>Cancelled</strong> = was part of backlog, removed without playing</Typography>
+                <Typography variant="body2"><strong>Backlog</strong> = intend to play this game, but not yet started</Typography>
               </Stack>
               <Typography variant="subtitle2" sx={{ mt: 1.25, mb: 0.5 }}>
                 Filter intentions (Library: &quot;Filter Played&quot;)
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                Groups various states to make current state easier to understand
               </Typography>
               <Stack spacing={0.4}>
                 <Typography variant="body2"><strong>Completed</strong> = Completed</Typography>
@@ -384,13 +553,13 @@ export default function FaqGlossarPage() {
                 Variant
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
-                Variant explains how a release relates to original availability and platform spread.
+                Variant explains how a release relates to original availability and platform spread at time of my acquisition.
               </Typography>
               <Stack spacing={0.5}>
-                <Typography variant="body2"><strong>Original</strong> = first/native release context</Typography>
-                <Typography variant="body2"><strong>Port</strong> = adapted release to another platform/context</Typography>
-                <Typography variant="body2"><strong>Multiplatform</strong> = launched across multiple effective platforms</Typography>
-                <Typography variant="body2"><strong>Console Exclusive</strong> = limited to one console ecosystem</Typography>
+                <Typography variant="body2"><strong>Original</strong> = first/native release on this console</Typography>
+                <Typography variant="body2"><strong>Port</strong> = adapted release to another platform/context, sometimes remasters count, sometimes not, ~6 months after original release, otherwise Multiplatform</Typography>
+                <Typography variant="body2"><strong>Multiplatform</strong> = launched across multiple consoles/platforms at time of release/acquisition</Typography>
+                <Typography variant="body2"><strong>Console Exclusive</strong> = still limited to consoles at time of acquisition</Typography>
               </Stack>
             </Box>
             </Stack>

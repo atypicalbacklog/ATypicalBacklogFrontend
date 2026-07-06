@@ -13,7 +13,6 @@ import {
   SelectChangeEvent,
   Stack,
   TextField,
-  Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -320,9 +319,6 @@ export default function LibraryFilters({ value, onChange }: Props) {
 
   return (
     <Stack spacing={0} mb={3}>
-      <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5 }}>
-        Filter
-      </Typography>
       {headerRow}
       {isMobile ? (
         <Collapse in={filtersOpen}>{filterFields}</Collapse>

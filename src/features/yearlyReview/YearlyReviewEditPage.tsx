@@ -13,9 +13,13 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
+  FormLabel,
   IconButton,
   InputLabel,
   MenuItem,
+  Radio,
+  RadioGroup,
   Select,
   Stack,
   TextField,
@@ -42,6 +46,16 @@ import {
 import type { GameOverviewRowDto } from '../library/types';
 import YearlyReviewGameCard from './YearlyReviewGameCard';
 import SmartImage from '../shared/SmartImage';
+import {
+  YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS,
+  chunkYearlyReviewGames,
+  normalizeYearlyReviewGamePresentationType,
+} from './yearlyReviewGamePresentationUtils';
+import {
+  yearlyReviewBlurredPanelSx,
+  yearlyReviewIntroOutroTextFieldSx,
+} from './yearlyReviewPanelStyles';
+import type { YearlyReviewGamePresentationType } from '../../types/dto';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const LAST_YEAR = CURRENT_YEAR - 1;
@@ -51,20 +65,6 @@ const MIN_YEAR = 2017;
 function getSelectableYears(): number[] {
   const maxYear = getAppConfig().mode === 'MANAGEMENT' ? CURRENT_YEAR : LAST_YEAR;
   return Array.from({ length: maxYear - MIN_YEAR + 1 }, (_, i) => maxYear - i);
-}
-
-/** Chunk games into rows with max 6 per row, balanced (e.g. 13 -> 5, 4, 4). */
-function chunkGames<T>(items: T[], maxPerRow: number = 6): T[][] {
-  if (items.length === 0) return [];
-  const numRows = Math.ceil(items.length / maxPerRow);
-  const rows: T[][] = [];
-  let remaining = items.length;
-  for (let i = 0; i < numRows; i++) {
-    const take = Math.ceil(remaining / (numRows - i));
-    rows.push(items.slice(rows.flat().length, rows.flat().length + take));
-    remaining -= take;
-  }
-  return rows;
 }
 
 function displayName(row: GameOverviewRowDto): string {
@@ -99,6 +99,8 @@ export default function YearlyReviewEditPage() {
   const [selectedRow, setSelectedRow] = useState<GameOverviewRowDto | null>(null);
   const [gameText, setGameText] = useState('');
   const [preferredImageUid, setPreferredImageUid] = useState<string | null>(null);
+  const [gamePresentationType, setGamePresentationType] =
+    useState<YearlyReviewGamePresentationType>('DEFAULT');
   const [gameImages, setGameImages] = useState<{ uid: string }[]>([]);
   const [gameSaving, setGameSaving] = useState(false);
 
@@ -272,6 +274,7 @@ export default function YearlyReviewEditPage() {
     setSelectedRow(null);
     setGameText('');
     setPreferredImageUid(null);
+    setGamePresentationType('DEFAULT');
     setGameSearchQuery('');
     setGameSearchResults([]);
     setGameDialogOpen(true);
@@ -281,6 +284,7 @@ export default function YearlyReviewEditPage() {
     setGameEditTarget({ categoryUid, game });
     setGameText(game.text ?? '');
     setPreferredImageUid(game.preferredImageUid);
+    setGamePresentationType(normalizeYearlyReviewGamePresentationType(game.presentationType));
     setGameSearchQuery('');
     setGameSearchResults([]);
     if (game.gameUid) {
@@ -320,6 +324,7 @@ export default function YearlyReviewEditPage() {
         preferredImageUid,
         text: gameText.trim() || null,
         order,
+        presentationType: gamePresentationType,
       };
       await YearlyReviewApi.upsertGame(payload);
       setGameDialogOpen(false);
@@ -356,6 +361,7 @@ export default function YearlyReviewEditPage() {
           preferredImageUid: g.preferredImageUid ?? null,
           text: g.text ?? null,
           order: i,
+          presentationType: g.presentationType ?? 'DEFAULT',
         };
         // Persist sequentially to keep server-side order deterministic.
         // (Endpoint is single-upsert; no bulk reorder contract.)
@@ -414,6 +420,7 @@ export default function YearlyReviewEditPage() {
                 minRows={3}
                 size="small"
                 fullWidth
+                sx={yearlyReviewIntroOutroTextFieldSx}
               />
             </AccordionDetails>
           </Accordion>
@@ -430,6 +437,7 @@ export default function YearlyReviewEditPage() {
                 minRows={3}
                 size="small"
                 fullWidth
+                sx={yearlyReviewIntroOutroTextFieldSx}
               />
             </AccordionDetails>
           </Accordion>
@@ -455,7 +463,7 @@ export default function YearlyReviewEditPage() {
       {!loading && data && (
         <Stack spacing={4}>
           {sortedCategories.map((category, catIdx) => (
-            <Box key={category.uid}>
+            <Box key={category.uid} sx={yearlyReviewBlurredPanelSx}>
               {catIdx === 0 && (
                 <Button
                   size="small"
@@ -501,7 +509,7 @@ export default function YearlyReviewEditPage() {
               <Stack spacing={2}>
                 {(() => {
                   const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
-                  const rows = chunkGames(gamesSorted, 6);
+                  const rows = chunkYearlyReviewGames(gamesSorted, isMobile ? 2 : 6, isMobile);
                   let globalIdx = 0;
 
                   const isActiveCategory = dragState?.categoryUid === category.uid;
@@ -824,6 +832,28 @@ export default function YearlyReviewEditPage() {
               size="small"
               fullWidth
             />
+            <FormControl>
+              <FormLabel id="yearly-review-game-presentation-label">Presentation</FormLabel>
+              <RadioGroup
+                row
+                aria-labelledby="yearly-review-game-presentation-label"
+                value={gamePresentationType}
+                onChange={(e) =>
+                  setGamePresentationType(
+                    normalizeYearlyReviewGamePresentationType(e.target.value)
+                  )
+                }
+              >
+                {YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS.map((opt) => (
+                  <FormControlLabel
+                    key={opt.value}
+                    value={opt.value}
+                    control={<Radio size="small" />}
+                    label={opt.label}
+                  />
+                ))}
+              </RadioGroup>
+            </FormControl>
           </Stack>
         </DialogContent>
         <DialogActions>

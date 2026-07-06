@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 31
+Version: 33
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -333,6 +333,41 @@ Response: 200 OK
   "stoppedAt": "2024-01-01T14:00:00Z",   // ISO-8601 Instant
   "durationSeconds": 7200
 }
+
+================================================================================
+3.5 TIME BOOKING ENDPOINTS
+================================================================================
+Base Path: /api/time-bookings
+
+--------------------------------------------------------------------------------
+3.5.1 Reduce Time Booking Duration
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/time-bookings/reduce-duration
+Content-Type: application/json
+
+Request Body:
+{
+  "uid": "string",              // required – time booking UID
+  "durationMinutes": 15         // required – minutes to subtract from endTime (must be > 0)
+}
+
+Response: 200 OK
+TimeBookingResponse:
+{
+  "uid": "string",
+  "creationDate": "2024-01-01T12:00:00Z",
+  "playthroughUid": "string",
+  "startTime": "2024-01-01T12:00:00Z",
+  "endTime": "2024-01-01T12:45:00Z"    // endTime minus durationMinutes when reduced
+}
+
+Behaviour:
+- Loads the time booking by uid; throws IllegalArgumentException when not found.
+- Throws IllegalArgumentException when durationMinutes is not positive.
+- Throws IllegalArgumentException when the booking is still open (endTime is null).
+- Throws IllegalArgumentException when (endTime - startTime) is not greater than durationMinutes.
+- endTime is set to endTime minus durationMinutes; reduction is logged server-side.
 
 ================================================================================
 4. REFERENCE DATA ENDPOINTS
@@ -729,6 +764,199 @@ Request Body:
 
 Response: 200 OK
 (no body)
+
+================================================================================
+9.4 BACKLOG RECOMMENDATION ENDPOINTS
+================================================================================
+Base Path: /api/backlog-recommendations
+
+--------------------------------------------------------------------------------
+9.4.1 Create Backlog Recommendation
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/backlog-recommendations
+Content-Type: application/json
+
+Request Body:
+{
+  "gameRecommendation": {
+    "uid": "string" | null,              // existing game_recommendation UID
+    "nameBase": "string" | null,          // required when uid is not provided
+    "releaseDate": "YYYY-MM-DD" | null,
+    "externalIgdbId": "string" | null
+  },
+  "backlogRecommendation": {
+    "gameUid": "string" | null,           // optional link to existing game
+    "name": "string",
+    "originalRecommendationBy": "string" | null,
+    "comment": "string" | null            // optional initial comment
+  }
+}
+
+Response: 200 OK
+{
+  "backlogRecommendationUid": "string",
+  "gameRecommendationUid": "string"
+}
+
+Behaviour:
+- When gameRecommendation.uid is provided, that existing game_recommendation is used.
+- Otherwise a new game_recommendation is created (nameBase required).
+- votecount starts at 1.
+- state is set to NEW, stateDate to today, stateReason to null (not accepted in request).
+
+BacklogRecommendationState values:
+NEW | CONFIRMED_FOR_BACKLOG | FINISHED | REJECTED | UP_FOR_REPLAY | RESUBMIT | DUPLICATE
+
+--------------------------------------------------------------------------------
+9.4.2 Upvote Backlog Recommendation
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/backlog-recommendations/{uid}/upvote
+
+Path Parameters:
+- uid (string): Unique identifier of the backlog recommendation
+
+Response: 200 OK
+(no body). Increments votecount by 1.
+
+--------------------------------------------------------------------------------
+9.4.3 Add Comment to Backlog Recommendation
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/backlog-recommendations/{uid}/comments
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the backlog recommendation
+
+Request Body:
+{
+  "comment": "string"
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+9.4.4 Get Backlog Recommendation by UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/backlog-recommendations/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the backlog recommendation
+
+Response: 200 OK
+BacklogRecommendationViewDto:
+{
+  "uid": "string",
+  "creationDate": "2024-01-01T12:00:00Z",
+  "name": "string",
+  "state": "NEW",
+  "stateReason": "string" | null,
+  "stateDate": "YYYY-MM-DD",
+  "voteCount": 0,
+  "voteRank": 1,
+  "originalRecommendationBy": "string" | null,
+  "gameUid": "string" | null,
+  "linkedGameImageUid": "string" | null,
+  "gameRecommendation": {
+    "uid": "string",
+    "creationDate": "2024-01-01T12:00:00Z",
+    "nameBase": "string",
+    "releaseDate": "YYYY-MM-DD" | null,
+    "externalIgdbId": "string" | null
+  },
+  "backlogInfo": {
+    "uid": "string",
+    "addedDate": "YYYY-MM-DD",
+    "removedDate": "YYYY-MM-DD" | null,
+    "reason": "string" | null
+  } | null,
+  "completions": [
+    {
+      "uid": "string",
+      "gameInstanceUid": "string",
+      "dlcUid": "string" | null,
+      "completionStateUid": "string",
+      "info": "string" | null,
+      "finishedDate": "YYYY-MM-DD" | null,
+      "completedDate": "YYYY-MM-DD" | null
+    }
+  ],
+  "comments": [
+    {
+      "uid": "string",
+      "creationDate": "2024-01-01T12:00:00Z",
+      "comment": "string"
+    }
+  ]
+}
+
+Notes:
+- backlogInfo is populated when gameUid is set
+- linkedGameImageUid is populated when gameUid is set: primary game cover, else primary instance cover (first instance)
+- completions are populated only when gameUid is set and the linked game has at least one game instance
+
+--------------------------------------------------------------------------------
+9.4.5 List All Backlog Recommendations
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/backlog-recommendations
+
+Response: 200 OK
+Array of BacklogRecommendationViewDto (max 500 results, ordered by voteRank ascending):
+[
+  {
+    "uid": "string",
+    "creationDate": "2024-01-01T12:00:00Z",
+    "name": "string",
+    "state": "NEW",
+    "stateReason": "string" | null,
+    "stateDate": "YYYY-MM-DD",
+    "voteCount": 0,
+    "voteRank": 1,
+    "originalRecommendationBy": "string" | null,
+    "gameUid": "string" | null,
+    "linkedGameImageUid": "string" | null,
+    "gameRecommendation": {
+      "uid": "string",
+      "creationDate": "2024-01-01T12:00:00Z",
+      "nameBase": "string",
+      "releaseDate": "YYYY-MM-DD" | null,
+      "externalIgdbId": "string" | null
+    },
+    "backlogInfo": {
+      "uid": "string",
+      "addedDate": "YYYY-MM-DD",
+      "removedDate": "YYYY-MM-DD" | null,
+      "reason": "string" | null
+    } | null,
+    "completions": [
+      {
+        "uid": "string",
+        "gameInstanceUid": "string",
+        "dlcUid": "string" | null,
+        "completionStateUid": "string",
+        "info": "string" | null,
+        "finishedDate": "YYYY-MM-DD" | null,
+        "completedDate": "YYYY-MM-DD" | null
+      }
+    ],
+    "comments": [
+      {
+        "uid": "string",
+        "creationDate": "2024-01-01T12:00:00Z",
+        "comment": "string"
+      }
+    ]
+  }
+]
+
+Notes:
+- voteRank: position among all recommendations by voteCount desc, creationDate asc (rank 1 = highest votes)
+- Same backlogInfo/completion/comment enrichment as 9.4.4
 
 ================================================================================
 10. QUERY ENDPOINTS – BACKLOG OVERVIEW
@@ -1286,6 +1514,7 @@ Response: 200 OK
   "tierUid": "string" | null,
   "text": "string" | null,
   "preferredImageUid": "string" | null,  // game_image uid chosen as preferred image for the review
+  "presentationType": "string",          // e.g. DEFAULT, UPDATED, REPEAT, REPLACED
 
   "linkedPlaythrough": {
     "uid": "string",
@@ -1325,6 +1554,7 @@ Array of ReviewDetailDto (same structure as 18.1):
     "tierUid": "string" | null,
     "text": "string" | null,
     "preferredImageUid": "string" | null,
+    "presentationType": "string",
 
     "linkedPlaythrough": {
       "uid": "string",
@@ -1376,6 +1606,7 @@ Array of ReviewSearchResultDto:
         "reviewDate": "YYYY-MM-DD" | null,
         "tierUid": "string" | null,
         "preferredImageUid": "string" | null,   // review's preferred image; null when no review or not set
+        "presentationType": "string" | null,  // null when no review; e.g. DEFAULT, UPDATED, REPEAT, REPLACED
         "hasTextReview": true | false,      // true when reviewUid is non-null and review text is not blank
         "linkedDlcs": [                          // DLCs linked to this playthrough
           { "uid": "string", "name": "string" }
@@ -1426,13 +1657,14 @@ Request Body:
   "reviewDate": "YYYY-MM-DD" | null,    // LocalDate
   "tierUid": "string" | null,
   "text": "string" | null,
-  "preferredImageUid": "string" | null  // game_image uid; only applied when non-null
+  "preferredImageUid": "string" | null,  // game_image uid; only applied when non-null
+  "presentationType": "string" | null    // only applied when non-null; e.g. DEFAULT, UPDATED, REPEAT, REPLACED
 }
 
 Response: 200 OK
 Body: empty
 
-Note: partial update — only non-null fields are applied (reviewDate, tierUid, text, preferredImageUid).
+Note: partial update — only non-null fields are applied (reviewDate, tierUid, text, preferredImageUid, presentationType).
 
 ================================================================================
 19. ADMIN IMPORT – STAGING ENDPOINTS
@@ -1773,7 +2005,8 @@ YearlyReviewDto:
           "gameInstanceUid": "string" | null,
           "preferredImageUid": "string" | null,
           "text": "string" | null,
-          "order": 0
+          "order": 0,
+          "presentationType": "string"   // e.g. DEFAULT, IMAGE_LEFT, IMAGE_RIGHT
         }
       ]
     }
@@ -1838,7 +2071,8 @@ Request Body:
   "gameInstanceUid": "string" | null,
   "preferredImageUid": "string" | null,
   "text": "string" | null,
-  "order": 0
+  "order": 0,
+  "presentationType": "string" | null   // optional on create (defaults to DEFAULT); only applied when non-null on update
 }
 
 Response: 200 OK
@@ -2151,6 +2385,223 @@ Array of GamePlayedPerYearDto (view data + cover_image_uid):
 ]
 
 ================================================================================
+25. PUBLIC ENDPOINTS
+================================================================================
+Base Path: (varies per endpoint below)
+Endpoints implemented by Public* controllers (see app.mode in section 0.1).
+
+Shared type – PublicGameFeedRowDto (used by feed endpoints):
+{
+  "gameUid": "string",
+  "gameInstanceUid": "string" | null,
+  "imageUid": "string" | null,           // instance cover, else game cover
+  "name": "string",                      // instance name, else game name
+  "overview": { ...GameOverviewRowDto }  // see section 5.1 rows (instance row; isDlc=false)
+}
+
+--------------------------------------------------------------------------------
+25.1 Recent Activity Feed
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/feed/recent-activity
+Content-Type: application/json
+
+Request Body:
+{
+  "totalCount": 20,        // X – max total results
+  "maxPerCategory": 5      // Y – max per category before moving to next
+}
+
+Response: 200 OK
+Array of RecentActivityFeedItemDto:
+[
+  {
+    "category": "BACKLOG_RECENT" | "ENDED_PLAYTHROUGH" | "RECENT_COMPLETION" | "RECENT_PLAY",
+    "row": { ...PublicGameFeedRowDto }
+  }
+]
+
+Configuration (application.yml):
+- app.public-feed.recent-activity-days (int, default 90)
+  Only changes within this window are considered for all categories below.
+
+Categories (filled in order; stops when totalCount reached):
+- BACKLOG_RECENT: active backlog entries with added_date >= now - recent-activity-days, newest first (newest game instance when present)
+- ENDED_PLAYTHROUGH: non-Active playthroughs with last time booking start >= now - recent-activity-days; per game best match ordered by state, year, latest time booking start desc
+- RECENT_COMPLETION: game instances with COALESCE(completed_date, finished_date) >= now - recent-activity-days
+- RECENT_PLAY: game instances with time booking start_time >= now - recent-activity-days, by start_time desc
+
+Rules:
+- At most one entry per game across all categories
+- If a game appears in an earlier category it is skipped in later categories (does not count toward that category's max)
+- If totalCount is reached, remaining categories are omitted
+
+--------------------------------------------------------------------------------
+25.2 Random Backlog Feed
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/feed/random-backlog
+Content-Type: application/json
+
+Request Body:
+{
+  "count": 5
+}
+
+Response: 200 OK
+Array of BacklogOverviewGameDto (see section 10.1). Instances are ordered with preference:
+completion set, playthrough exists, newest receivedDate. coverImageUid uses preferred instance cover.
+
+--------------------------------------------------------------------------------
+25.3 Random S Tier Review Feed
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/feed/random-s-tier-reviews
+Content-Type: application/json
+
+Request Body:
+{
+  "count": 5
+}
+
+Response: 200 OK
+Array of PublicSTierReviewFeedItemDto:
+[
+  {
+    "gameUid": "string",
+    "gameInstanceUid": "string",
+    "imageUid": "string" | null,
+    "name": "string",
+    "overview": { ...GameOverviewRowDto },
+    "reviewUid": "string",
+    "reviewDate": "YYYY-MM-DD" | null,
+    "tierUid": "string",
+    "reviewText": "string" | null,
+    "preferredImageUid": "string" | null,
+    "presentationType": "string",
+    "playthroughUid": "string"
+  }
+]
+
+Notes:
+- Only reviews with tier name "S" are included
+- Results are random
+
+--------------------------------------------------------------------------------
+25.4 Random Backlog Recommendation Feed
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/feed/random-backlog-recommendations
+Content-Type: application/json
+
+Request Body:
+{
+  "count": 5
+}
+
+Response: 200 OK
+Array of PublicRandomBacklogRecommendationFeedItemDto:
+[
+  {
+    "backlogRecommendationUid": "string",
+    "name": "string",
+    "state": "NEW",
+    "stateReason": "string" | null,
+    "stateDate": "YYYY-MM-DD",
+    "voteCount": 0,
+    "voteRank": 1,
+    "gameUid": "string" | null,
+    "gameInstanceUid": "string" | null,
+    "imageUid": "string" | null,
+    "overview": { ...GameOverviewRowDto } | null,
+    "gameRecommendation": {
+      "uid": "string",
+      "creationDate": "2024-01-01T12:00:00Z",
+      "nameBase": "string",
+      "releaseDate": "YYYY-MM-DD" | null,
+      "externalIgdbId": "string" | null
+    }
+  }
+]
+
+Notes:
+- voteRank is position among all recommendations ordered by voteCount desc, creationDate asc (rank 1 = highest votes)
+- When gameUid is set, overview and imageUid reflect the newest game instance
+- Results are random
+
+--------------------------------------------------------------------------------
+25.5 Unified Game Search
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/query/games/unified?q={query}
+
+Query Parameters:
+- q (string, required): Search text (LIKE %text%) matched against game names,
+  active backlog game names, and backlog recommendation / game recommendation names
+
+Response: 200 OK
+Array of UnifiedGameSearchResultDto (max 20 results, sorted by name):
+[
+  {
+    "resultType": "GAME" | "BACKLOG" | "BACKLOG_RECOMMENDATION",
+    "name": "string",
+    "releaseDate": "YYYY-MM-DD" | null,
+    "coverImageUid": "string" | null,
+    "gameUid": "string" | null,
+    "backlogInfo": {
+      "uid": "string",
+      "addedDate": "YYYY-MM-DD",
+      "removedDate": "YYYY-MM-DD" | null,
+      "reason": "string" | null
+    } | null,
+    "completions": [
+      {
+        "uid": "string",
+        "gameInstanceUid": "string",
+        "dlcUid": "string" | null,
+        "completionStateUid": "string",
+        "info": "string" | null,
+        "finishedDate": "YYYY-MM-DD" | null,
+        "completedDate": "YYYY-MM-DD" | null,
+        "platformUid": "string",
+        "platformName": "string",
+        "coverImageUid": "string" | null
+      }
+    ],
+    "backlogRecommendationUid": "string" | null,
+    "voteCount": 0,
+    "state": "NEW" | "CONFIRMED_FOR_BACKLOG" | "FINISHED" | "REJECTED" | "UP_FOR_REPLAY" | "RESUBMIT" | "DUPLICATE" | null,
+    "stateReason": "string" | null,
+    "stateDate": "YYYY-MM-DD" | null,
+    "originalRecommendationBy": "string" | null,
+    "gameRecommendation": {
+      "uid": "string",
+      "creationDate": "2024-01-01T12:00:00Z",
+      "nameBase": "string",
+      "releaseDate": "YYYY-MM-DD" | null,
+      "externalIgdbId": "string" | null
+    } | null
+  }
+]
+
+Notes:
+- resultType GAME: catalog games; backlogInfo set when an active backlog entry exists
+- resultType BACKLOG: active backlog entries; backlogInfo always set
+- resultType BACKLOG_RECOMMENDATION: recommendation with gameRecommendation;
+  when gameUid is set, backlogInfo and completions reflect the linked game
+- completion coverImageUid: instance cover when present, otherwise game cover
+
+--------------------------------------------------------------------------------
+25.6 List All Backlog Recommendations
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/backlog-recommendations
+
+Response: 200 OK
+Array of BacklogRecommendationViewDto (max 500, ordered by voteRank ascending).
+See section 9.4.5 for full response shape.
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -2162,5 +2613,5 @@ NOTES
 - The API uses Spring Boot's default error handling
 
 ================================================================================
-Generated: 2026-02-27  |  Document version: 31
+Generated: 2026-07-04  |  Document version: 33
 ================================================================================

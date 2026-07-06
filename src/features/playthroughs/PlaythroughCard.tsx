@@ -16,10 +16,12 @@ import {
   useTheme,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import PlaythroughTypeWithIcon from '../shared/PlaythroughTypeWithIcon';
 import SmartImage from '../shared/SmartImage';
 import TimeTrackingOverlay from './TimeTrackingOverlay';
 import PlaythroughTimeDisplay from './PlaythroughTimeDisplay';
+import PlaythroughTimeBookingsModal from './PlaythroughTimeBookingsModal';
 import type { ActivePlaythroughOverviewRow } from '../../types/dto';
 
 interface Props {
@@ -31,6 +33,7 @@ interface Props {
     playthroughUid: string,
     payload: { date: string; minuteCount: number }
   ) => void | Promise<void>;
+  onBookingsChanged?: () => void | Promise<void>;
   isActionDisabled: boolean;
 }
 
@@ -44,9 +47,11 @@ export default function PlaythroughCard({
   onStart,
   onStop,
   onAddRetroactive,
+  onBookingsChanged,
   isActionDisabled,
 }: Props) {
   const [retroactiveOpen, setRetroactiveOpen] = useState(false);
+  const [bookingsOpen, setBookingsOpen] = useState(false);
   const [retroactiveDate, setRetroactiveDate] = useState(today);
   const [retroactiveHours, setRetroactiveHours] = useState(0);
   const [retroactiveMinutes, setRetroactiveMinutes] = useState(0);
@@ -167,6 +172,14 @@ export default function PlaythroughCard({
           </Link>
           <IconButton
             size="small"
+            onClick={() => setBookingsOpen(true)}
+            aria-label="Time bookings"
+            sx={{ color: 'text.secondary' }}
+          >
+            <ListAltIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
             onClick={() => setRetroactiveOpen(true)}
             disabled={isActionDisabled}
             aria-label="Add overlooked booking"
@@ -255,6 +268,14 @@ export default function PlaythroughCard({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <PlaythroughTimeBookingsModal
+        open={bookingsOpen}
+        playthroughUid={row.playthroughUid}
+        displayName={row.displayName}
+        onClose={() => setBookingsOpen(false)}
+        onChanged={onBookingsChanged}
+      />
     </Box>
   );
 }

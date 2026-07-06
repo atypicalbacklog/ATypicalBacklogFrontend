@@ -28,11 +28,11 @@ export default function AppFooter() {
     >
       <Stack spacing={0.25} alignItems="center">
         <Stack direction="row" spacing={2} flexWrap="nowrap" useFlexGap alignItems="center" justifyContent="center">
-          <MuiLink component={RouterLink} to="/impressum" underline="hover" color="text.secondary">
-            Impressum
+          <MuiLink component={RouterLink} to="/imprint" underline="hover" color="text.secondary">
+            Imprint
           </MuiLink>
           <MuiLink component={RouterLink} to="/faq-glossar" underline="hover" color="text.secondary">
-            FAQ &amp; Glossar
+            FAQ &amp; Glossary
           </MuiLink>
           <MuiLink
             href={GITHUB_URL}
@@ -45,7 +45,7 @@ export default function AppFooter() {
           </MuiLink>
         </Stack>
         <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.675rem' }}>
-          Atypical Backlog
+          &copy; Atypical Backlog
         </Typography>
       </Stack>
     </Box>

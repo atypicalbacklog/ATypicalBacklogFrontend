@@ -50,6 +50,7 @@ interface Props {
   dlcName: string | null;
   /** Time booking sessions (from api/playthroughs/{playthroughUid}/sessions / query/time-bookings). */
   sessions: TimeBookingQueryDto[];
+  readOnly?: boolean;
 }
 
 export default function PlaythroughOverviewCard({
@@ -61,6 +62,7 @@ export default function PlaythroughOverviewCard({
   totalSeconds,
   dlcName,
   sessions,
+  readOnly = false,
 }: Props) {
   const [chartOpen, setChartOpen] = useState(false);
 
@@ -121,17 +123,19 @@ export default function PlaythroughOverviewCard({
             DLC: {dlcName}
           </Typography>
         )}
-        <Tooltip title="Edit Playthrough">
-          <IconButton
-            component={Link}
-            to={`/playthroughs/${playthroughUid}`}
-            size="small"
-            aria-label="Edit Playthrough"
-            sx={{ mt: 0.5 }}
-          >
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        {!readOnly ? (
+          <Tooltip title="Edit Playthrough">
+            <IconButton
+              component={Link}
+              to={`/playthroughs/${playthroughUid}`}
+              size="small"
+              aria-label="Edit Playthrough"
+              sx={{ mt: 0.5 }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : null}
         <Typography
           component="button"
           variant="caption"

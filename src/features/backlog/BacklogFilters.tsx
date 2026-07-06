@@ -48,18 +48,15 @@ export default function BacklogFilters({ value, onChange }: Props) {
     });
   };
 
-  const searchRow = (
-    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: isMobile ? 2 : 0 }}>
-      <TextField
-        label="Search"
-        value={value.searchText}
-        onChange={(e) => onChange({ ...value, searchText: e.target.value })}
-        size="small"
-        sx={{
-          minWidth: 160,
-          ...(isMobile ? { flex: 1 } : { maxWidth: 280 }),
-        }}
-      />
+  const headerRow = (
+    <Stack
+      direction="row"
+      spacing={2}
+      alignItems="center"
+      flexWrap="wrap"
+      useFlexGap
+      sx={{ mb: isMobile ? 1 : 0 }}
+    >
       {isMobile && (
         <Button
           variant={filtersOpen ? 'outlined' : 'text'}
@@ -75,88 +72,100 @@ export default function BacklogFilters({ value, onChange }: Props) {
   );
 
   const filterFields = (
-    <Stack
-      direction="row"
-      spacing={2}
-      flexWrap="wrap"
-      alignItems="center"
-      useFlexGap
-      sx={isMobile ? { mt: 1, '& > *': { minWidth: 0, flex: '1 1 160px' } } : {}}
-    >
-      <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 160, flex: isMobile ? '1 1 160px' : undefined }}>
-        <InputLabel>Consoles</InputLabel>
-        <Select
-          multiple
-          value={value.consoleUids}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              consoleUids: e.target.value as string[],
-            })
-          }
-          input={<OutlinedInput label="Consoles" />}
-          renderValue={(selected) =>
-            selected
-              .map((uid) => consoles.find((c) => c.uid === uid)?.name ?? uid)
-              .join(', ')
-          }
-        >
-          {consoles.map((c) => (
-            <MenuItem key={c.uid} value={c.uid}>
-              {c.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+    <Stack spacing={1.25} sx={{ mt: 1 }}>
+      <Stack
+        direction="row"
+        spacing={2}
+        flexWrap="wrap"
+        useFlexGap
+        alignItems="center"
+        sx={isMobile ? { '& > *': { minWidth: 0, flex: '1 1 160px' } } : {}}
+      >
+        <TextField
+          label="Search"
+          placeholder="Search by Name"
+          value={value.searchText}
+          onChange={(e) => onChange({ ...value, searchText: e.target.value })}
+          size="small"
+          sx={{
+            minWidth: 160,
+            ...(isMobile ? { flex: 1 } : { maxWidth: 280 }),
+          }}
+        />
 
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={value.hasActivePlaythrough === true}
-            onChange={(_, checked) =>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 160 }}>
+          <InputLabel>Consoles</InputLabel>
+          <Select
+            multiple
+            value={value.consoleUids}
+            onChange={(e) =>
               onChange({
                 ...value,
-                hasActivePlaythrough: checked ? true : null,
+                consoleUids: e.target.value as string[],
               })
             }
-          />
-        }
-        label="Playthrough active"
-      />
+            input={<OutlinedInput label="Consoles" />}
+            renderValue={(selected) =>
+              selected
+                .map((uid) => consoles.find((c) => c.uid === uid)?.name ?? uid)
+                .join(', ')
+            }
+          >
+            {consoles.map((c) => (
+              <MenuItem key={c.uid} value={c.uid}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-      <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 180, flex: isMobile ? '1 1 160px' : undefined }}>
-        <InputLabel>Completion state</InputLabel>
-        <Select
-          multiple
-          value={value.completionStateUids}
-          onChange={handleCompletionChange}
-          input={<OutlinedInput label="Completion state" />}
-          renderValue={(selected) =>
-            selected
-              .map(
-                (uid) =>
-                  completionStates.find((c) => c.uid === uid)?.name ?? uid
-              )
-              .join(', ')
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={value.hasActivePlaythrough === true}
+              onChange={(_, checked) =>
+                onChange({
+                  ...value,
+                  hasActivePlaythrough: checked ? true : null,
+                })
+              }
+            />
           }
-        >
-          {completionStates.map((c) => (
-            <MenuItem key={c.uid} value={c.uid}>
-              {c.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+          label="Playthrough active"
+        />
+
+        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 180 }}>
+          <InputLabel>Completion state</InputLabel>
+          <Select
+            multiple
+            value={value.completionStateUids}
+            onChange={handleCompletionChange}
+            input={<OutlinedInput label="Completion state" />}
+            renderValue={(selected) =>
+              selected
+                .map(
+                  (uid) =>
+                    completionStates.find((c) => c.uid === uid)?.name ?? uid
+                )
+                .join(', ')
+            }
+          >
+            {completionStates.map((c) => (
+              <MenuItem key={c.uid} value={c.uid}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
     </Stack>
   );
 
   return (
-    <Stack spacing={0} mb={1}>
-      {searchRow}
+    <Stack spacing={0} mb={3}>
+      {headerRow}
       {isMobile ? (
-        <Collapse in={filtersOpen}>
-          {filterFields}
-        </Collapse>
+        <Collapse in={filtersOpen}>{filterFields}</Collapse>
       ) : (
         filterFields
       )}

@@ -19,6 +19,27 @@ export interface BacklogChangesByYearRow {
   completedDate: number;
 }
 
+/** First row per gameUid matching predicate (games with multiple instances count once). */
+export function uniqueGamesByUid(
+  rows: BacklogCompletionGameOverviewDto[],
+  predicate: (r: BacklogCompletionGameOverviewDto) => boolean
+): BacklogCompletionGameOverviewDto[] {
+  const map = new Map<string, BacklogCompletionGameOverviewDto>();
+  for (const r of rows) {
+    if (!predicate(r)) continue;
+    if (!map.has(r.gameUid)) map.set(r.gameUid, r);
+  }
+  return Array.from(map.values());
+}
+
+/** Count distinct games (by gameUid) matching predicate. */
+export function countUniqueGames(
+  rows: BacklogCompletionGameOverviewDto[],
+  predicate: (r: BacklogCompletionGameOverviewDto) => boolean
+): number {
+  return uniqueGamesByUid(rows, predicate).length;
+}
+
 /**
  * Groups raw BacklogCompletionGameOverviewDto list by year and counts:
  * - addedToBacklog: games added to backlog in that year
@@ -26,6 +47,7 @@ export interface BacklogChangesByYearRow {
  * - removedFromBacklog: games removed from backlog in that year
  * - finishedDate: games with finishedDate in that year
  * - completedDate: games with completedDate in that year
+ * Each gameUid is counted at most once per metric (multiple instances = one game).
  * Years with all zero counts are excluded from the result (so they are not shown in the chart/tooltips).
  */
 export function groupBacklogChangesByYear(
@@ -34,12 +56,14 @@ export function groupBacklogChangesByYear(
 ): BacklogChangesByYearRow[] {
   return yearRange
     .map((year) => {
-      const addedToBacklogRows = rows.filter((r) => isInYear(r.addedToBacklog, year));
+      const addedToBacklogRows = uniqueGamesByUid(rows, (r) => isInYear(r.addedToBacklog, year));
       const addedToBacklog = addedToBacklogRows.length;
       const addedFree = addedToBacklogRows.filter((r) => r.forFree).length;
-      const removedFromBacklog = rows.filter((r) => isInYear(r.removedFromBacklog, year)).length;
-      const finishedDate = rows.filter((r) => isInYear(r.finishedDate, year)).length;
-      const completedDate = rows.filter((r) => isInYear(r.completedDate, year)).length;
+      const removedFromBacklog = countUniqueGames(rows, (r) =>
+        isInYear(r.removedFromBacklog, year)
+      );
+      const finishedDate = countUniqueGames(rows, (r) => isInYear(r.finishedDate, year));
+      const completedDate = countUniqueGames(rows, (r) => isInYear(r.completedDate, year));
       return {
         year,
         addedToBacklog,

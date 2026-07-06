@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
-import { ImageApi, getImageUrl, type ImageMetadataDto, type UpdateImageMetadataRequest } from '../../services/imageApi';
+import { ImageApi, type ImageMetadataDto, type UpdateImageMetadataRequest } from '../../services/imageApi';
 import SmartImage from '../shared/SmartImage';
 
 const OWNER_TYPES: Array<'GAME' | 'GAME_INSTANCE' | 'DLC'> = ['GAME', 'GAME_INSTANCE', 'DLC'];
@@ -188,7 +188,6 @@ export default function EditImagePage() {
       </Box>
     );
 
-  const previewImageUrl = getImageUrl(imageUid, true);
 
   return (
     <Box sx={{ maxWidth: 480 }}>
@@ -227,27 +226,21 @@ export default function EditImagePage() {
         <Typography variant="subtitle2" color="text.secondary" gutterBottom>
           Image
         </Typography>
-        {previewImageUrl ? (
-          <SmartImage
-            imageUid={imageUid ?? null}
-            thumbnail
-            alt=""
-            aspectRatio={1}
-            fit="contain"
-            sx={{
-              width: 200,
-              height: 200,
-              borderRadius: 1,
-              border: 1,
-              borderColor: 'divider',
-            }}
-            imgSx={{ borderRadius: 1 }}
-          />
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            Image UID: {imageUid}
-          </Typography>
-        )}
+        <SmartImage
+          imageUid={imageUid ?? null}
+          thumbnail
+          alt=""
+          aspectRatio={1}
+          fit="contain"
+          sx={{
+            width: 200,
+            height: 200,
+            borderRadius: 1,
+            border: 1,
+            borderColor: 'divider',
+          }}
+          imgSx={{ borderRadius: 1 }}
+        />
         {metadata && (
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
             Source: {metadata.source} · Created: {metadata.creationDate ? new Date(metadata.creationDate).toLocaleString() : '—'}

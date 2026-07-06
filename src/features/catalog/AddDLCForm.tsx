@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { getImageUrl } from '../../services/imageApi';
+import SmartImage from '../shared/SmartImage';
 import { searchGameOverviewForPlaythrough } from '../../services/gameOverviewApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import { BacklogApi } from '../../services/backlogApi';
@@ -319,30 +319,22 @@ export default function AddDLCForm() {
                         key={r.gameInstanceUid!}
                         onClick={() => handleSelectInstance(r)}
                       >
-                        {getImageUrl(displayImageUid(r), true) ? (
-                          <Box
-                            component="img"
-                            src={getImageUrl(displayImageUid(r), true)!}
-                            alt=""
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              objectFit: 'cover',
-                              borderRadius: 0.5,
-                              mr: 1.5,
-                            }}
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              bgcolor: 'grey.300',
-                              borderRadius: 0.5,
-                              mr: 1.5,
-                            }}
-                          />
-                        )}
+                        <SmartImage
+                          imageUid={displayImageUid(r)}
+                          thumbnail
+                          alt=""
+                          compactPlaceholder
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 0.5,
+                            mr: 1.5,
+                            flexShrink: 0,
+                            aspectRatio: 'unset',
+                          }}
+                          imgSx={{ borderRadius: 0.5, objectFit: 'cover' }}
+                          fit="cover"
+                        />
                         <ListItemText
                           primary={displayName(r)}
                           secondary={
