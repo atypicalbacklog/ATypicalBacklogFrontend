@@ -60,7 +60,7 @@ export default function BacklogList({
 
   if (viewMode === 'minimized') {
     return (
-      <TableContainer sx={{ maxWidth: 1080, overflowX: 'auto' }}>
+      <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
         <Table size="small" sx={{ bgcolor: 'background.paper' }}>
           <TableHead>
             <TableRow sx={{ bgcolor: 'background.paper' }}>
@@ -96,7 +96,7 @@ export default function BacklogList({
   }
 
   return (
-    <Stack spacing={0.5} sx={{ maxWidth: 1080 }}>
+    <Stack spacing={0.5} sx={{ width: '100%' }}>
       {items.map((item, index) => (
         <BacklogListItem
           key={item.backlogUid}

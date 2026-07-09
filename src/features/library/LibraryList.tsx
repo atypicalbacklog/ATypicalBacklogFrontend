@@ -39,6 +39,7 @@ export default function LibraryList({
     return (
       <Box
         sx={{
+          width: '100%',
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 80px))',
           gap: 1.5,
@@ -58,6 +59,7 @@ export default function LibraryList({
   return (
     <Box
       sx={{
+        width: '100%',
         display: 'grid',
         gridTemplateColumns: {
           xs: 'repeat(2, 1fr)',

@@ -27,6 +27,7 @@ import {
   listItemsFromSearchRecommendations,
   unifiedPanelGameResults,
 } from './unifiedSearchResultUtils';
+import { compactBlurredFilterPanelSx } from '../yearlyReview/yearlyReviewPanelStyles';
 
 const SEARCH_MIN_LENGTH = 2;
 
@@ -160,37 +161,38 @@ export default function BacklogSubmissionsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h4" sx={{ mb: 2, textAlign: 'center' }}>
         Backlog submissions
       </Typography>
 
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2}
-        alignItems={{ xs: 'stretch', sm: 'center' }}
-        sx={{ mb: 2 }}
-      >
-        <TextField
-          label="Search games and submissions"
-          placeholder="Search by name…"
-          value={searchDraft}
-          onChange={(e) => setSearchDraft(e.target.value)}
-          size="small"
-          fullWidth
-          sx={{ maxWidth: { sm: 420 } }}
-        />
-        <Button
-          variant="contained"
-          onClick={() => openCreate(null)}
-          sx={{
-            ...landingCtaButtonSx,
-            flexShrink: 0,
-            alignSelf: { xs: 'flex-start', sm: 'center' },
-          }}
+      <Box sx={{ ...compactBlurredFilterPanelSx, mb: 2 }}>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
+          justifyContent="center"
         >
-          Add backlog submission
-        </Button>
-      </Stack>
+          <TextField
+            label="Search games and submissions"
+            placeholder="Search by name…"
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            size="small"
+            sx={{ width: { xs: '100%', sm: 420 } }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => openCreate(null)}
+            sx={{
+              ...landingCtaButtonSx,
+              flexShrink: 0,
+              alignSelf: { xs: 'flex-start', sm: 'center' },
+            }}
+          >
+            Add backlog submission
+          </Button>
+        </Stack>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -225,7 +227,7 @@ export default function BacklogSubmissionsPage() {
       ) : (
         <Box>
           {isSearchActive ? (
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, textAlign: 'center' }}>
               Matching backlog submissions
             </Typography>
           ) : null}

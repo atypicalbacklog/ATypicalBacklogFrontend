@@ -96,10 +96,10 @@ function StatisticsDashboardContent() {
     useWeekdayPlaytime();
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ textAlign: 'center' }}>
         Statistics
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
         Playtime and activity for {fromYear}–{toYear}. Adjust the year range to change all charts.
       </Typography>
 

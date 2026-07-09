@@ -6,11 +6,13 @@ import PagedSwipeGallery from './PagedSwipeGallery';
 import { yearlyReviewBlurredPanelSx } from '../yearlyReview/yearlyReviewPanelStyles';
 import {
   LANDING_CARD_IMAGE_HEIGHT,
+  LANDING_CARD_WIDTH,
   LANDING_FADE_DURATION_MS,
   LANDING_FEED_SECTION_GAP,
   LANDING_PAGE_INTERVAL_MS,
   LANDING_SCROLL_DURATION_S,
 } from './landingFeedConstants';
+import { useGalleryItemsPerView } from './useGalleryItemsPerView';
 
 export type FeedGalleryMode = 'scroll' | 'page' | 'fade';
 
@@ -21,6 +23,8 @@ interface Props<T> {
   renderItem: (item: T, index: number) => ReactNode;
   getItemKey: (item: T, index: number) => string;
   itemsPerView?: number;
+  /** Fixed card width (px) for page/fade layout; used to fit as many cards as the row allows. */
+  cardWidth?: number;
   pageIntervalMs?: number;
   fadeDurationMs?: number;
   scrollDurationS?: number;
@@ -85,6 +89,7 @@ export default function FeedGallery<T>({
   renderItem,
   getItemKey,
   itemsPerView: itemsPerViewProp,
+  cardWidth = LANDING_CARD_WIDTH,
   pageIntervalMs = LANDING_PAGE_INTERVAL_MS,
   fadeDurationMs = LANDING_FADE_DURATION_MS,
   scrollDurationS = LANDING_SCROLL_DURATION_S,
@@ -97,8 +102,16 @@ export default function FeedGallery<T>({
   const isSm = useMediaQuery(theme.breakpoints.down('sm'));
   const isMd = useMediaQuery(theme.breakpoints.down('md'));
 
-  const itemsPerView = itemsPerViewProp ?? (isSm ? 2 : isMd ? 4 : 5);
   const gap = 2;
+  const breakpointFallback = isSm ? 2 : isMd ? 4 : 8;
+  const { itemsPerView: measuredItemsPerView, measureRef } = useGalleryItemsPerView(
+    cardWidth,
+    gap,
+    breakpointFallback
+  );
+
+  const itemsPerView =
+    itemsPerViewProp ?? (mode === 'scroll' ? (isSm ? 2 : isMd ? 4 : 5) : measuredItemsPerView);
 
   const pages = useMemo(
     () => (mode === 'scroll' ? [] : chunk(items, itemsPerView)),
@@ -148,18 +161,12 @@ export default function FeedGallery<T>({
   }
 
   if (mode === 'scroll') {
-    const trackItems = [...items, ...items];
-
     return (
       <GallerySection title={title}>
-        <InfiniteScrollTrack
-          scrollDurationS={scrollDurationS}
-          gap={gap}
-          direction={scrollDirection}
-        >
-          {trackItems.map((item, index) => (
-            <Box key={`${getItemKey(item, index % items.length)}-${index}`} sx={{ flexShrink: 0 }}>
-              {renderItem(item, index % items.length)}
+        <InfiniteScrollTrack scrollDurationS={scrollDurationS} gap={gap} direction={scrollDirection}>
+          {items.map((item, index) => (
+            <Box key={getItemKey(item, index)} sx={{ flexShrink: 0 }}>
+              {renderItem(item, index)}
             </Box>
           ))}
         </InfiniteScrollTrack>
@@ -170,22 +177,24 @@ export default function FeedGallery<T>({
   if (mode === 'page') {
     return (
       <GallerySection title={title}>
-        <PagedSwipeGallery
-          pageIndex={pageIndex}
-          pageCount={pages.length}
-          onPageChange={handlePageChange}
-          gap={gap}
-          minCardHeight={minCardHeight}
-        >
-          {pageItems.map((item, index) => (
-            <Box
-              key={getItemKey(item, pageIndex * itemsPerView + index)}
-              sx={{ flexShrink: 0 }}
-            >
-              {renderItem(item, pageIndex * itemsPerView + index)}
-            </Box>
-          ))}
-        </PagedSwipeGallery>
+        <Box ref={measureRef} sx={{ width: '100%' }}>
+          <PagedSwipeGallery
+            pageIndex={pageIndex}
+            pageCount={pages.length}
+            onPageChange={handlePageChange}
+            gap={gap}
+            minCardHeight={minCardHeight}
+          >
+            {pageItems.map((item, index) => (
+              <Box
+                key={getItemKey(item, pageIndex * itemsPerView + index)}
+                sx={{ flexShrink: 0 }}
+              >
+                {renderItem(item, pageIndex * itemsPerView + index)}
+              </Box>
+            ))}
+          </PagedSwipeGallery>
+        </Box>
       </GallerySection>
     );
   }
@@ -195,28 +204,30 @@ export default function FeedGallery<T>({
 
   return (
     <GallerySection title={title}>
-      <Box
-        sx={{
-          display: 'flex',
-          gap,
-          minHeight: minCardHeight ?? LANDING_CARD_IMAGE_HEIGHT,
-          overflow: 'hidden',
-        }}
-      >
-        {pageItems.map((item, index) => (
-          <Box
-            key={getItemKey(item, pageIndex * itemsPerView + index)}
-            sx={{
-              flexShrink: 0,
-              opacity: fadePhase === 'in' ? 1 : 0,
-              transform: fadePhase === 'in' ? 'translateX(0)' : 'translateX(-8px)',
-              transition: `opacity ${fadeDurationMs}ms ease, transform ${fadeDurationMs}ms ease`,
-              transitionDelay: `${index * staggerMs}ms`,
-            }}
-          >
-            {renderItem(item, pageIndex * itemsPerView + index)}
-          </Box>
-        ))}
+      <Box ref={measureRef} sx={{ width: '100%' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap,
+            minHeight: minCardHeight ?? LANDING_CARD_IMAGE_HEIGHT,
+            overflow: 'hidden',
+          }}
+        >
+          {pageItems.map((item, index) => (
+            <Box
+              key={getItemKey(item, pageIndex * itemsPerView + index)}
+              sx={{
+                flexShrink: 0,
+                opacity: fadePhase === 'in' ? 1 : 0,
+                transform: fadePhase === 'in' ? 'translateX(0)' : 'translateX(-8px)',
+                transition: `opacity ${fadeDurationMs}ms ease, transform ${fadeDurationMs}ms ease`,
+                transitionDelay: `${index * staggerMs}ms`,
+              }}
+            >
+              {renderItem(item, pageIndex * itemsPerView + index)}
+            </Box>
+          ))}
+        </Box>
       </Box>
     </GallerySection>
   );

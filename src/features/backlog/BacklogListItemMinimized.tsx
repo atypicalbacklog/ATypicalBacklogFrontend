@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { TableCell, TableRow, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
@@ -7,6 +7,7 @@ import DateWithIcon from '../shared/DateWithIcon';
 import SmartImage from '../shared/SmartImage';
 import { pickDefaultInstance } from './instanceDisplay';
 import type { BacklogOverviewGameDto } from './types';
+import { createGameInstanceReturnState, gameInstanceTo } from '../gameInstances/gameInstanceNavigation';
 
 const thumbSx = { width: 20, height: 28, flexShrink: 0, borderRadius: 0.5 };
 
@@ -23,6 +24,8 @@ export default function BacklogListItemMinimized({
   compactColumns = false,
   cellPaddingSx = { px: 1 },
 }: Props) {
+  const location = useLocation();
+  const instanceReturn = createGameInstanceReturnState(location);
   const { referenceData } = useReferenceData();
   const defaultInstance = pickDefaultInstance(item.instances);
   const singleInstance = item.instances.length === 1 ? item.instances[0] : null;
@@ -46,7 +49,7 @@ export default function BacklogListItemMinimized({
 
   const toHref =
     defaultInstance != null
-      ? `/game-instances/${defaultInstance.gameInstanceUid}`
+      ? gameInstanceTo(defaultInstance.gameInstanceUid, instanceReturn)
       : undefined;
 
   const baseCellSx = (extra?: object) => ({ ...cellPaddingSx, ...extra });

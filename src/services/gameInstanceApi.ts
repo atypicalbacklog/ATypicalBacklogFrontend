@@ -1,3 +1,4 @@
+import { isManagementMode } from '../app/AppConfig';
 import { http } from './httpClient';
 import {
   CreateGameInstanceRequest,
@@ -30,6 +31,9 @@ export const GameInstanceApi = {
     }),
 
   get: (uid: string) => {
+    if (!isManagementMode()) {
+      return http<GameInstanceDetailDTO>(`${BASE}/${uid}`);
+    }
     let cached = instanceCache.get(uid);
     if (!cached) {
       cached = http<GameInstanceDetailDTO>(`${BASE}/${uid}`);

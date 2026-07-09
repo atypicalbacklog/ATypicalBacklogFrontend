@@ -6,12 +6,13 @@ import {
   Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DateWithIcon from '../shared/DateWithIcon';
 import ReviewModalHeader from '../reviews/ReviewModalHeader';
 import { getAppConfig } from '../../app/AppConfig';
 import { yearFromReviewDate } from '../reviews/reviewPresentationUtils';
 import { LANDING_REVIEW_MODAL_MAX_WIDTH } from './landingLayout';
+import { createGameInstanceReturnState, gameInstanceTo } from '../gameInstances/gameInstanceNavigation';
 import type { PublicSTierReviewFeedItemDto } from '../../types/feedDto';
 
 interface Props {
@@ -22,6 +23,7 @@ interface Props {
 
 export default function PublicSTierReviewModal({ item, open, onClose }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const isManagement = getAppConfig().mode === 'MANAGEMENT';
 
   const imageUid = item?.preferredImageUid ?? item?.imageUid ?? null;
@@ -37,7 +39,7 @@ export default function PublicSTierReviewModal({ item, open, onClose }: Props) {
   const goToGameDetail = () => {
     if (!gameInstanceUid) return;
     onClose();
-    navigate(`/game-instances/${gameInstanceUid}`);
+    navigate(gameInstanceTo(gameInstanceUid, createGameInstanceReturnState(location)));
   };
 
   return (

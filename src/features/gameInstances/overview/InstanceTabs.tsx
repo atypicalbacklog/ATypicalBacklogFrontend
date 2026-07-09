@@ -1,6 +1,7 @@
 import { Tab, Tabs } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import type { GameInstanceSummaryDto } from '../../../types/dto';
+import { gameInstanceTo, resolveGameInstanceReturn } from '../gameInstanceNavigation';
 
 interface Props {
   instances: GameInstanceSummaryDto[];
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export default function InstanceTabs({ instances, currentUid, getInstanceLabel }: Props) {
+  const location = useLocation();
+  const returnState = resolveGameInstanceReturn(location.state);
   const currentIndex = Math.max(
     0,
     instances.findIndex((i) => i.uid === currentUid)
@@ -42,7 +45,7 @@ export default function InstanceTabs({ instances, currentUid, getInstanceLabel }
         <Tab
           key={inst.uid}
           component={Link}
-          to={`/game-instances/${inst.uid}`}
+          to={gameInstanceTo(inst.uid, returnState)}
           label={label(inst)}
           value={index}
           id={`instance-tab-${index}`}

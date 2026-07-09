@@ -1,12 +1,13 @@
 import { Accordion, AccordionDetails, AccordionSummary, Box, Divider, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { BLUESKY_PROFILE_URL, GITHUB_PROFILE_URL } from '../shared/socialLinks';
 import { Link as RouterLink } from 'react-router-dom';
 import TrackingCoverageBar from '../shared/TrackingCoverageBar';
 import { TRACKING_COVERAGE_ENTRIES } from './trackingCoverageData';
 
 export default function FaqGlossarPage() {
   return (
-    <Box sx={{ width: '100%', maxWidth: 1200 }}>
+    <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>
         FAQ &amp; Glossary
       </Typography>
@@ -315,7 +316,13 @@ export default function FaqGlossarPage() {
           </Accordion>
           <Accordion disableGutters>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="body2">Why didn&apos;t you just use X instead?</Typography>
+              <Typography variant="body2">
+                Why didn&apos;t you just use{' '}
+                <Box component="span" sx={{ fontStyle: 'italic' }}>
+                  (Insert tracking plaform here)
+                </Box>{' '}
+                instead?
+              </Typography>
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary" component="div">
@@ -345,7 +352,7 @@ export default function FaqGlossarPage() {
                 <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
                   If you want a new feature, please add an issue on{' '}
                   <MuiLink
-                    href="https://github.com"
+                    href={GITHUB_PROFILE_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     underline="hover"
@@ -369,7 +376,7 @@ export default function FaqGlossarPage() {
                   If you can set up your local environment and database, you can get the frontend and backend code at
                   the{' '}
                   <MuiLink
-                    href="https://github.com"
+                    href={GITHUB_PROFILE_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     underline="hover"
@@ -396,7 +403,16 @@ export default function FaqGlossarPage() {
                 <MuiLink href="mailto:atypicalbacklog@gmail.com" underline="hover">
                   atypicalbacklog@gmail.com
                 </MuiLink>{' '}
-                or use Bluesky.
+                or use{' '}
+                <MuiLink
+                  href={BLUESKY_PROFILE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="hover"
+                >
+                  Bluesky
+                </MuiLink>
+                . (Maybe in the future even Discord? Depends on demand.)
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -409,7 +425,16 @@ export default function FaqGlossarPage() {
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
                 Sorry to disappoint. Opinions are subjective — if you want to talk about it, contact me via email or
-                use Bluesky.
+                use{' '}
+                <MuiLink
+                  href={BLUESKY_PROFILE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="hover"
+                >
+                  Bluesky
+                </MuiLink>
+                . (Maybe in the future even Discord? Depends on demand.)
               </Typography>
             </AccordionDetails>
           </Accordion>

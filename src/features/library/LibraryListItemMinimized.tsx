@@ -1,11 +1,14 @@
 import { Box, Chip, Tooltip } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import SmartImage from '../shared/SmartImage';
 import { GameOverviewRowDto } from './types';
+import { createGameInstanceReturnState, gameInstanceTo } from '../gameInstances/gameInstanceNavigation';
 
 type Props = { item: GameOverviewRowDto };
 
 export default function LibraryListItemMinimized({ item }: Props) {
+  const location = useLocation();
+  const instanceReturn = createGameInstanceReturnState(location);
   const isDlc = item.isDlc === true;
   const coverUid = isDlc
     ? (item.dlcCoverImageUid ?? item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid)
@@ -14,7 +17,7 @@ export default function LibraryListItemMinimized({ item }: Props) {
   const coverTooltip = item.dlcName ?? item.instanceName ?? item.gameName;
 
   const to = item.gameInstanceUid
-    ? `/game-instances/${item.gameInstanceUid}`
+    ? gameInstanceTo(item.gameInstanceUid, instanceReturn)
     : `/games/${item.gameUid}`;
 
   return (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   CircularProgress,
@@ -23,6 +23,7 @@ import { totalDurationSeconds } from '../gameInstances/overview/timeBookingUtils
 import { formatPlaytime } from '../library/formatPlaytime';
 import { getTierColorByIndex } from '../../constants/tierColors';
 import { getAppConfig } from '../../app/AppConfig';
+import { createGameInstanceReturnState, gameInstanceTo } from '../gameInstances/gameInstanceNavigation';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import type { ReviewSearchResultDto, ReviewByUidDto } from '../../types/dto';
 import ReviewModalHeader from './ReviewModalHeader';
@@ -42,6 +43,7 @@ const TYPE_PRIORITY_ORDER = ['Solo', 'Coop', 'Multiplayer', 'Casual'];
 
 export default function ReviewDetailModal({ card, open, onClose }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { referenceData } = useReferenceData();
@@ -57,7 +59,7 @@ export default function ReviewDetailModal({ card, open, onClose }: Props) {
   const goToGameDetail = () => {
     if (!gameInstanceUid) return;
     onClose();
-    navigate(`/game-instances/${gameInstanceUid}`);
+    navigate(gameInstanceTo(gameInstanceUid, createGameInstanceReturnState(location)));
   };
 
   const data = referenceData?.data;

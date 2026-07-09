@@ -29,6 +29,7 @@ import {
   hasActiveFilters,
   searchParamsToFilters,
 } from './urlFilters';
+import { centeredFitContentColumnSx } from '../landing/landingLayout';
 
 const initialFilters: LibraryFilterState = {
   searchText: '',
@@ -95,11 +96,16 @@ DLC: ${counts.dlcCount}`
   };
 
   return (
-    <Box>
-      <Stack direction="row" alignItems="center" gap={2} sx={{ mb: 2 }}>
-        <Typography variant="h4">
-          Library
-        </Typography>
+    <Box sx={{ width: '100%' }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="center"
+        flexWrap="wrap"
+        gap={2}
+        sx={{ mb: 2 }}
+      >
+        <Typography variant="h4">Library</Typography>
         {isManagementMode() ? (
           <Tooltip title="Add new Game/DLC">
             <IconButton
@@ -145,11 +151,18 @@ DLC: ${counts.dlcCount}`
         )}
       </Stack>
 
-      <Box ref={filtersContainerRef}>
+      <Box ref={filtersContainerRef} sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
         <LibraryFilters value={filters} onChange={setFilters} />
       </Box>
 
-      <Stack direction="row" alignItems="center" sx={{ width: '100%', mb: 0.5 }}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="center"
+        flexWrap="wrap"
+        useFlexGap
+        sx={{ ...centeredFitContentColumnSx, mb: 0.5, gap: 1 }}
+      >
         <Switch
           checked={viewMode === 'minimized'}
           onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}

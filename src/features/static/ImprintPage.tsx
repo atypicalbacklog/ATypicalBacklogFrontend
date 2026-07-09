@@ -1,11 +1,11 @@
 import { Box, Link, Paper, Stack, Typography } from '@mui/material';
 
-const CONTACT_EMAIL = 'your-email@example.com';
+const CONTACT_EMAIL = 'atypicalbacklog@gmail.com';
 
 export default function ImprintPage() {
   return (
-    <Box sx={{ width: '100%', maxWidth: 900 }}>
-      <Typography variant="h4" sx={{ mb: 2 }}>
+    <Box>
+      <Typography variant="h4" sx={{ mb: 2, textAlign: 'center' }}>
         Imprint
       </Typography>
 

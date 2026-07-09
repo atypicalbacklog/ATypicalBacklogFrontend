@@ -52,57 +52,58 @@ export default function BacklogPage() {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
+      <Typography variant="h4" sx={{ mb: 2, textAlign: 'center' }}>
         Backlog
       </Typography>
 
       <BacklogFilters value={filters} onChange={setFilters} />
 
-      <FormControlLabel
-        control={
-          <Switch
-            checked={viewMode === 'minimized'}
-            onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}
-            color="primary"
-          />
-        }
-        label={
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Typography variant="body2" color={viewMode === 'extended' ? 'text.primary' : 'text.secondary'}>
-              Extended
-            </Typography>
-            <Typography variant="body2">/</Typography>
-            <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
-              Minimized
-            </Typography>
-            {gameCount != null && (
-              <Box
-                component="span"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  ml: 3,
-                  pl: 1.5,
-                  borderLeft: 2,
-                  borderColor: (theme) =>
-                    alpha(
-                      theme.palette.mode === 'dark'
-                        ? theme.palette.common.white
-                        : theme.palette.common.black,
-                      theme.palette.mode === 'dark' ? 0.58 : 0.38
-                    ),
-                  minHeight: 22,
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  {gameCount}
-                </Typography>
-              </Box>
-            )}
-          </Stack>
-        }
-        sx={{ mb: 0 }}
-      />
+      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={viewMode === 'minimized'}
+              onChange={(e) => setViewMode(e.target.checked ? 'minimized' : 'extended')}
+              color="primary"
+            />
+          }
+          label={
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="body2" color={viewMode === 'extended' ? 'text.primary' : 'text.secondary'}>
+                Extended
+              </Typography>
+              <Typography variant="body2">/</Typography>
+              <Typography variant="body2" color={viewMode === 'minimized' ? 'text.primary' : 'text.secondary'}>
+                Minimized
+              </Typography>
+              {gameCount != null && (
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    ml: 3,
+                    pl: 1.5,
+                    borderLeft: 2,
+                    borderColor: (theme) =>
+                      alpha(
+                        theme.palette.mode === 'dark'
+                          ? theme.palette.common.white
+                          : theme.palette.common.black,
+                        theme.palette.mode === 'dark' ? 0.58 : 0.38
+                      ),
+                    minHeight: 22,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {gameCount}
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
+          }
+        />
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mt: 2 }}>

@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import CompletionBar from '../shared/CompletionBar';
 import DateWithIcon from '../shared/DateWithIcon';
@@ -21,6 +21,11 @@ import type {
   BacklogOverviewGameDto,
   BacklogOverviewInstanceDto,
 } from './types';
+import {
+  createGameInstanceReturnState,
+  gameInstanceTo,
+  type GameInstanceReturnState,
+} from '../gameInstances/gameInstanceNavigation';
 
 interface Props {
   item: BacklogOverviewGameDto;
@@ -34,11 +39,13 @@ function InstanceRow({
   gameName,
   gameReleaseDate,
   gameCoverImageUid,
+  instanceReturn,
 }: {
   instance: BacklogOverviewInstanceDto;
   gameName: string;
   gameReleaseDate: string | null;
   gameCoverImageUid: string | null;
+  instanceReturn: GameInstanceReturnState;
 }) {
   const { referenceData } = useReferenceData();
   const completionName =
@@ -77,7 +84,7 @@ function InstanceRow({
       spacing={1.5}
       alignItems="center"
       component={RouterLink}
-      to={`/game-instances/${instance.gameInstanceUid}`}
+      to={gameInstanceTo(instance.gameInstanceUid, instanceReturn)}
       sx={{
         py: 0.75,
         px: 1,
@@ -186,6 +193,8 @@ export default function BacklogListItem({
   expanded,
   onToggleExpand,
 }: Props) {
+  const location = useLocation();
+  const instanceReturn = createGameInstanceReturnState(location);
   const defaultInstance = pickDefaultInstance(item.instances);
   const others = otherInstances(item.instances, defaultInstance);
   const hasOthers = others.length > 0;
@@ -337,6 +346,7 @@ export default function BacklogListItem({
               gameName={item.gameName}
               gameReleaseDate={item.gameReleaseDate}
               gameCoverImageUid={item.coverImageUid}
+              instanceReturn={instanceReturn}
             />
           ) : (
             <Stack spacing={0.75}>
@@ -346,6 +356,7 @@ export default function BacklogListItem({
                   gameName={item.gameName}
                   gameReleaseDate={item.gameReleaseDate}
                   gameCoverImageUid={item.coverImageUid}
+                  instanceReturn={instanceReturn}
                 />
               )}
               {hasOthers && (
@@ -372,6 +383,7 @@ export default function BacklogListItem({
                           gameName={item.gameName}
                           gameReleaseDate={item.gameReleaseDate}
                           gameCoverImageUid={item.coverImageUid}
+                          instanceReturn={instanceReturn}
                         />
                       ))}
                     </Stack>

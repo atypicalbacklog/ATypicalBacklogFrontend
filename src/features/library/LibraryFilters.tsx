@@ -21,6 +21,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { CompletionFilterIntent, LibraryFilterState } from './types';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import PlatformSelect from '../shared/PlatformSelect';
+import { compactBlurredFilterPanelSx } from '../yearlyReview/yearlyReviewPanelStyles';
 
 interface Props {
   value: LibraryFilterState;
@@ -102,6 +103,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
       direction="row"
       spacing={2}
       alignItems="center"
+      justifyContent="center"
       flexWrap="wrap"
       useFlexGap
       sx={{ mb: isMobile ? 1 : 0 }}
@@ -120,15 +122,40 @@ export default function LibraryFilters({ value, onChange }: Props) {
     </Stack>
   );
 
+  const filterDivider = (
+    <Box
+      aria-hidden
+      className="library-filter-divider"
+      sx={{
+        display: { xs: 'none', sm: 'block' },
+        alignSelf: 'center',
+        flex: '0 0 auto',
+        color: 'text.disabled',
+        typography: 'body2',
+        lineHeight: 1,
+        userSelect: 'none',
+      }}
+    >
+      |
+    </Box>
+  );
+
+  const filterFieldSx = isMobile ? { minWidth: 0, flex: '1 1 160px' } : undefined;
+
+  const filterRowSx = {
+    width: 'fit-content',
+    maxWidth: '100%',
+  };
+
   const filterFields = (
-    <Stack spacing={1.25} sx={{ mt: 1 }}>
+    <Stack spacing={2} sx={{ mt: 1, width: 'fit-content', maxWidth: '100%' }}>
       <Stack
         direction="row"
         spacing={2}
         flexWrap="wrap"
         useFlexGap
         alignItems="center"
-        sx={isMobile ? { '& > *': { minWidth: 0, flex: '1 1 160px' } } : {}}
+        sx={filterRowSx}
       >
         <TextField
           label="Search"
@@ -147,10 +174,10 @@ export default function LibraryFilters({ value, onChange }: Props) {
           size="small"
           sx={{
             minWidth: 160,
-            ...(isMobile ? { flex: 1 } : { maxWidth: 280 }),
+            ...(isMobile ? filterFieldSx : { maxWidth: 280 }),
           }}
         />
-        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
           <InputLabel>Filter Played</InputLabel>
           <Select
             multiple
@@ -179,7 +206,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
             ))}
           </Select>
         </FormControl>
-        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
           <InputLabel>Filter Playtype</InputLabel>
           <Select
             label="Filter Playtype"
@@ -223,9 +250,9 @@ export default function LibraryFilters({ value, onChange }: Props) {
         flexWrap="wrap"
         useFlexGap
         alignItems="center"
-        sx={isMobile ? { '& > *': { minWidth: 0, flex: '1 1 160px' } } : {}}
+        sx={filterRowSx}
       >
-        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 160 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 160, ...filterFieldSx }}>
           <InputLabel>Original Console</InputLabel>
           <Select
             label="Original Console"
@@ -247,6 +274,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
           </Select>
         </FormControl>
         <FormControlLabel
+          sx={filterFieldSx}
           control={
             <Checkbox
               checked={value.ignorePorts}
@@ -258,7 +286,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
           label="Ignore Ports"
         />
 
-        <Box sx={{ minWidth: isMobile ? 0 : 160 }}>
+        <Box sx={{ width: isMobile ? '100%' : 240, minWidth: isMobile ? 0 : 160, ...filterFieldSx }}>
           <PlatformSelect
             value={value.platformUids[0] ?? ''}
             onChange={(v) =>
@@ -271,11 +299,14 @@ export default function LibraryFilters({ value, onChange }: Props) {
             allowEmpty
             emptyLabel="All"
             size="small"
-            fullWidth={isMobile}
+            fullWidth
           />
         </Box>
 
+        {filterDivider}
+
         <FormControlLabel
+          sx={filterFieldSx}
           control={
             <Checkbox
               checked={value.includeDlc !== false}
@@ -287,7 +318,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
           label="Include DLC"
         />
 
-        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200 }}>
+        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
           <InputLabel>Limit DLC Games</InputLabel>
           <Select
             label="Limit DLC Games"
@@ -318,14 +349,16 @@ export default function LibraryFilters({ value, onChange }: Props) {
   );
 
   return (
-    <Stack spacing={0} mb={3}>
-      {headerRow}
-      {isMobile ? (
-        <Collapse in={filtersOpen}>{filterFields}</Collapse>
-      ) : (
-        filterFields
-      )}
-    </Stack>
+    <Box sx={{ ...compactBlurredFilterPanelSx, mb: 3 }}>
+      <Stack spacing={0}>
+        {headerRow}
+        {isMobile ? (
+          <Collapse in={filtersOpen}>{filterFields}</Collapse>
+        ) : (
+          filterFields
+        )}
+      </Stack>
+    </Box>
   );
 }
   

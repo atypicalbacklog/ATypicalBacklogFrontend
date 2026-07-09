@@ -22,11 +22,11 @@ import PublicSTierReviewModal from './PublicSTierReviewModal';
 import {
   LANDING_CAPTION_CARD_IMAGE_HEIGHT,
   LANDING_CAPTION_CARD_MIN_HEIGHT,
+  LANDING_CAPTION_CARD_WIDTH,
   LANDING_FEED_COUNT,
   LANDING_RECENT_ACTIVITY_MAX_PER_CATEGORY,
   LANDING_RECENT_ACTIVITY_TOTAL,
 } from './landingFeedConstants';
-import { landingPageContainerSx } from './landingLayout';
 import { recentActivityLabel } from './recentActivityLabels';
 
 export default function LandingPage() {
@@ -78,17 +78,17 @@ export default function LandingPage() {
 
   if (loading) {
     return (
-      <Box sx={landingPageContainerSx}>
+      <>
         <LandingPageHero />
         <Stack alignItems="center" sx={{ py: 6 }}>
           <CircularProgress />
         </Stack>
-      </Box>
+      </>
     );
   }
 
   return (
-    <Box sx={landingPageContainerSx}>
+    <>
       <LandingPageHero />
 
       {error && (
@@ -116,6 +116,7 @@ export default function LandingPage() {
         title="Example games currently in backlog"
         items={randomBacklog}
         mode="page"
+        cardWidth={LANDING_CAPTION_CARD_WIDTH}
         minCardHeight={LANDING_CAPTION_CARD_MIN_HEIGHT}
         getItemKey={(item) => item.backlogUid}
         renderItem={(item) => <BacklogFeedCard item={item} />}
@@ -141,6 +142,7 @@ export default function LandingPage() {
         title="Backlog submissions"
         items={recommendations}
         mode="page"
+        cardWidth={LANDING_CAPTION_CARD_WIDTH}
         minCardHeight={LANDING_CAPTION_CARD_IMAGE_HEIGHT}
         hideWhenEmpty
         getItemKey={(item) => item.backlogRecommendationUid}
@@ -154,6 +156,6 @@ export default function LandingPage() {
         open={selectedReview != null}
         onClose={() => setSelectedReview(null)}
       />
-    </Box>
+    </>
   );
 }

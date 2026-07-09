@@ -13,6 +13,16 @@ export const theme = createTheme({
     },
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          scrollbarGutter: 'stable',
+        },
+        body: {
+          scrollbarGutter: 'stable',
+        },
+      },
+    },
     MuiPaper: {
       styleOverrides: {
         root: {
@@ -22,6 +32,9 @@ export const theme = createTheme({
       },
     },
     MuiDialog: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
       styleOverrides: {
         paper: {
           backgroundColor: 'rgba(50, 50, 50, 1)',
@@ -53,6 +66,11 @@ export const theme = createTheme({
       },
     },
     MuiSelect: {
+      defaultProps: {
+        MenuProps: {
+          disableScrollLock: true,
+        },
+      },
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-notchedOutline': {
@@ -187,6 +205,9 @@ export const theme = createTheme({
       },
     },
     MuiMenu: {
+      defaultProps: {
+        disableScrollLock: true,
+      },
       styleOverrides: {
         paper: {
           backgroundColor: 'rgba(50, 50, 50, 1)',
@@ -214,6 +235,11 @@ export const theme = createTheme({
         root: {
           backgroundColor: 'rgba(50, 50, 50, 1)',
         },
+      },
+    },
+    MuiPopover: {
+      defaultProps: {
+        disableScrollLock: true,
       },
     },
   },

@@ -1,3 +1,4 @@
+import { isManagementMode } from '../app/AppConfig';
 import { http } from './httpClient';
 import { GameDTO, GameInstanceSummaryDto } from '../types/dto';
 
@@ -13,6 +14,9 @@ export const GameApi = {
     http<GameDTO>(BASE, { method: 'POST', body: JSON.stringify(data) }),
 
   get: (uid: string) => {
+    if (!isManagementMode()) {
+      return http<GameDTO>(`${BASE}/${uid}`);
+    }
     let cached = gameCache.get(uid);
     if (!cached) {
       cached = http<GameDTO>(`${BASE}/${uid}`);
@@ -23,6 +27,9 @@ export const GameApi = {
 
   /** All instances for this game (for instance switcher, stats, etc.). */
   getInstances: (gameUid: string) => {
+    if (!isManagementMode()) {
+      return http<GameInstanceSummaryDto[]>(`${BASE}/${gameUid}/instances`);
+    }
     let cached = gameInstancesCache.get(gameUid);
     if (!cached) {
       cached = http<GameInstanceSummaryDto[]>(`${BASE}/${gameUid}/instances`);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -44,9 +44,20 @@ import HowLongToBeatBlock from './overview/HowLongToBeatBlock';
 import PlaythroughGallery from './overview/PlaythroughGallery';
 import ReviewOverviewBlock from './overview/ReviewOverviewBlock';
 import ImageGallery from './overview/ImageGallery';
+import { LANDING_PAGE_MAX_WIDTH } from '../landing/landingLayout';
+import { resolveGameInstanceReturn } from './gameInstanceNavigation';
+
+const overviewPanelSx = {
+  width: '100%',
+  maxWidth: LANDING_PAGE_MAX_WIDTH,
+  minWidth: 0,
+  mx: 'auto',
+} as const;
 
 export default function GameInstanceOverviewPage() {
   const { uid } = useParams<{ uid: string }>();
+  const location = useLocation();
+  const { returnTo, returnLabel } = resolveGameInstanceReturn(location.state);
   const readOnly = !isManagementMode();
   const { referenceData, isLoaded } = useReferenceData();
   const [instance, setInstance] = useState<GameInstanceDetailDTO | null>(null);
@@ -269,10 +280,10 @@ export default function GameInstanceOverviewPage() {
   })();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0, width: '100%' }}>
-      <Box display="flex" alignItems="center" gap={2} mb={2}>
-        <Button component={Link} to="/library" size="small">
-          Back to Library
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0, width: '100%' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mb: 2 }}>
+        <Button component={Link} to={returnTo} size="small">
+          Back to {returnLabel}
         </Button>
       </Box>
 
@@ -288,10 +299,7 @@ export default function GameInstanceOverviewPage() {
         sx={{
           mb: 2,
           p: 2,
-          width: '100%',
-          maxWidth: { xs: 480, sm: 1200 },
-          minWidth: 0,
-          mx: { xs: 'auto', sm: 0 },
+          ...overviewPanelSx,
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),
           display: 'flex',
           flexDirection: 'row',
@@ -340,10 +348,7 @@ export default function GameInstanceOverviewPage() {
         variant="outlined"
         sx={{
           mb: 2,
-          width: '100%',
-          maxWidth: { xs: 480, sm: 1200 },
-          minWidth: 0,
-          mx: { xs: 'auto', sm: 0 },
+          ...overviewPanelSx,
           overflow: 'hidden',
           boxSizing: 'border-box',
           bgcolor: (t) => (t.palette.mode === 'dark' ? 'grey.800' : 'grey.100'),

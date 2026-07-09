@@ -1,5 +1,11 @@
 export const LANDING_HERO_PHRASES = ['atypical backlog', 'a typical backlog'] as const;
 
+/** Original gap: hero title row → CTA block (title mb + footer spacer mb). */
+export const LANDING_HERO_TITLE_TO_FOOTER_GAP = 2;
+
+/** Desktop gap between top nav and hero title. */
+export const LANDING_HERO_TOP_NAV_GAP = 4;
+
 export const LANDING_HERO_LONGEST_PHRASE = LANDING_HERO_PHRASES.reduce((a, b) =>
   a.length >= b.length ? a : b
 );

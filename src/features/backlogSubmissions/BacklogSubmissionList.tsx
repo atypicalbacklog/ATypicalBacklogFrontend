@@ -32,7 +32,7 @@ export default function BacklogSubmissionList({
           sm: `repeat(auto-fill, minmax(${BACKLOG_SUBMISSION_CARD_WIDTH}px, ${BACKLOG_SUBMISSION_CARD_WIDTH}px))`,
         },
         gap: 1,
-        justifyContent: 'start',
+        justifyContent: 'center',
       }}
     >
       {items.map((item) => (

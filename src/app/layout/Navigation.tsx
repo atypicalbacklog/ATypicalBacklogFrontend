@@ -4,6 +4,7 @@ import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import GamesIcon from '@mui/icons-material/Games';
 import BookmarksIcon from '@mui/icons-material/Bookmarks';
 import ReviewsIcon from '@mui/icons-material/Reviews';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import HowToVoteIcon from '@mui/icons-material/HowToVote';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -23,9 +24,8 @@ export default function Navigation({ onNavigate }: NavigationProps) {
       aria-label="Primary Navigation"
       sx={{
         bgcolor: 'background.paper',
-        width: 220,
+        width: 280,
         flexShrink: 0,
-        '--app-nav-width': '220px',
         height: '100%',
         py: 1,
         px: 0,
@@ -77,6 +77,12 @@ export default function Navigation({ onNavigate }: NavigationProps) {
             <ReviewsIcon />
           </ListItemIcon>
           <ListItemText primary="Reviews" />
+        </ListItemButton>
+        <ListItemButton component={Link} to="/statistics" onClick={onNavigate} sx={{ py: 1.25, px: 2 }}>
+          <ListItemIcon sx={{ minWidth: 40 }}>
+            <BarChartIcon />
+          </ListItemIcon>
+          <ListItemText primary="Statistics" />
         </ListItemButton>
         {mode === 'MANAGEMENT' && (
           <ListItemButton component={Link} to="/public" onClick={onNavigate} sx={{ py: 1.25, px: 2 }}>

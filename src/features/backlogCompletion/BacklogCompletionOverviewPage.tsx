@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Accordion,
   AccordionDetails,
@@ -9,10 +9,6 @@ import {
   Card,
   CardContent,
   CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   Stack,
   Table,
   TableBody,
@@ -30,6 +26,8 @@ import type {
 } from '../../services/statisticsApi';
 import SmartImage from '../shared/SmartImage';
 import { uniqueGamesByUid } from '../statistics/backlogChangesUtils';
+import YearlyReviewYearSelector from '../yearlyReview/YearlyReviewYearSelector';
+import { gameInstanceTo, createGameInstanceReturnState } from '../gameInstances/gameInstanceNavigation';
 
 const MIN_YEAR = 2017;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -55,6 +53,8 @@ function formatPlaytimeHours(seconds: number): string {
 }
 
 export default function BacklogCompletionOverviewPage() {
+  const location = useLocation();
+  const instanceReturn = createGameInstanceReturnState(location);
   const [year, setYear] = useState(CURRENT_YEAR);
   const [rows, setRows] = useState<BacklogCompletionGameOverviewDto[]>([]);
   const [gamesPlayedPerYear, setGamesPlayedPerYear] = useState<GamePlayedPerYearDto[]>([]);
@@ -206,22 +206,15 @@ export default function BacklogCompletionOverviewPage() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h5">Backlog & Completion Overview</Typography>
+      <Typography variant="h4" sx={{ textAlign: 'center' }}>
+        Backlog Completion Overview
+      </Typography>
 
-      <FormControl size="small" sx={{ minWidth: 120, maxWidth: 160, alignSelf: 'flex-start' }}>
-        <InputLabel>Year</InputLabel>
-        <Select
-          label="Year"
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-        >
-          {YEARS.map((y) => (
-            <MenuItem key={y} value={y}>
-              {y}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <YearlyReviewYearSelector
+        years={YEARS}
+        selectedYear={year}
+        onYearChange={setYear}
+      />
 
       <Accordion defaultExpanded={false} sx={{ '&:before': { display: 'none' } }}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -244,7 +237,7 @@ export default function BacklogCompletionOverviewPage() {
                 <TableRow
                   key={r.gameInstanceUid}
                   component={Link}
-                  to={`/game-instances/${r.gameInstanceUid}`}
+                  to={gameInstanceTo(r.gameInstanceUid, instanceReturn)}
                   sx={{
                     textDecoration: 'none',
                     color: 'inherit',
@@ -501,7 +494,7 @@ export default function BacklogCompletionOverviewPage() {
                     <TableRow
                       key={r.gameUid}
                       component={Link}
-                      to={`/game-instances/${r.gameInstanceUid}`}
+                      to={gameInstanceTo(r.gameInstanceUid, instanceReturn)}
                       sx={{
                         textDecoration: 'none',
                         color: 'inherit',
@@ -561,7 +554,7 @@ export default function BacklogCompletionOverviewPage() {
                     <TableRow
                       key={r.gameUid}
                       component={Link}
-                      to={`/game-instances/${r.gameInstanceUid}`}
+                      to={gameInstanceTo(r.gameInstanceUid, instanceReturn)}
                       sx={{
                         textDecoration: 'none',
                         color: 'inherit',

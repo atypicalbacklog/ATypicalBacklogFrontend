@@ -1,10 +1,11 @@
 import { Box, Chip, Stack, Tooltip, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import CompletionBar from '../shared/CompletionBar';
 import DateWithIcon from '../shared/DateWithIcon';
 import SmartImage from '../shared/SmartImage';
 import { GameOverviewRowDto } from './types';
+import { createGameInstanceReturnState, gameInstanceTo } from '../gameInstances/gameInstanceNavigation';
 
 export const LIBRARY_CARD_WIDTH = 200;
 const CARD_HEIGHT = 325;
@@ -13,6 +14,8 @@ const COVER_HEIGHT = 260;
 type Props = { item: GameOverviewRowDto };
 
 export default function LibraryListItem({ item }: Props) {
+  const location = useLocation();
+  const instanceReturn = createGameInstanceReturnState(location);
   const { referenceData } = useReferenceData();
   const completionStateName =
     referenceData?.data.completionStates.find(
@@ -40,7 +43,7 @@ export default function LibraryListItem({ item }: Props) {
     item.dlcReleaseDate ?? item.instanceReleaseDate ?? item.gameReleaseDate ?? null;
 
   const to = item.gameInstanceUid
-    ? `/game-instances/${item.gameInstanceUid}`
+    ? gameInstanceTo(item.gameInstanceUid, instanceReturn)
     : `/games/${item.gameUid}`;
 
   return (

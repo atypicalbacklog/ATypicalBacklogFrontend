@@ -1,6 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  Children,
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 import { Box } from '@mui/material';
-import type { ReactNode } from 'react';
 
 const VELOCITY_DECAY = 0.92;
 const DRAG_VELOCITY_SCALE = 0.35;
@@ -18,8 +29,7 @@ interface Props {
 }
 
 /**
- * Infinite horizontal strip: auto-scrolls left; drag/swipe shifts position and adds momentum.
- * Pointer capture starts only after drag threshold so taps on cards still work.
+ * Infinite horizontal strip when content overflows the viewport; otherwise a static centered row.
  */
 export default function InfiniteScrollTrack({
   children,
@@ -40,23 +50,45 @@ export default function InfiniteScrollTrack({
   const lastPointerTimeRef = useRef(0);
   const rafRef = useRef(0);
 
-  const measureHalfWidth = () => {
+  const childArray = useMemo(() => Children.toArray(children), [children]);
+  const [scrollable, setScrollable] = useState(false);
+
+  const measureOverflow = () => {
+    const viewport = viewportRef.current;
     const track = trackRef.current;
-    if (!track) return;
-    halfWidthRef.current = track.scrollWidth / 2;
+    if (!viewport || !track) return;
+
+    const viewportWidth = viewport.clientWidth;
+    const singleSetWidth = scrollable ? track.scrollWidth / 2 : track.scrollWidth;
+    const nextScrollable = singleSetWidth > viewportWidth + 1;
+
+    if (nextScrollable !== scrollable) {
+      setScrollable(nextScrollable);
+    }
+
+    halfWidthRef.current = nextScrollable ? singleSetWidth : 0;
+
+    if (!nextScrollable) {
+      offsetRef.current = 0;
+      velocityRef.current = 0;
+      track.style.transform = '';
+    }
   };
 
   useLayoutEffect(() => {
-    measureHalfWidth();
-  }, [children]);
+    measureOverflow();
+  }, [childArray, scrollable, gap]);
 
   useEffect(() => {
-    const ro = new ResizeObserver(measureHalfWidth);
+    const ro = new ResizeObserver(measureOverflow);
+    if (viewportRef.current) ro.observe(viewportRef.current);
     if (trackRef.current) ro.observe(trackRef.current);
     return () => ro.disconnect();
-  }, []);
+  }, [scrollable, childArray]);
 
   useEffect(() => {
+    if (!scrollable) return;
+
     let lastTime = performance.now();
 
     const tick = (now: number) => {
@@ -88,9 +120,27 @@ export default function InfiniteScrollTrack({
 
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [scrollDurationS, direction]);
+  }, [scrollDurationS, direction, scrollable]);
+
+  const displayChildren = useMemo(() => {
+    if (!scrollable) return childArray;
+
+    const cloneWithKey = (child: ReactNode, key: string) => {
+      if (isValidElement(child)) {
+        return cloneElement(child as ReactElement, { key });
+      }
+      return child;
+    };
+
+    return [
+      ...childArray.map((child, index) => cloneWithKey(child, `scroll-a-${index}`)),
+      ...childArray.map((child, index) => cloneWithKey(child, `scroll-b-${index}`)),
+    ];
+  }, [childArray, scrollable]);
 
   const applyDragDelta = (dx: number, dt: number) => {
+    if (!scrollable) return;
+
     offsetRef.current += dx;
     const half = halfWidthRef.current;
     if (half > 0) {
@@ -107,7 +157,7 @@ export default function InfiniteScrollTrack({
   };
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0) return;
+    if (!scrollable || e.button !== 0) return;
     pointerActiveRef.current = true;
     draggingRef.current = false;
     pointerIdRef.current = e.pointerId;
@@ -118,7 +168,7 @@ export default function InfiniteScrollTrack({
   };
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!pointerActiveRef.current || e.pointerId !== pointerIdRef.current) return;
+    if (!scrollable || !pointerActiveRef.current || e.pointerId !== pointerIdRef.current) return;
 
     const dxFromStart = e.clientX - startXRef.current;
     if (!draggingRef.current) {
@@ -155,12 +205,14 @@ export default function InfiniteScrollTrack({
       sx={{
         overflow: 'hidden',
         width: '100%',
-        touchAction: 'pan-y',
-        cursor: 'grab',
-        userSelect: 'none',
+        touchAction: scrollable ? 'pan-y' : undefined,
+        cursor: scrollable ? 'grab' : undefined,
+        userSelect: scrollable ? 'none' : undefined,
         mx: -0.5,
         px: 0.5,
-        '&:active': { cursor: 'grabbing' },
+        display: scrollable ? 'block' : 'flex',
+        justifyContent: scrollable ? undefined : 'center',
+        '&:active': scrollable ? { cursor: 'grabbing' } : undefined,
       }}
     >
       <Box
@@ -168,11 +220,12 @@ export default function InfiniteScrollTrack({
         sx={{
           display: 'flex',
           gap,
-          width: 'max-content',
-          willChange: 'transform',
+          width: scrollable ? 'max-content' : 'auto',
+          maxWidth: scrollable ? undefined : '100%',
+          willChange: scrollable ? 'transform' : undefined,
         }}
       >
-        {children}
+        {displayChildren}
       </Box>
     </Box>
   );

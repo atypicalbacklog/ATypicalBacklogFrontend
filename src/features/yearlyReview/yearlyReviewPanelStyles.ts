@@ -19,6 +19,19 @@ export const yearlyReviewBlurredPanelSx: SxProps<Theme> = {
   p: 2,
 };
 
+/** Compact blurred panel for centered filter bars (backlog, statistics). */
+export const compactBlurredFilterPanelSx: SxProps<Theme> = {
+  bgcolor: 'rgba(255, 255, 255, 0.12)',
+  backdropFilter: 'blur(4px)',
+  borderRadius: 1,
+  width: 'fit-content',
+  maxWidth: '100%',
+  mx: 'auto',
+  pt: 1,
+  pb: 2,
+  px: 2,
+};
+
 export const yearlyReviewIntroOutroTextFieldSx: SxProps<Theme> = {
   '& .MuiOutlinedInput-root': {
     lineHeight: 1.6,

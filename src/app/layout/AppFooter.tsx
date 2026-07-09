@@ -1,7 +1,7 @@
 import { Box, Link as MuiLink, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-
-const GITHUB_URL = 'https://github.com';
+import { BLUESKY_PROFILE_URL, GITHUB_PROFILE_URL } from '../../features/shared/socialLinks';
+import blueskyLogo from '../../assets/Bluesky_Logo.svg';
 
 export default function AppFooter() {
   return (
@@ -19,7 +19,7 @@ export default function AppFooter() {
         maxWidth: '100%',
         border: 1,
         borderColor: 'divider',
-        bgcolor: 'background.paper',
+        bgcolor: 'grey.900',
         borderRadius: 2,
         px: 1.75,
         py: 0.6,
@@ -35,13 +35,28 @@ export default function AppFooter() {
             FAQ &amp; Glossary
           </MuiLink>
           <MuiLink
-            href={GITHUB_URL}
+            href={GITHUB_PROFILE_URL}
             target="_blank"
             rel="noopener noreferrer"
             underline="hover"
             color="text.secondary"
           >
             Github
+          </MuiLink>
+          <MuiLink
+            href={BLUESKY_PROFILE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Bluesky"
+            color="text.secondary"
+            sx={{ display: 'inline-flex', lineHeight: 0 }}
+          >
+            <Box
+              component="img"
+              src={blueskyLogo}
+              alt=""
+              sx={{ width: '1.125rem', height: '1.125rem' }}
+            />
           </MuiLink>
         </Stack>
         <Typography variant="caption" color="text.disabled" sx={{ fontSize: '0.675rem' }}>

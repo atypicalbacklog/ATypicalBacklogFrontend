@@ -29,3 +29,8 @@ export function isManagementMode(): boolean {
   return getAppConfig().mode === 'MANAGEMENT';
 }
 
+/** Safe before config load (e.g. bootstrap); used for fetch cache policy. */
+export function isPublicMode(): boolean {
+  return appConfig?.mode === 'PUBLIC';
+}
+

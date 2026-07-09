@@ -6,6 +6,7 @@ import LandingHeroFooter from './LandingHeroFooter';
 import {
   LANDING_HERO_CURSOR_TEXT_GAP,
   LANDING_HERO_PHRASES,
+  LANDING_HERO_TITLE_TO_FOOTER_GAP,
   LANDING_HERO_TYPE_B_LINE_HEIGHT,
   LANDING_HERO_TYPE_B_TITLE_TEXT_SX,
   landingHeroWindowSx,
@@ -41,8 +42,14 @@ export default function LandingPageHeroTypeB() {
   }, []);
 
   return (
-    <Box sx={{ pt: { xs: 2.5, sm: 3.5 }, pb: { xs: 1, sm: 1.5 }, mb: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+    <Box sx={{ pt: { xs: 2.5, sm: 0 }, pb: { xs: 1, sm: 1.5 }, mb: 3 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          mb: LANDING_HERO_TITLE_TO_FOOTER_GAP,
+        }}
+      >
         <Box
           component="div"
           role="listbox"

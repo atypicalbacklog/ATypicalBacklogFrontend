@@ -3,9 +3,21 @@ import { AppBar, Box, Drawer, IconButton, Toolbar, Typography, useMediaQuery } f
 import MenuIcon from '@mui/icons-material/Menu';
 import { useLocation } from 'react-router-dom';
 import Navigation from './Navigation';
+import DesktopTopNav from './DesktopTopNav';
 import AppFooter from './AppFooter';
 import patternController from '../../assets/pattern_controller.svg';
 import { getAppConfig } from '../AppConfig';
+import { LANDING_HERO_TOP_NAV_GAP } from '../../features/landing/landingHeroConstants';
+import { landingPageContainerSx, fullWidthPageContainerSx } from '../../features/landing/landingLayout';
+
+function usesFullWidthColumn(pathname: string): boolean {
+  if (pathname.startsWith('/library')) return true;
+  return (
+    pathname.startsWith('/backlog') &&
+    !pathname.startsWith('/backlog-submissions') &&
+    !pathname.startsWith('/backlog-completion-overview')
+  );
+}
 
 function getPageTitle(pathname: string): string {
   const { mode } = getAppConfig();
@@ -38,6 +50,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const currentTitle = getPageTitle(location.pathname);
+  const pageContainerSx = usesFullWidthColumn(location.pathname)
+    ? fullWidthPageContainerSx
+    : landingPageContainerSx;
 
   const handleDrawerToggle = () => {
     setMobileOpen((open) => !open);
@@ -102,22 +117,38 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Drawer>
 
           <Box component="main" flexGrow={1} sx={{ mt: 7, minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <Box p={2}>
-              {children}
+            <Box sx={{ p: 2, width: '100%' }}>
+              <Box sx={pageContainerSx}>{children}</Box>
             </Box>
             <AppFooter />
           </Box>
         </>
       ) : (
-        <>
-          <Navigation />
-          <Box component="main" flexGrow={1} sx={{ minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <Box p={2}>
-              {children}
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            flexGrow: 1,
+            minWidth: 0,
+            width: '100%',
+          }}
+        >
+          <DesktopTopNav />
+          <Box
+            component="main"
+            flexGrow={1}
+            sx={{ m: 0, minWidth: 0, overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}
+          >
+            <Box
+              aria-hidden
+              sx={{ height: (theme) => theme.spacing(LANDING_HERO_TOP_NAV_GAP), flexShrink: 0 }}
+            />
+            <Box sx={{ px: 2, pt: 0, pb: 2, width: '100%' }}>
+              <Box sx={pageContainerSx}>{children}</Box>
             </Box>
             <AppFooter />
           </Box>
-        </>
+        </Box>
       )}
     </Box>
   );

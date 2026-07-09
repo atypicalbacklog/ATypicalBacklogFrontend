@@ -49,7 +49,7 @@ export default function FeedCardTooltip({ title, children }: Props) {
               }
             : undefined
         }
-        sx={{ display: 'inline-flex' }}
+        sx={{ display: 'block', width: 'fit-content' }}
       >
         {children}
       </Box>

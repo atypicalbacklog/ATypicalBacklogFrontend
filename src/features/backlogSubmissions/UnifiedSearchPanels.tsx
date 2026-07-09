@@ -32,6 +32,7 @@ export default function UnifiedGameSearchPanel({
         mb: 2,
         width: '100%',
         maxWidth: UNIFIED_SEARCH_PANEL_MAX_WIDTH,
+        mx: 'auto',
       }}
     >
       <Typography variant="subtitle2" sx={{ mb: 1 }}>

@@ -12,6 +12,7 @@ export default function YearlyReviewYearSelector({ years, selectedYear, onYearCh
       sx={{
         display: 'flex',
         flexWrap: 'wrap',
+        justifyContent: 'center',
         gap: 1,
         mb: 2,
       }}

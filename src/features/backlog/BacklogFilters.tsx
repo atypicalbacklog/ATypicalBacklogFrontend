@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Box,
   Button,
   Collapse,
   FormControl,
@@ -18,6 +19,7 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
+import { compactBlurredFilterPanelSx } from '../yearlyReview/yearlyReviewPanelStyles';
 import type { BacklogFilterState } from './types';
 
 interface Props {
@@ -53,6 +55,7 @@ export default function BacklogFilters({ value, onChange }: Props) {
       direction="row"
       spacing={2}
       alignItems="center"
+      justifyContent="center"
       flexWrap="wrap"
       useFlexGap
       sx={{ mb: isMobile ? 1 : 0 }}
@@ -79,6 +82,7 @@ export default function BacklogFilters({ value, onChange }: Props) {
         flexWrap="wrap"
         useFlexGap
         alignItems="center"
+        justifyContent="center"
         sx={isMobile ? { '& > *': { minWidth: 0, flex: '1 1 160px' } } : {}}
       >
         <TextField
@@ -162,13 +166,15 @@ export default function BacklogFilters({ value, onChange }: Props) {
   );
 
   return (
-    <Stack spacing={0} mb={3}>
-      {headerRow}
-      {isMobile ? (
-        <Collapse in={filtersOpen}>{filterFields}</Collapse>
-      ) : (
-        filterFields
-      )}
-    </Stack>
+    <Box sx={{ ...compactBlurredFilterPanelSx, mb: 3 }}>
+      <Stack spacing={0}>
+        {headerRow}
+        {isMobile ? (
+          <Collapse in={filtersOpen}>{filterFields}</Collapse>
+        ) : (
+          filterFields
+        )}
+      </Stack>
+    </Box>
   );
 }
