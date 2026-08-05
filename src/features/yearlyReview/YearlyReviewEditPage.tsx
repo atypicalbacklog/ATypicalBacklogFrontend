@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Accordion,
   AccordionDetails,
@@ -33,7 +33,6 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
-import { getAppConfig } from '../../app/AppConfig';
 import { ImageApi } from '../../services/imageApi';
 import { queryGameOverview } from '../../services/gameOverviewApi';
 import type { GameOverviewQueryPayload } from '../../services/gameOverviewApi';
@@ -46,6 +45,7 @@ import {
 import type { GameOverviewRowDto } from '../library/types';
 import YearlyReviewGameCard from './YearlyReviewGameCard';
 import SmartImage from '../shared/SmartImage';
+import AdditionalImagePickerModal from './AdditionalImagePickerModal';
 import {
   YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS,
   chunkYearlyReviewGames,
@@ -55,17 +55,11 @@ import {
   yearlyReviewBlurredPanelSx,
   yearlyReviewIntroOutroTextFieldSx,
 } from './yearlyReviewPanelStyles';
+import {
+  getSelectableReviewYears,
+  LAST_CALENDAR_YEAR,
+} from './yearlyReviewYearUtils';
 import type { YearlyReviewGamePresentationType } from '../../types/dto';
-
-const CURRENT_YEAR = new Date().getFullYear();
-const LAST_YEAR = CURRENT_YEAR - 1;
-const MIN_YEAR = 2017;
-
-/** Selectable years; current year is only included in MANAGEMENT mode. */
-function getSelectableYears(): number[] {
-  const maxYear = getAppConfig().mode === 'MANAGEMENT' ? CURRENT_YEAR : LAST_YEAR;
-  return Array.from({ length: maxYear - MIN_YEAR + 1 }, (_, i) => maxYear - i);
-}
 
 function displayName(row: GameOverviewRowDto): string {
   return row.instanceName ?? row.gameName ?? '';
@@ -77,8 +71,17 @@ function displayCoverUid(row: GameOverviewRowDto): string | null {
 }
 
 export default function YearlyReviewEditPage() {
-  const years = getSelectableYears();
-  const [year, setYear] = useState(LAST_YEAR);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const years = getSelectableReviewYears();
+
+  const parseYearParam = useCallback((): number | null => {
+    const raw = searchParams.get('year');
+    if (!raw) return null;
+    const parsed = Number.parseInt(raw, 10);
+    return !Number.isNaN(parsed) && years.includes(parsed) ? parsed : null;
+  }, [searchParams, years]);
+
+  const [year, setYear] = useState(() => parseYearParam() ?? LAST_CALENDAR_YEAR);
   const [data, setData] = useState<YearlyReviewDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +102,8 @@ export default function YearlyReviewEditPage() {
   const [selectedRow, setSelectedRow] = useState<GameOverviewRowDto | null>(null);
   const [gameText, setGameText] = useState('');
   const [preferredImageUid, setPreferredImageUid] = useState<string | null>(null);
+  const [additionalImageUid, setAdditionalImageUid] = useState<string | null>(null);
+  const [additionalImagePickerOpen, setAdditionalImagePickerOpen] = useState(false);
   const [gamePresentationType, setGamePresentationType] =
     useState<YearlyReviewGamePresentationType>('DEFAULT');
   const [gameImages, setGameImages] = useState<{ uid: string }[]>([]);
@@ -110,6 +115,22 @@ export default function YearlyReviewEditPage() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  useEffect(() => {
+    const fromUrl = parseYearParam();
+    if (fromUrl != null && fromUrl !== year) setYear(fromUrl);
+  }, [parseYearParam, year]);
+
+  useEffect(() => {
+    if (!searchParams.get('year')) {
+      setSearchParams({ year: String(year) }, { replace: true });
+    }
+  }, [searchParams, setSearchParams, year]);
+
+  const handleYearChange = (newYear: number) => {
+    setYear(newYear);
+    setSearchParams({ year: String(newYear) }, { replace: true });
+  };
 
   const loadReview = useCallback(() => {
     setLoading(true);
@@ -274,6 +295,7 @@ export default function YearlyReviewEditPage() {
     setSelectedRow(null);
     setGameText('');
     setPreferredImageUid(null);
+    setAdditionalImageUid(null);
     setGamePresentationType('DEFAULT');
     setGameSearchQuery('');
     setGameSearchResults([]);
@@ -284,10 +306,11 @@ export default function YearlyReviewEditPage() {
     setGameEditTarget({ categoryUid, game });
     setGameText(game.text ?? '');
     setPreferredImageUid(game.preferredImageUid);
+    setAdditionalImageUid(game.additionalImageUid ?? null);
     setGamePresentationType(normalizeYearlyReviewGamePresentationType(game.presentationType));
     setGameSearchQuery('');
     setGameSearchResults([]);
-    if (game.gameUid) {
+    if (game.gameUid && !game.additionalImageUid) {
       setSelectedRow({
         gameUid: game.gameUid,
         gameInstanceUid: game.gameInstanceUid ?? null,
@@ -309,19 +332,21 @@ export default function YearlyReviewEditPage() {
     if (!data || !gameEditTarget) return;
     const category = data.categories.find((c) => c.uid === gameEditTarget.categoryUid);
     if (!category) return;
-    if (!selectedRow) {
-      setError('Select a game/instance');
+    if (!additionalImageUid && !selectedRow) {
+      setError('Select a game/instance or an additional image');
       return;
     }
     setGameSaving(true);
     try {
       const order = gameEditTarget.game != null ? gameEditTarget.game.order : category.games.length;
+      const usingAdditional = Boolean(additionalImageUid);
       const payload: UpsertYearlyReviewGameRequest = {
         uid: gameEditTarget.game?.uid ?? null,
         categoryUid: gameEditTarget.categoryUid,
-        gameUid: selectedRow.gameUid,
-        gameInstanceUid: selectedRow.gameInstanceUid ?? null,
-        preferredImageUid,
+        gameUid: usingAdditional ? null : (selectedRow?.gameUid ?? null),
+        gameInstanceUid: usingAdditional ? null : (selectedRow?.gameInstanceUid ?? null),
+        preferredImageUid: usingAdditional ? null : preferredImageUid,
+        additionalImageUid: usingAdditional ? additionalImageUid : null,
         text: gameText.trim() || null,
         order,
         presentationType: gamePresentationType,
@@ -359,6 +384,7 @@ export default function YearlyReviewEditPage() {
           gameUid: g.gameUid,
           gameInstanceUid: g.gameInstanceUid ?? null,
           preferredImageUid: g.preferredImageUid ?? null,
+          additionalImageUid: g.additionalImageUid ?? null,
           text: g.text ?? null,
           order: i,
           presentationType: g.presentationType ?? 'DEFAULT',
@@ -385,7 +411,12 @@ export default function YearlyReviewEditPage() {
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2} sx={{ mb: 2 }}>
         <Typography variant="h4">Yearly review (edit)</Typography>
-        <Button component={Link} to="/reviews/yearly" variant="outlined" size="small">
+        <Button
+          component={Link}
+          to={`/reviews/yearly?year=${year}`}
+          variant="outlined"
+          size="small"
+        >
           Back to view
         </Button>
       </Stack>
@@ -396,7 +427,7 @@ export default function YearlyReviewEditPage() {
           <Select
             label="Year"
             value={year}
-            onChange={(e) => setYear(Number(e.target.value))}
+            onChange={(e) => handleYearChange(Number(e.target.value))}
           >
             {years.map((y) => (
               <MenuItem key={y} value={y}>{y}</MenuItem>
@@ -745,83 +776,136 @@ export default function YearlyReviewEditPage() {
         <DialogTitle>{gameEditTarget?.game ? 'Edit game' : 'Add game'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Search game / instance"
-              value={gameSearchQuery}
-              onChange={(e) => setGameSearchQuery(e.target.value)}
-              size="small"
-              fullWidth
-              placeholder="Type to search (no DLCs)"
-            />
-            {gameSearching && <CircularProgress size={24} />}
-            {gameSearchResults.length > 0 && (
-              <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                {gameSearchResults.map((r) => (
-                  <Box
-                    key={r.gameInstanceUid ?? r.gameUid}
-                    onClick={() => setSelectedRow(r)}
-                    sx={{
-                      p: 1,
-                      cursor: 'pointer',
-                      bgcolor: selectedRow?.gameInstanceUid === r.gameInstanceUid ? 'action.selected' : undefined,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                    }}
-                  >
-                    {displayCoverUid(r) && (
-                      <SmartImage
-                        imageUid={displayCoverUid(r)}
-                        thumbnail
-                        alt=""
-                        aspectRatio={2 / 3}
-                        fit="contain"
-                        sx={{ width: 40, height: 56, borderRadius: 0.5 }}
-                        imgSx={{ borderRadius: 0.5 }}
-                      />
-                    )}
-                    <Typography variant="body2">
-                      {displayName(r)}
-                      {r.platformName ? (
-                        <Box component="span" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                          {` - ${r.platformName}`}
-                        </Box>
-                      ) : ''}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            )}
-            {selectedRow && gameImages.length > 0 && (
+            {additionalImageUid ? (
               <Box>
-                <Typography variant="caption" color="text.secondary">Preferred image (optional)</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                  {gameImages.map((im) => (
-                    <Box
-                      key={im.uid}
-                      onClick={() => setPreferredImageUid(preferredImageUid === im.uid ? null : im.uid)}
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: 1,
-                        border: 2,
-                        borderColor: preferredImageUid === im.uid ? 'primary.main' : 'divider',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                  Additional image (stand-in)
+                </Typography>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <SmartImage
+                    imageUid={additionalImageUid}
+                    kind="additional"
+                    thumbnail
+                    alt=""
+                    aspectRatio={2 / 3}
+                    fit="contain"
+                    sx={{ width: 72, height: 108, borderRadius: 0.5 }}
+                    imgSx={{ borderRadius: 0.5 }}
+                  />
+                  <Stack spacing={1}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setAdditionalImagePickerOpen(true)}
+                    >
+                      Change image
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setAdditionalImageUid(null);
                       }}
                     >
-                      <SmartImage
-                        imageUid={im.uid}
-                        thumbnail
-                        alt=""
-                        aspectRatio={1}
-                        fit="contain"
-                        sx={{ width: '100%', height: '100%' }}
-                      />
-                    </Box>
-                  ))}
-                </Box>
+                      Use game instead
+                    </Button>
+                  </Stack>
+                </Stack>
               </Box>
+            ) : (
+              <>
+                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                  <TextField
+                    label="Search game / instance"
+                    value={gameSearchQuery}
+                    onChange={(e) => setGameSearchQuery(e.target.value)}
+                    size="small"
+                    fullWidth
+                    placeholder="Type to search (no DLCs)"
+                    sx={{ flex: 1, minWidth: 180 }}
+                  />
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setAdditionalImagePickerOpen(true)}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    Use additional image
+                  </Button>
+                </Stack>
+                {gameSearching && <CircularProgress size={24} />}
+                {gameSearchResults.length > 0 && (
+                  <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+                    {gameSearchResults.map((r) => (
+                      <Box
+                        key={r.gameInstanceUid ?? r.gameUid}
+                        onClick={() => {
+                          setSelectedRow(r);
+                          setAdditionalImageUid(null);
+                        }}
+                        sx={{
+                          p: 1,
+                          cursor: 'pointer',
+                          bgcolor: selectedRow?.gameInstanceUid === r.gameInstanceUid ? 'action.selected' : undefined,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                        }}
+                      >
+                        {displayCoverUid(r) && (
+                          <SmartImage
+                            imageUid={displayCoverUid(r)}
+                            thumbnail
+                            alt=""
+                            aspectRatio={2 / 3}
+                            fit="contain"
+                            sx={{ width: 40, height: 56, borderRadius: 0.5 }}
+                            imgSx={{ borderRadius: 0.5 }}
+                          />
+                        )}
+                        <Typography variant="body2">
+                          {displayName(r)}
+                          {r.platformName ? (
+                            <Box component="span" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                              {` - ${r.platformName}`}
+                            </Box>
+                          ) : ''}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+                {selectedRow && gameImages.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Preferred image (optional)</Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
+                      {gameImages.map((im) => (
+                        <Box
+                          key={im.uid}
+                          onClick={() => setPreferredImageUid(preferredImageUid === im.uid ? null : im.uid)}
+                          sx={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: 1,
+                            border: 2,
+                            borderColor: preferredImageUid === im.uid ? 'primary.main' : 'divider',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <SmartImage
+                            imageUid={im.uid}
+                            thumbnail
+                            alt=""
+                            aspectRatio={1}
+                            fit="contain"
+                            sx={{ width: '100%', height: '100%' }}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </>
             )}
             <TextField
               label="Text"
@@ -858,11 +942,28 @@ export default function YearlyReviewEditPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setGameDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={saveGame} disabled={gameSaving || !selectedRow}>
+          <Button
+            variant="contained"
+            onClick={saveGame}
+            disabled={gameSaving || (!selectedRow && !additionalImageUid)}
+          >
             {gameSaving ? 'Saving…' : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <AdditionalImagePickerModal
+        open={additionalImagePickerOpen}
+        selectedUid={additionalImageUid}
+        onClose={() => setAdditionalImagePickerOpen(false)}
+        onSelect={(uid) => {
+          setAdditionalImageUid(uid);
+          setSelectedRow(null);
+          setPreferredImageUid(null);
+          setGameSearchQuery('');
+          setGameSearchResults([]);
+        }}
+      />
     </Box>
   );
 }

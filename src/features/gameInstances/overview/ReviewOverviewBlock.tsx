@@ -36,7 +36,6 @@ interface Props {
   reviews: ReviewByUidDto[];
   gameInstanceUid: string;
   typeName: (uid: string | null) => string;
-  stateName: (uid: string) => string;
   tierName: (uid: string | null) => string;
   getTierColor: (tierUid: string | null) => string;
   readOnly?: boolean;
@@ -96,7 +95,6 @@ export default function ReviewOverviewBlock({
   reviews,
   gameInstanceUid,
   typeName,
-  stateName,
   tierName,
   getTierColor,
   readOnly = false,
@@ -142,14 +140,11 @@ export default function ReviewOverviewBlock({
           '&::-webkit-scrollbar-thumb': { bgcolor: 'grey.400', borderRadius: 1 },
         }}
       >
-        {cardRows.map(({ primary, others }) => (
+        {cardRows.map(({ primary }) => (
           <ReviewCard
             key={primary.reviewUid}
             primary={primary}
-            others={others}
             gameInstanceUid={gameInstanceUid}
-            typeName={typeName}
-            stateName={stateName}
             tierName={tierName}
             getTierColor={getTierColor}
             readOnly={readOnly}
@@ -162,10 +157,7 @@ export default function ReviewOverviewBlock({
 
 interface ReviewCardProps {
   primary: ReviewByUidDto;
-  others: ReviewByUidDto[];
   gameInstanceUid: string;
-  typeName: (uid: string | null) => string;
-  stateName: (uid: string) => string;
   tierName: (uid: string | null) => string;
   getTierColor: (tierUid: string | null) => string;
   readOnly?: boolean;
@@ -173,10 +165,7 @@ interface ReviewCardProps {
 
 function ReviewCard({
   primary,
-  others,
   gameInstanceUid,
-  typeName,
-  stateName,
   tierName,
   getTierColor,
   readOnly = false,
@@ -192,17 +181,6 @@ function ReviewCard({
       ? primary.text
       : primary.text.slice(0, PREVIEW_LENGTH) + (primary.text.length > PREVIEW_LENGTH ? '…' : '')
     : null;
-
-  const primaryMain = `${typeName(primary.linkedPlaythrough.playthroughTypeUid)} – ${stateName(primary.linkedPlaythrough.playthroughStateUid)}`;
-  const groupedLabels =
-    others.length > 0
-      ? others
-          .map(
-            (r) =>
-              `${typeName(r.linkedPlaythrough.playthroughTypeUid)} – ${stateName(r.linkedPlaythrough.playthroughStateUid)}`
-          )
-          .join(', ')
-      : null;
 
   const cardWidth = expanded ? CARD_WIDTH_EXPANDED : CARD_WIDTH;
 
@@ -241,14 +219,6 @@ function ReviewCard({
       <CardContent sx={{ flex: 1, minWidth: 0, '&:last-child': { pb: 2 } }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
           {dateLabel}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
-          {primaryMain}
-          {groupedLabels && (
-            <Box component="span" sx={{ fontStyle: 'italic', fontSize: '0.75rem', ml: 0.5 }}>
-              ({groupedLabels})
-            </Box>
-          )}
         </Typography>
         {textPreview && (
           <Box

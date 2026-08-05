@@ -1,11 +1,39 @@
 import { Accordion, AccordionDetails, AccordionSummary, Box, Divider, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useEffect } from 'react';
 import { BLUESKY_PROFILE_URL, GITHUB_PROFILE_URL } from '../shared/socialLinks';
-import { Link as RouterLink } from 'react-router-dom';
+import { glossaryAnchorScrollSx, scheduleGlossaryAnchorScroll, scrollToGlossaryAnchor } from './glossaryAnchor';
+import { useLocation } from 'react-router-dom';
 import TrackingCoverageBar from '../shared/TrackingCoverageBar';
 import { TRACKING_COVERAGE_ENTRIES } from './trackingCoverageData';
 
+const GLOSSARY_SECTION_ID = 'glossary';
+const GLOSSARY_COMPLETION_STATES_ID = 'glossary-completion-states';
+
+function GlossarySegmentLink({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <MuiLink
+      href={`#${id}`}
+      underline="hover"
+      onClick={(e) => {
+        e.preventDefault();
+        scrollToGlossaryAnchor(id);
+      }}
+    >
+      {children}
+    </MuiLink>
+  );
+}
+
 export default function FaqGlossarPage() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!location.hash) return;
+    const id = location.hash.replace(/^#/, '');
+    scheduleGlossaryAnchorScroll(id, 'auto');
+  }, [location.pathname, location.hash]);
+
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>
@@ -55,13 +83,9 @@ export default function FaqGlossarPage() {
                     multiple consoles/platforms can lead to duplicate-looking entries — that is intentional,
                     because each instance is tracked separately. How completion states work is described in
                     the{' '}
-                    <MuiLink
-                      component={RouterLink}
-                      to="/faq-glossar#glossary-completion-states"
-                      underline="hover"
-                    >
+                    <GlossarySegmentLink id={GLOSSARY_SECTION_ID}>
                       glossary
-                    </MuiLink>
+                    </GlossarySegmentLink>
                     . Currently the following games are tracked on this site / will be added soon-ish:
                   </Typography>
                   <Box
@@ -291,9 +315,12 @@ export default function FaqGlossarPage() {
                 <Typography variant="body2" color="text.secondary" paragraph sx={{ mb: 0 }}>
                   For more on completion states, see the{' '}
                   <MuiLink
-                    component={RouterLink}
-                    to="/faq-glossar#glossary-completion-states"
+                    href={`#${GLOSSARY_SECTION_ID}`}
                     underline="hover"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToGlossaryAnchor(GLOSSARY_SECTION_ID);
+                    }}
                   >
                     glossary
                   </MuiLink>
@@ -319,7 +346,7 @@ export default function FaqGlossarPage() {
               <Typography variant="body2">
                 Why didn&apos;t you just use{' '}
                 <Box component="span" sx={{ fontStyle: 'italic' }}>
-                  (Insert tracking plaform here)
+                  (Insert tracking platform here)
                 </Box>{' '}
                 instead?
               </Typography>
@@ -441,7 +468,7 @@ export default function FaqGlossarPage() {
           </Box>
         </Paper>
 
-        <Paper variant="outlined" sx={{ p: 2 }} id="glossary">
+        <Paper variant="outlined" sx={{ p: 2, ...glossaryAnchorScrollSx }} id={GLOSSARY_SECTION_ID}>
           <Typography variant="h6" sx={{ mb: 1 }}>
             Glossary
           </Typography>
@@ -527,18 +554,18 @@ export default function FaqGlossarPage() {
                 Backlog + Backlog Score
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
-                If a game is part of the Backlog, i intend to play this game / play more / finish it / complete it.
+                If a game is part of the Backlog, I intend to play this game / play more / finish it / complete it.
                 Therefore a game can be in backlog while still having playthrough/completion history.                
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 <strong>Backlog score</strong> is calculated with time since game release, game acquisition and other hidden factors.
-                It exists to provide a sort of ranking and prioritization of games, even though i disregard it often.
+                It exists to provide a sort of ranking and prioritization of games, even though I disregard it often.
               </Typography>
             </Box>
             </Stack>
 
             <Stack spacing={2}>
-            <Box id="glossary-completion-states">
+            <Box id={GLOSSARY_COMPLETION_STATES_ID} sx={glossaryAnchorScrollSx}>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
                 Completion States (Played)
               </Typography>

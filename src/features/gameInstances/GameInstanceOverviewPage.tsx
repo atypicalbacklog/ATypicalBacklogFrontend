@@ -525,7 +525,6 @@ export default function GameInstanceOverviewPage() {
               reviews={reviews}
               gameInstanceUid={instance.uid}
               typeName={(uid) => (uid ? typeName(uid) : '—')}
-              stateName={stateName}
               tierName={tierName}
               getTierColor={getTierColor}
               readOnly={readOnly}

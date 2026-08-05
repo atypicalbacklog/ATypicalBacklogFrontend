@@ -43,7 +43,7 @@ export default function BacklogList({
 
   if (items.length === 0) {
     return (
-      <Box sx={{ py: 3 }}>
+      <Box sx={{ py: 3, textAlign: 'center' }}>
         <Typography color="text.secondary" gutterBottom>
           {hasActiveFilters
             ? 'No backlog entries match your filters.'

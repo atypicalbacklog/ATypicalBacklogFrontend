@@ -21,6 +21,13 @@ export function recommendationCoverUid(
   return firstCompletionCover(item.completions);
 }
 
+/** IGDB cover URL when no linked game / instance image is available. */
+export function recommendationIgdbCoverUrl(
+  item: Pick<BacklogRecommendationViewDto, 'gameRecommendation'>
+): string | null {
+  return item.gameRecommendation?.externalIgdbIdImageURL ?? null;
+}
+
 /** @deprecated Use recommendationCoverUid */
 export const recommendationListCoverUid = recommendationCoverUid;
 

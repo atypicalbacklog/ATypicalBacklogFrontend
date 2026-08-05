@@ -50,6 +50,8 @@ export default function SubmissionStateBorderFrame({
           position: 'relative',
           borderRadius,
           overflow: 'hidden',
+          boxSizing: 'border-box',
+          p: `${RAINBOW_BORDER_PX}px`,
           ...sx,
           '&::before': {
             content: '""',
@@ -66,7 +68,8 @@ export default function SubmissionStateBorderFrame({
           sx={{
             position: 'relative',
             zIndex: 1,
-            m: `${RAINBOW_BORDER_PX}px`,
+            height: '100%',
+            minHeight: 0,
             borderRadius: Math.max(0, borderRadius - 0.25),
             bgcolor: innerBg,
             overflow: 'hidden',
@@ -89,6 +92,7 @@ export default function SubmissionStateBorderFrame({
   return (
     <Box
       sx={{
+        position: 'relative',
         border: 2,
         borderColor,
         borderRadius,

@@ -55,6 +55,7 @@ export interface PublicGameRecommendationDto {
   nameBase: string;
   releaseDate: string | null;
   externalIgdbId: string | null;
+  externalIgdbIdImageURL: string | null;
 }
 
 export interface PublicRandomBacklogRecommendationFeedItemDto {

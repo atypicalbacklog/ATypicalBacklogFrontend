@@ -81,7 +81,9 @@ export default function ImprintPage() {
           </Typography>
           <Typography variant="body2" color="text.secondary">
             This website <strong>does not use cookies</strong> and <strong>does not store any personal data</strong>{' '}
-            of visitors.<br/>There are <strong>no GDPR-relevant processing activities</strong>.
+            of visitors.
+            <br />
+            There are <strong>no GDPR-relevant processing activities</strong>.
           </Typography>
         </Paper>
 
@@ -94,7 +96,7 @@ export default function ImprintPage() {
               The content of this website is provided <strong>without warranty</strong>.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              No liability is assumed for the <strong>accuracy, completeness, or timeliness</strong> of the
+              No liability is assumed for the <strong>accuracy, completeness or timeliness</strong> of the
               information provided.
             </Typography>
             <Typography variant="body2" color="text.secondary">

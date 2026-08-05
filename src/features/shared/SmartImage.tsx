@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import { getImageUrl } from '../../services/imageApi';
+import { getAdditionalImageUrl } from '../../services/additionalImageApi';
 import GameImageMissingPlaceholder from './GameImageMissingPlaceholder';
 
 export type SmartImageFit = 'contain' | 'cover';
+export type SmartImageKind = 'game' | 'additional';
 
 interface Props {
   imageUid: string | null;
   thumbnail?: boolean;
+  /** Default: game (`/api/images`). Use additional for `/api/additional-images`. */
+  kind?: SmartImageKind;
   alt?: string;
   /** Default is 2:3 vertical cover (width/height = 2/3). */
   aspectRatio?: number;
@@ -38,6 +42,7 @@ interface Props {
 export default function SmartImage({
   imageUid,
   thumbnail = true,
+  kind = 'game',
   alt = '',
   aspectRatio = 2 / 3,
   fit = 'contain',
@@ -48,12 +53,15 @@ export default function SmartImage({
   sx,
   imgSx,
 }: Props) {
-  const url = getImageUrl(imageUid, thumbnail);
+  const url =
+    kind === 'additional'
+      ? getAdditionalImageUrl(imageUid, thumbnail)
+      : getImageUrl(imageUid, thumbnail);
   const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     setLoadFailed(false);
-  }, [url, imageUid]);
+  }, [url, imageUid, kind]);
 
   if (!url && !showPlaceholder) return null;
 

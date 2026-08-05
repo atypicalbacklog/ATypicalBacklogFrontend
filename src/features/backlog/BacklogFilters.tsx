@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Button,
@@ -32,6 +32,25 @@ export default function BacklogFilters({ value, onChange }: Props) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [searchTextDraft, setSearchTextDraft] = useState(value.searchText);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valueRef = useRef(value);
+
+  useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
+
+  useEffect(() => {
+    setSearchTextDraft(value.searchText);
+  }, [value.searchText]);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, []);
 
   if (!isLoaded || !referenceData) return null;
 
@@ -88,8 +107,17 @@ export default function BacklogFilters({ value, onChange }: Props) {
         <TextField
           label="Search"
           placeholder="Search by Name"
-          value={value.searchText}
-          onChange={(e) => onChange({ ...value, searchText: e.target.value })}
+          value={searchTextDraft}
+          onChange={(e) => {
+            const next = e.target.value;
+            setSearchTextDraft(next);
+            if (searchDebounceRef.current) {
+              clearTimeout(searchDebounceRef.current);
+            }
+            searchDebounceRef.current = setTimeout(() => {
+              onChange({ ...valueRef.current, searchText: next });
+            }, 250);
+          }}
           size="small"
           sx={{
             minWidth: 160,

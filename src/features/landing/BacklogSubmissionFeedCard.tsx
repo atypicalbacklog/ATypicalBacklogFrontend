@@ -22,6 +22,8 @@ interface Props {
 
 export default function BacklogSubmissionFeedCard({ item }: Props) {
   const releaseDate = item.gameRecommendation?.releaseDate ?? null;
+  const igdbCoverUrl = item.gameRecommendation?.externalIgdbIdImageURL ?? null;
+  const showIgdbCover = !item.imageUid && Boolean(igdbCoverUrl);
 
   const tooltipTitle = (
     <Box component="span" sx={{ display: 'block' }}>
@@ -41,21 +43,39 @@ export default function BacklogSubmissionFeedCard({ item }: Props) {
       <FeedCaptionCardFrame>
         <Box sx={{ position: 'relative' }}>
           <PlaythroughBorderCard kind="none" borderRadius={0}>
-            <SmartImage
-              imageUid={item.imageUid}
-              thumbnail
-              alt=""
-              aspectRatio={2 / 3}
-              fit="contain"
-              placeholderLabel={item.name}
-              sx={{
-                width: '100%',
-                height: LANDING_CAPTION_CARD_IMAGE_HEIGHT,
-                borderRadius: 0,
-                aspectRatio: 'unset',
-              }}
-              imgSx={{ borderRadius: 0 }}
-            />
+            {showIgdbCover ? (
+              <Box
+                component="img"
+                src={igdbCoverUrl!}
+                alt=""
+                sx={{
+                  width: '100%',
+                  height: LANDING_CAPTION_CARD_IMAGE_HEIGHT,
+                  objectFit: 'contain',
+                  display: 'block',
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark'
+                      ? theme.palette.grey[900]
+                      : theme.palette.grey[200],
+                }}
+              />
+            ) : (
+              <SmartImage
+                imageUid={item.imageUid}
+                thumbnail
+                alt=""
+                aspectRatio={2 / 3}
+                fit="contain"
+                placeholderLabel={item.name}
+                sx={{
+                  width: '100%',
+                  height: LANDING_CAPTION_CARD_IMAGE_HEIGHT,
+                  borderRadius: 0,
+                  aspectRatio: 'unset',
+                }}
+                imgSx={{ borderRadius: 0 }}
+              />
+            )}
           </PlaythroughBorderCard>
           <Box
             sx={{

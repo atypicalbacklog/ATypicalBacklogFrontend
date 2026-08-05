@@ -10,7 +10,7 @@ export const landingPageContainerSx = {
   mx: 'auto',
 } as const;
 
-/** Full-width content column for data-heavy views (library, backlog). */
+/** Full-width content column for data-heavy views (library, backlog, statistics, reviews). */
 export const fullWidthPageContainerSx = {
   width: '100%',
 } as const;
@@ -20,4 +20,10 @@ export const centeredFitContentColumnSx = {
   width: 'fit-content',
   maxWidth: '100%',
   mx: 'auto',
+} as const;
+
+/** Centered content column; safe inside MUI Stack (avoids align-items: stretch). */
+export const landingPageCenteredColumnSx = {
+  ...landingPageContainerSx,
+  alignSelf: 'center',
 } as const;

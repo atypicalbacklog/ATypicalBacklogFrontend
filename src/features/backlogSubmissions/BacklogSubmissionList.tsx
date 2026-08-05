@@ -1,7 +1,7 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Tooltip, Typography } from '@mui/material';
 import type { BacklogRecommendationViewDto } from '../../types/backlogRecommendationDto';
 import BacklogSubmissionCard from './BacklogSubmissionCard';
-import { recommendationCoverUid } from './recommendationImageUtils';
+import { recommendationCoverUid, recommendationIgdbCoverUrl } from './recommendationImageUtils';
 import { BACKLOG_SUBMISSION_CARD_WIDTH } from './BacklogSubmissionCard';
 
 interface Props {
@@ -35,17 +35,32 @@ export default function BacklogSubmissionList({
         justifyContent: 'center',
       }}
     >
-      {items.map((item) => (
-        <BacklogSubmissionCard
-          key={item.uid}
-          name={item.name}
-          imageUid={recommendationCoverUid(item)}
-          voteCount={item.voteCount}
-          voteRank={item.voteRank}
-          state={item.state}
-          onClick={() => onSelect(item.uid, item.voteRank)}
-        />
-      ))}
+      {items.map((item) => {
+        const awaitingReview = item.state === 'NEW';
+        const card = (
+          <BacklogSubmissionCard
+            name={item.name}
+            imageUid={recommendationCoverUid(item)}
+            externalCoverUrl={recommendationIgdbCoverUrl(item)}
+            voteCount={item.voteCount}
+            voteRank={item.voteRank}
+            state={item.state}
+            onClick={
+              awaitingReview ? undefined : () => onSelect(item.uid, item.voteRank)
+            }
+          />
+        );
+
+        return awaitingReview ? (
+          <Tooltip key={item.uid} title="Game awaiting Review" enterDelay={300}>
+            <Box component="span" sx={{ display: 'block' }}>
+              {card}
+            </Box>
+          </Tooltip>
+        ) : (
+          <Box key={item.uid}>{card}</Box>
+        );
+      })}
     </Box>
   );
 }

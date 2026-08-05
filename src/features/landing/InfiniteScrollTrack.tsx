@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Box } from '@mui/material';
+import { useFeedTooltipOptional } from './FeedTooltipContext';
 
 const VELOCITY_DECAY = 0.92;
 const DRAG_VELOCITY_SCALE = 0.35;
@@ -52,6 +53,7 @@ export default function InfiniteScrollTrack({
 
   const childArray = useMemo(() => Children.toArray(children), [children]);
   const [scrollable, setScrollable] = useState(false);
+  const tooltipCtx = useFeedTooltipOptional();
 
   const measureOverflow = () => {
     const viewport = viewportRef.current;
@@ -174,6 +176,7 @@ export default function InfiniteScrollTrack({
     if (!draggingRef.current) {
       if (Math.abs(dxFromStart) < DRAG_START_PX) return;
       draggingRef.current = true;
+      tooltipCtx?.closeAll();
       viewportRef.current?.setPointerCapture(e.pointerId);
     }
 

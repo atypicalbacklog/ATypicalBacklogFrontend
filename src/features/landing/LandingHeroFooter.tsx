@@ -13,7 +13,7 @@ export default function LandingHeroFooter() {
 
       <Button
         component={RouterLink}
-        to="/faq-glossar"
+        to="/faq-glossary"
         disableElevation
         fullWidth
         sx={landingCtaButtonSx}

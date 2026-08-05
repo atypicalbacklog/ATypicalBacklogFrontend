@@ -1,7 +1,8 @@
 import type { SxProps, Theme } from '@mui/material/styles';
+import type { SystemStyleObject } from '@mui/system';
 
 /** Solid panel for intro/outro text (matches MuiTextField / edit review). */
-export const yearlyReviewSolidTextPanelSx: SxProps<Theme> = {
+export const yearlyReviewSolidTextPanelSx: SystemStyleObject<Theme> = {
   bgcolor: 'rgba(50, 50, 50, 1)',
   borderRadius: 1,
   border: 1,

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -27,6 +27,7 @@ import {
   TIER_LIST_ROW_PADDING,
 } from '../../constants/tierListLayout';
 import TierEntryCard from './TierEntryCard';
+import type { EditReviewLocationState } from './EditReviewPage';
 
 /** Single card tier (if all playthroughs share same tier). */
 function cardTierUid(card: ReviewSearchResultDto): string | null {
@@ -39,22 +40,103 @@ function cardTierUid(card: ReviewSearchResultDto): string | null {
 
 const DRAG_TYPE = 'application/json';
 
+function parseBoolParam(raw: string | null, fallback: boolean): boolean {
+  if (raw == null || raw === '') return fallback;
+  return raw === '1' || raw === 'true';
+}
+
+function parsePreviousYearsParam(raw: string | null, allowed: number[]): number[] {
+  if (!raw) return [];
+  return raw
+    .split(',')
+    .map((s) => Number.parseInt(s.trim(), 10))
+    .filter((y) => !Number.isNaN(y) && allowed.includes(y));
+}
+
 export default function ManageYearTierlistPage() {
   const { referenceData, isLoaded } = useReferenceData();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const currentYear = new Date().getFullYear();
   const lastYear = currentYear - 1;
-  const previousYearOptions = Array.from({ length: 10 }, (_, i) => currentYear - 2 - i);
+  const previousYearOptions = useMemo(
+    () => Array.from({ length: 10 }, (_, i) => currentYear - 2 - i),
+    [currentYear]
+  );
 
-  const [includeCurrentYear, setIncludeCurrentYear] = useState(true);
-  const [includeLastYear, setIncludeLastYear] = useState(true);
-  const [selectedPreviousYears, setSelectedPreviousYears] = useState<number[]>([]);
-  const [includeActivePlaythroughs, setIncludeActivePlaythroughs] = useState(true);
+  const [includeCurrentYear, setIncludeCurrentYear] = useState(() =>
+    parseBoolParam(searchParams.get('current'), true)
+  );
+  const [includeLastYear, setIncludeLastYear] = useState(() =>
+    parseBoolParam(searchParams.get('last'), true)
+  );
+  const [selectedPreviousYears, setSelectedPreviousYears] = useState<number[]>(() =>
+    parsePreviousYearsParam(searchParams.get('previous'), previousYearOptions)
+  );
+  const [includeActivePlaythroughs, setIncludeActivePlaythroughs] = useState(() =>
+    parseBoolParam(searchParams.get('active'), true)
+  );
   const [results, setResults] = useState<ReviewSearchResultDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [draggingCard, setDraggingCard] = useState<ReviewSearchResultDto | null>(null);
   const [savingTier, setSavingTier] = useState<string | null>(null);
+
+  // Keep local filter state in sync when returning via browser/back with query params.
+  useEffect(() => {
+    setIncludeCurrentYear(parseBoolParam(searchParams.get('current'), true));
+    setIncludeLastYear(parseBoolParam(searchParams.get('last'), true));
+    setSelectedPreviousYears(
+      parsePreviousYearsParam(searchParams.get('previous'), previousYearOptions)
+    );
+    setIncludeActivePlaythroughs(parseBoolParam(searchParams.get('active'), true));
+  }, [searchParams, previousYearOptions]);
+
+  const syncFiltersToUrl = useCallback(
+    (next: {
+      includeCurrentYear: boolean;
+      includeLastYear: boolean;
+      selectedPreviousYears: number[];
+      includeActivePlaythroughs: boolean;
+    }) => {
+      const params = new URLSearchParams();
+      params.set('current', next.includeCurrentYear ? '1' : '0');
+      params.set('last', next.includeLastYear ? '1' : '0');
+      if (next.selectedPreviousYears.length > 0) {
+        params.set(
+          'previous',
+          [...next.selectedPreviousYears].sort((a, b) => b - a).join(',')
+        );
+      }
+      params.set('active', next.includeActivePlaythroughs ? '1' : '0');
+      setSearchParams(params, { replace: true });
+    },
+    [setSearchParams]
+  );
+
+  useEffect(() => {
+    // Ensure defaults are written once so back-links have a stable query string.
+    if (
+      searchParams.get('current') == null &&
+      searchParams.get('last') == null &&
+      searchParams.get('previous') == null &&
+      searchParams.get('active') == null
+    ) {
+      syncFiltersToUrl({
+        includeCurrentYear,
+        includeLastYear,
+        selectedPreviousYears,
+        includeActivePlaythroughs,
+      });
+    }
+  }, [
+    searchParams,
+    includeCurrentYear,
+    includeLastYear,
+    selectedPreviousYears,
+    includeActivePlaythroughs,
+    syncFiltersToUrl,
+  ]);
 
   const tiers: SimpleLookupDto[] = (referenceData?.data?.tiers ?? []).slice().sort(
     (a, b) => (a.order ?? 0) - (b.order ?? 0)
@@ -92,6 +174,19 @@ export default function ManageYearTierlistPage() {
         initialFetchEnd(key);
       });
   }, [includeCurrentYear, includeLastYear, selectedPreviousYears, includeActivePlaythroughs, years]);
+
+  const openEdit = useCallback(
+    (state: EditReviewLocationState) => {
+      const qs = searchParams.toString();
+      navigate('/reviews/edit', {
+        state: {
+          ...state,
+          tierlistSearch: qs ? `?${qs}` : '',
+        } satisfies EditReviewLocationState,
+      });
+    },
+    [navigate, searchParams]
+  );
 
   const unassignedCards = results.filter((c) => !cardTierUid(c));
   const cardsByTier = (tierUid: string) =>
@@ -203,7 +298,16 @@ export default function ManageYearTierlistPage() {
             control={
               <Checkbox
                 checked={includeCurrentYear}
-                onChange={(e) => setIncludeCurrentYear(e.target.checked)}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setIncludeCurrentYear(next);
+                  syncFiltersToUrl({
+                    includeCurrentYear: next,
+                    includeLastYear,
+                    selectedPreviousYears,
+                    includeActivePlaythroughs,
+                  });
+                }}
               />
             }
             label={String(currentYear)}
@@ -212,7 +316,16 @@ export default function ManageYearTierlistPage() {
             control={
               <Checkbox
                 checked={includeLastYear}
-                onChange={(e) => setIncludeLastYear(e.target.checked)}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setIncludeLastYear(next);
+                  syncFiltersToUrl({
+                    includeCurrentYear,
+                    includeLastYear: next,
+                    selectedPreviousYears,
+                    includeActivePlaythroughs,
+                  });
+                }}
               />
             }
             label={String(lastYear)}
@@ -224,7 +337,16 @@ export default function ManageYearTierlistPage() {
             <Select
               multiple
               value={selectedPreviousYears}
-              onChange={(e) => setSelectedPreviousYears(e.target.value as number[])}
+              onChange={(e) => {
+                const next = e.target.value as number[];
+                setSelectedPreviousYears(next);
+                syncFiltersToUrl({
+                  includeCurrentYear,
+                  includeLastYear,
+                  selectedPreviousYears: next,
+                  includeActivePlaythroughs,
+                });
+              }}
               label="Previous years"
               renderValue={(selected) =>
                 selected.length === 0 ? 'None' : selected.sort((a, b) => b - a).join(', ')
@@ -241,7 +363,16 @@ export default function ManageYearTierlistPage() {
             control={
               <Checkbox
                 checked={includeActivePlaythroughs}
-                onChange={(e) => setIncludeActivePlaythroughs(e.target.checked)}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setIncludeActivePlaythroughs(next);
+                  syncFiltersToUrl({
+                    includeCurrentYear,
+                    includeLastYear,
+                    selectedPreviousYears,
+                    includeActivePlaythroughs: next,
+                  });
+                }}
               />
             }
             label="Include Active"
@@ -278,7 +409,7 @@ export default function ManageYearTierlistPage() {
                 card={card}
                 playthroughTypeNames={playthroughTypeName}
                 onDragStart={setDraggingCard}
-                onEdit={(state) => navigate('/reviews/edit', { state })}
+                onEdit={openEdit}
                 isDragging={draggingCard === card}
                 compact={isMobile}
                 tiers={isMobile ? tiers : undefined}
@@ -352,7 +483,7 @@ export default function ManageYearTierlistPage() {
                         card={card}
                         playthroughTypeNames={playthroughTypeName}
                         onDragStart={setDraggingCard}
-                        onEdit={(state) => navigate('/reviews/edit', { state })}
+                        onEdit={openEdit}
                         isDragging={draggingCard === card}
                         compact={isMobile}
                         tiers={isMobile ? tiers : undefined}

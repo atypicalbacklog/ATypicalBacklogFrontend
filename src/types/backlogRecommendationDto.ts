@@ -4,12 +4,15 @@ export interface GameRecommendationDto {
   nameBase: string;
   releaseDate: string | null;
   externalIgdbId: string | null;
+  externalIgdbIdImageURL: string | null;
 }
 
 export interface BacklogRecommendationCommentDto {
   uid: string;
   creationDate: string;
   comment: string;
+  /** True when moderation replaced the body with a flagged placeholder. */
+  flagged: boolean;
 }
 
 export interface BacklogInfoDto {
@@ -42,6 +45,8 @@ export interface BacklogRecommendationViewDto {
   voteCount: number;
   voteRank: number;
   originalRecommendationBy: string | null;
+  /** Owner/submitter comment; null while state is NEW. */
+  comment: string | null;
   gameUid: string | null;
   /** Primary game or instance cover when gameUid is set. */
   linkedGameImageUid: string | null;
@@ -79,6 +84,7 @@ export interface CreateBacklogRecommendationRequest {
     nameBase: string | null;
     releaseDate: string | null;
     externalIgdbId: string | null;
+    externalIgdbIdImageURL: string | null;
   };
   backlogRecommendation: {
     gameUid: string | null;

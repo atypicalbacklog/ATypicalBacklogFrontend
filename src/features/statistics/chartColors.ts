@@ -27,6 +27,20 @@ export function formatChartHoursOnly(hours: number): string {
   return `${rounded.toFixed(1)}h`;
 }
 
+/** Floored whole hours for compact bar labels (no unit suffix). Returns null when < 1 hour. */
+export function formatChartHoursFloorInt(hours: number): string | null {
+  const h = Math.floor(hours);
+  if (h <= 0) return null;
+  return String(h);
+}
+
+/** Whole-number label for count bar charts. */
+export function formatChartCountLabel(value: number): string | null {
+  const n = Math.floor(value);
+  if (n <= 0) return null;
+  return String(n);
+}
+
 /** Percent for stacked charts: no decimals if whole number, else one decimal. */
 export function formatPercentChartLabel(pct: number): string {
   const rounded = Math.round(pct * 10) / 10;
@@ -38,6 +52,30 @@ export function formatPercentChartLabel(pct: number): string {
 
 /** Minimum bar dimension (px) to show a label; avoids cramped/overlapping labels on small segments. */
 export const MIN_BAR_LABEL_PX = 18;
+
+/** Never show a bar label when either bar dimension is below this (px). */
+export const MIN_BAR_LABEL_ABSOLUTE_PX = 16;
+
+/** Min bar width (px) to fit a label by character count (grouped bar charts). */
+export function minBarLabelWidthForText(label: string): number {
+  const len = label.length;
+  if (len <= 2) return 16;
+  if (len === 3) return 24;
+  return 32;
+}
+
+/** Show a bar label only when the bar is large enough for its text width. */
+export function barLabelIfFits(
+  label: string | null,
+  bar: { height: number; width: number }
+): string | null {
+  if (!label) return null;
+  if (bar.height < MIN_BAR_LABEL_ABSOLUTE_PX || bar.width < MIN_BAR_LABEL_ABSOLUTE_PX) {
+    return null;
+  }
+  if (bar.width < minBarLabelWidthForText(label)) return null;
+  return label;
+}
 
 /** Minimum pie slice angle (degrees) to show an arc label; hides labels on very small slices. */
 export const MIN_PIE_ARC_LABEL_ANGLE = 8;

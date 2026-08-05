@@ -1,6 +1,6 @@
 export const LANDING_RECENT_ACTIVITY_TOTAL = 20;
 export const LANDING_RECENT_ACTIVITY_MAX_PER_CATEGORY = 5;
-export const LANDING_FEED_COUNT = 20;
+export const LANDING_FEED_COUNT = 27;
 
 /** Vertical gap between feed gallery sections on the landing page. */
 export const LANDING_FEED_SECTION_GAP = 2;

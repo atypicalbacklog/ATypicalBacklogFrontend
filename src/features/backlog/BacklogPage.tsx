@@ -119,6 +119,7 @@ export default function BacklogPage() {
 
       {!isLoading && !error && (
         <BacklogList
+          key={viewMode}
           items={data}
           viewMode={viewMode}
           hasActiveFilters={filtersApplied}

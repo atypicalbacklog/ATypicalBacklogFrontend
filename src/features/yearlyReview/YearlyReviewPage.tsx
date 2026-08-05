@@ -51,10 +51,10 @@ import {
 } from './yearlyReviewYearUtils';
 import { chunkYearlyReviewGames, isSideImagePresentation } from './yearlyReviewGamePresentationUtils';
 import {
-  yearlyReviewBlurredPanelSx,
   yearlyReviewSolidTextPanelSx,
 } from './yearlyReviewPanelStyles';
 import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
+import { landingPageCenteredColumnSx } from '../landing/landingLayout';
 
 function formatTotalPlaytime(totalPlaytimeSeconds: number): string {
   const  totalhours = Math.round(totalPlaytimeSeconds / 3600);
@@ -219,7 +219,7 @@ export default function YearlyReviewPage() {
   const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       <Stack
         direction="row"
         alignItems="center"
@@ -230,9 +230,24 @@ export default function YearlyReviewPage() {
       >
         <Typography variant="h4">Yearly review</Typography>
         {isManagementMode() ? (
-          <Button component={Link} to="/reviews/yearly/edit" variant="outlined" size="small">
-            Edit yearly review
-          </Button>
+          <>
+            <Button
+              component={Link}
+              to={`/reviews/yearly/edit?year=${year}`}
+              variant="outlined"
+              size="small"
+            >
+              Edit yearly review
+            </Button>
+            <Button
+              component={Link}
+              to="/reviews/yearly/additional-images"
+              variant="outlined"
+              size="small"
+            >
+              Edit additional images
+            </Button>
+          </>
         ) : null}
       </Stack>
 
@@ -257,9 +272,16 @@ export default function YearlyReviewPage() {
       {!loading && (
         <Stack spacing={4}>
           {yearlyReview?.introText != null && yearlyReview.introText !== '' && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>Intro</Typography>
-              <Box sx={yearlyReviewSolidTextPanelSx}>
+            <Box sx={landingPageCenteredColumnSx}>
+              <Typography
+                variant="subtitle1"
+                color="text.secondary"
+                gutterBottom
+                sx={{ textAlign: 'center' }}
+              >
+                Intro
+              </Typography>
+              <Box sx={[yearlyReviewSolidTextPanelSx, { textAlign: 'center' }]}>
                 <Typography variant="body1" component="div">
                   {yearlyReview.introText}
                 </Typography>
@@ -268,43 +290,63 @@ export default function YearlyReviewPage() {
           )}
 
           {totalPlaytimeSeconds != null && (
-            <Typography variant="h4" component="p" gutterBottom>
-              Total playtime {formatTotalPlaytime(totalPlaytimeSeconds)}
-            </Typography>
+            <Box sx={landingPageCenteredColumnSx}>
+              <Box sx={[yearlyReviewSolidTextPanelSx, { textAlign: 'center' }]}>
+                <Typography variant="h4" component="p" sx={{ m: 0 }}>
+                  Total playtime {formatTotalPlaytime(totalPlaytimeSeconds)}
+                </Typography>
+              </Box>
+            </Box>
           )}
 
           <Box>
             <GamePlaytimeRankingBarChart data={gameRankingData} />
           </Box>
 
-          <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
-            <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 300px', minWidth: 0, width: isMobile ? '100%' : undefined }}>
-              <ConsolePlaytimePieChart data={consoleYearData} year={year} compact={isMobile} />
-            </Box>
-            <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 300px', minWidth: 0, width: isMobile ? '100%' : undefined }}>
-              <PcInputVariantsPieChart
-                data={pcInputStyleData}
-                year={year}
-                inputName={inputName}
-                compact={isMobile}
-              />
-            </Box>
-          </Stack>
+          <Box sx={landingPageCenteredColumnSx}>
+            <Stack
+              direction="row"
+              flexWrap="wrap"
+              gap={2}
+              alignItems="flex-start"
+              sx={{ width: '100%' }}
+            >
+              <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : undefined }}>
+                <ConsolePlaytimePieChart data={consoleYearData} year={year} compact={isMobile} />
+              </Box>
+              <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : undefined }}>
+                <PcInputVariantsPieChart
+                  data={pcInputStyleData}
+                  year={year}
+                  inputName={inputName}
+                  compact={isMobile}
+                />
+              </Box>
+            </Stack>
+          </Box>
 
-          <Stack direction="row" flexWrap="wrap" gap={2} alignItems="flex-start">
-            <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
-              <ConsoleVariantPlaytimeStackedBarChart
-                data={consoleVariantData}
-                year={year}
-              />
-            </Box>
-            <Box sx={{ flex: '1 1 400px', minWidth: 0 }}>
-              <ConsoleVariantGameCountStackedBarChart
-                data={consoleVariantData}
-                year={year}
-              />
-            </Box>
-          </Stack>
+          <Box sx={landingPageCenteredColumnSx}>
+            <Stack
+              direction="row"
+              flexWrap="wrap"
+              gap={2}
+              alignItems="flex-start"
+              sx={{ width: '100%' }}
+            >
+              <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : undefined }}>
+                <ConsoleVariantPlaytimeStackedBarChart
+                  data={consoleVariantData}
+                  year={year}
+                />
+              </Box>
+              <Box sx={{ flex: isMobile ? '1 1 100%' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : undefined }}>
+                <ConsoleVariantGameCountStackedBarChart
+                  data={consoleVariantData}
+                  year={year}
+                />
+              </Box>
+            </Stack>
+          </Box>
 
           {tiers.length > 0 && (
             <Box>
@@ -376,22 +418,24 @@ export default function YearlyReviewPage() {
           )}
 
           {sortedCategories.length > 0 && (
-            <Box>
-              <Typography variant="h6" color="text.secondary" gutterBottom>Categories</Typography>
+            <Box sx={landingPageCenteredColumnSx}>
               <Stack spacing={4}>
                 {sortedCategories.map((category) => {
                   const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
                   const rows = chunkYearlyReviewGames(gamesSorted, isMobile ? 2 : 6, isMobile);
                   return (
-                    <Box key={category.uid} sx={yearlyReviewBlurredPanelSx}>
-                      <Typography variant="h6" sx={{ mb: 1 }}>{category.name}</Typography>
-                      <Stack spacing={isMobile ? 1 : 2}>
+                    <Box key={category.uid} sx={yearlyReviewSolidTextPanelSx}>
+                      <Typography variant="h6" sx={{ mb: 1, textAlign: 'center' }}>
+                        {category.name}
+                      </Typography>
+                      <Stack spacing={isMobile ? 1 : 2} alignItems="center">
                         {rows.map((row, rowIdx) => (
                           <Stack
                             key={rowIdx}
                             direction="row"
                             spacing={isMobile ? 1 : 2}
                             flexWrap="wrap"
+                            justifyContent="center"
                             sx={{ width: '100%' }}
                           >
                             {row.map((game: YearlyReviewGameDto) => (
@@ -417,9 +461,16 @@ export default function YearlyReviewPage() {
           )}
 
           {yearlyReview?.outroText != null && yearlyReview.outroText !== '' && (
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>Outro</Typography>
-              <Box sx={yearlyReviewSolidTextPanelSx}>
+            <Box sx={landingPageCenteredColumnSx}>
+              <Typography
+                variant="subtitle1"
+                color="text.secondary"
+                gutterBottom
+                sx={{ textAlign: 'center' }}
+              >
+                Outro
+              </Typography>
+              <Box sx={[yearlyReviewSolidTextPanelSx, { textAlign: 'center' }]}>
                 <Typography variant="body1" component="div">
                   {yearlyReview.outroText}
                 </Typography>

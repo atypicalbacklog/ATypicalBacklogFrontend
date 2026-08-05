@@ -1,7 +1,7 @@
 import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { ConsoleYearDisplay } from '../hooks/useConsoleYearActivity';
-import { chartMargins, getYearColor, MIN_BAR_LABEL_PX, contrastBarLabelSlotProps } from '../chartColors';
+import { chartMargins, getYearColor, barLabelIfFits, contrastBarLabelSlotProps, formatChartCountLabel } from '../chartColors';
 
 interface Props {
   data: ConsoleYearDisplay[];
@@ -42,8 +42,7 @@ export default function ConsoleYearGamesBarChart({ data, height = 320 }: Props) 
             series={series}
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
-              if (context.bar.height < MIN_BAR_LABEL_PX) return null;
-              return String(item.value);
+              return barLabelIfFits(formatChartCountLabel(item.value), context.bar);
             }}
             height={height}
             margin={{ ...chartMargins.barVertical }}

@@ -3,9 +3,12 @@ import type { YearlyReviewGamePresentationType } from '../types/dto';
 
 export interface YearlyReviewGameDto {
   uid: string;
-  gameUid: string;
+  /** Null when the entry is an additional-image stand-in. */
+  gameUid: string | null;
   gameInstanceUid: string | null;
   preferredImageUid: string | null;
+  /** Stand-alone image (no game link). Mutually exclusive with gameUid in practice. */
+  additionalImageUid: string | null;
   text: string | null;
   order: number;
   presentationType: YearlyReviewGamePresentationType;
@@ -42,9 +45,11 @@ export interface UpsertYearlyReviewCategoryRequest {
 export interface UpsertYearlyReviewGameRequest {
   uid?: string | null;
   categoryUid: string;
-  gameUid: string;
+  /** Null when using additionalImageUid as a stand-in. */
+  gameUid: string | null;
   gameInstanceUid: string | null;
   preferredImageUid: string | null;
+  additionalImageUid?: string | null;
   text: string | null;
   order: number;
   presentationType?: YearlyReviewGamePresentationType | null;

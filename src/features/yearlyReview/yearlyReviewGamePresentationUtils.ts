@@ -99,17 +99,28 @@ export function yearlyReviewSideCardSlotWeight(
   return yearlyReviewSideSegmentCount(game.text);
 }
 
-/** Same starting size as default cards; steps down as segment count grows. */
-export function yearlyReviewSideLayoutFontSize(
-  text: string | null | undefined,
-  compact = false
-): string {
-  const segments = yearlyReviewSideSegmentCount(text);
-  const idx = segments - 2;
-  if (compact) {
-    return (['0.85rem', '0.75rem', '0.65rem'] as const)[idx];
-  }
-  return (['0.85rem', '0.75rem', '0.65rem'] as const)[idx];
+/** Side-layout text: start large, step down only when measured overflow (desktop). */
+export const YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS = [
+  '0.95rem',
+  '0.9rem',
+  '0.85rem',
+  '0.8rem',
+  '0.75rem',
+] as const;
+
+export const YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS_COMPACT = [
+  '0.85rem',
+  '0.8rem',
+  '0.75rem',
+] as const;
+
+/** Any positive overflow should shrink; avoid ignoring partial-line clips. */
+export const YEARLY_REVIEW_SIDE_TEXT_OVERFLOW_TOLERANCE_PX = 0;
+
+export function yearlyReviewSideLayoutInitialFontSize(compact = false): string {
+  return compact
+    ? YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS_COMPACT[0]
+    : YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS[0];
 }
 
 export const YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS: {

@@ -38,6 +38,8 @@ export interface EditReviewLocationState {
   from?: 'tierlist' | 'game-instance';
   /** When from is 'game-instance', link back to /game-instances/{gameInstanceUid} */
   gameInstanceUid?: string;
+  /** When from is 'tierlist', restore year filters on return (e.g. "?current=1&last=0&previous=2023"). */
+  tierlistSearch?: string;
 }
 
 export default function EditReviewPage() {
@@ -119,6 +121,8 @@ export default function EditReviewPage() {
     }
   }, [state?.reviewUid, reviewDate, tierUid, text, preferredImageUid, presentationType]);
 
+  const tierlistBackTo = `/reviews/year-tierlist${state?.tierlistSearch ?? ''}`;
+
   if (!isLoaded) return null;
 
   if (!state?.reviewUid) {
@@ -127,7 +131,7 @@ export default function EditReviewPage() {
         <Typography color="text.secondary" gutterBottom>
           No review selected. Open this page from the year tierlist by choosing a review to edit.
         </Typography>
-        <Button onClick={() => navigate('/reviews/year-tierlist')} sx={{ mt: 2 }}>
+        <Button onClick={() => navigate(tierlistBackTo)} sx={{ mt: 2 }}>
           Back to Year Tierlist
         </Button>
       </Box>
@@ -148,7 +152,7 @@ export default function EditReviewPage() {
         <Typography color="error" gutterBottom>
           {error ?? 'Failed to load review.'}
         </Typography>
-        <Button onClick={() => navigate('/reviews/year-tierlist')} sx={{ mt: 2 }}>
+        <Button onClick={() => navigate(tierlistBackTo)} sx={{ mt: 2 }}>
           Back to Year Tierlist
         </Button>
       </Box>
@@ -344,7 +348,7 @@ export default function EditReviewPage() {
         ) : (
           <Link
             component={RouterLink}
-            to="/reviews/year-tierlist"
+            to={tierlistBackTo}
             variant="body2"
             sx={{ ml: 1 }}
           >

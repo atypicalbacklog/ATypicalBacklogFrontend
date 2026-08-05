@@ -2,11 +2,11 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { Box, Card, CardContent, Typography } from '@mui/material';
 import type { ConsoleYearDisplay } from '../hooks/useConsoleYearActivity';
 import {
+  barLabelIfFits,
   chartMargins,
   contrastBarLabelSlotProps,
-  formatChartHoursOnly,
+  formatChartHoursFloorInt,
   getYearColor,
-  MIN_BAR_LABEL_PX,
 } from '../chartColors';
 
 interface Props {
@@ -49,8 +49,7 @@ export default function ConsoleYearPlaytimeBarChart({ data, height = 320 }: Prop
             series={series}
             barLabel={(item, context) => {
               if (item.value == null || item.value <= 0) return null;
-              if (context.bar.height < MIN_BAR_LABEL_PX) return null;
-              return formatChartHoursOnly(item.value);
+              return barLabelIfFits(formatChartHoursFloorInt(item.value), context.bar);
             }}
             height={height}
             margin={{ ...chartMargins.barVertical }}

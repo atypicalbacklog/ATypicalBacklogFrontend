@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 import GameImageMissingPlaceholder from '../shared/GameImageMissingPlaceholder';
 import { getImageUrl } from '../../services/imageApi';
+import { getAdditionalImageUrl } from '../../services/additionalImageApi';
 import { GameApi } from '../../services/gameApi';
 import { GameInstanceApi } from '../../services/gameInstanceApi';
 import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
@@ -15,8 +16,11 @@ import {
   yearlyReviewSideImageHeight,
   yearlyReviewSideImageMaxWidth,
   yearlyReviewSideImageWidth,
-  yearlyReviewSideLayoutFontSize,
+  yearlyReviewSideLayoutInitialFontSize,
   yearlyReviewSideUsesLargeImage,
+  YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS,
+  YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS_COMPACT,
+  YEARLY_REVIEW_SIDE_TEXT_OVERFLOW_TOLERANCE_PX,
 } from './yearlyReviewGamePresentationUtils';
 
 const CARD_WIDTH = 200;
@@ -43,6 +47,16 @@ interface Props {
 interface ResolvedData {
   displayName: string;
   coverImageUid: string | null;
+  imageKind: 'game' | 'additional';
+}
+
+function resolveCoverUrl(
+  coverUid: string | null,
+  imageKind: 'game' | 'additional'
+): string | null {
+  return imageKind === 'additional'
+    ? getAdditionalImageUrl(coverUid, true)
+    : getImageUrl(coverUid, true);
 }
 
 function useResolvedGame(game: YearlyReviewGameDto): ResolvedData | null {
@@ -55,6 +69,17 @@ function useResolvedGame(game: YearlyReviewGameDto): ResolvedData | null {
     const set = (data: ResolvedData) => {
       if (!cancelled) setResolved(data);
     };
+
+    if (game.additionalImageUid) {
+      set({
+        displayName: 'Custom image',
+        coverImageUid: game.additionalImageUid,
+        imageKind: 'additional',
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
 
     const imageUid = game.preferredImageUid;
 
@@ -79,9 +104,9 @@ function useResolvedGame(game: YearlyReviewGameDto): ResolvedData | null {
             }
           }
 
-          set({ displayName, coverImageUid: cover });
+          set({ displayName, coverImageUid: cover, imageKind: 'game' });
         } catch {
-          set({ displayName: 'Game', coverImageUid: imageUid });
+          set({ displayName: 'Game', coverImageUid: imageUid, imageKind: 'game' });
         }
       })();
       return () => {
@@ -95,19 +120,22 @@ function useResolvedGame(game: YearlyReviewGameDto): ResolvedData | null {
           set({
             displayName: g.name,
             coverImageUid: imageUid ?? g.coverImageUid,
+            imageKind: 'game',
           })
         )
-        .catch(() => set({ displayName: 'Game', coverImageUid: imageUid }));
+        .catch(() =>
+          set({ displayName: 'Game', coverImageUid: imageUid, imageKind: 'game' })
+        );
       return () => {
         cancelled = true;
       };
     }
 
-    set({ displayName: '—', coverImageUid: imageUid });
+    set({ displayName: '—', coverImageUid: imageUid, imageKind: 'game' });
     return () => {
       cancelled = true;
     };
-  }, [game.gameUid, game.gameInstanceUid, game.preferredImageUid]);
+  }, [game.gameUid, game.gameInstanceUid, game.preferredImageUid, game.additionalImageUid]);
 
   return resolved;
 }
@@ -139,8 +167,10 @@ function SideLayoutCard({
   compact: boolean;
 }) {
   const displayName = resolved?.displayName ?? '…';
-  const coverUid = game.preferredImageUid ?? resolved?.coverImageUid ?? null;
-  const imageUrl = getImageUrl(coverUid, true);
+  const imageKind = resolved?.imageKind ?? 'game';
+  const coverUid =
+    game.additionalImageUid ?? game.preferredImageUid ?? resolved?.coverImageUid ?? null;
+  const imageUrl = resolveCoverUrl(coverUid, game.additionalImageUid ? 'additional' : imageKind);
   const cardWidth = yearlyReviewSideCardWidth(game.text, compact);
   const cardHeight = compact ? CARD_HEIGHT_COMPACT : CARD_HEIGHT;
   const usesLargeImage = yearlyReviewSideUsesLargeImage(game.text);
@@ -148,12 +178,22 @@ function SideLayoutCard({
   const fixedImageWidth = yearlyReviewSideImageWidth(compact);
   const fixedImageHeight = yearlyReviewSideImageHeight(compact);
   const maxImageHeight = cardHeight - (compact ? 8 : 16);
-  const textFontSize = yearlyReviewSideLayoutFontSize(game.text, compact);
+  const fontSteps = compact
+    ? YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS_COMPACT
+    : YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS;
   const imageOnLeft = presentationType === 'IMAGE_LEFT';
 
   const sideImageRef = useRef<HTMLImageElement | null>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const textContainerRef = useRef<HTMLDivElement>(null);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const [scaledImageHeight, setScaledImageHeight] = useState<number>(fixedImageHeight);
+  const [textFontSize, setTextFontSize] = useState(() =>
+    yearlyReviewSideLayoutInitialFontSize(compact)
+  );
+
+  const imageBlockWidth = usesLargeImage ? maxImageWidth : fixedImageWidth;
+  const imageBlockHeight = usesLargeImage ? scaledImageHeight : fixedImageHeight;
 
   const applySideImageHeight = (img: HTMLImageElement) => {
     const w = img.naturalWidth ?? 0;
@@ -167,7 +207,64 @@ function SideLayoutCard({
   useEffect(() => {
     setScaledImageHeight(fixedImageHeight);
     setImageLoadFailed(false);
-  }, [game.uid, game.text, imageUrl, usesLargeImage, fixedImageHeight]);
+    setTextFontSize(yearlyReviewSideLayoutInitialFontSize(compact));
+  }, [game.uid, game.text, imageUrl, usesLargeImage, fixedImageHeight, cardWidth, compact]);
+
+  // Step font down only when text overflows available container height (desktop).
+  useEffect(() => {
+    if (compact || !game.text || !textRef.current || !textContainerRef.current) return;
+    let cancelled = false;
+    let frame = 0;
+
+    const measure = () => {
+      if (cancelled || !textRef.current || !textContainerRef.current) return;
+      const textEl = textRef.current;
+      const container = textContainerRef.current;
+      if (container.clientHeight <= 0) return;
+
+      const styles = getComputedStyle(container);
+      const padY =
+        (Number.parseFloat(styles.paddingTop) || 0) +
+        (Number.parseFloat(styles.paddingBottom) || 0);
+      const available = container.clientHeight - padY;
+      if (available <= 0) return;
+
+      // Unconstrain briefly so scrollHeight reflects full wrapped height.
+      const prevMax = textEl.style.maxHeight;
+      textEl.style.maxHeight = 'none';
+      const needed = textEl.scrollHeight;
+      textEl.style.maxHeight = prevMax;
+
+      if (needed <= available + YEARLY_REVIEW_SIDE_TEXT_OVERFLOW_TOLERANCE_PX) return;
+
+      setTextFontSize((prev) => {
+        const steps = fontSteps as readonly string[];
+        const idx = steps.indexOf(prev);
+        const nextIdx = idx < 0 ? 1 : idx + 1;
+        if (nextIdx >= steps.length) return prev;
+        return steps[nextIdx];
+      });
+    };
+
+    frame = requestAnimationFrame(() => {
+      requestAnimationFrame(measure);
+    });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [game.text, game.uid, textFontSize, cardWidth, imageBlockWidth, imageBlockHeight, compact, fontSteps]);
+
+  useEffect(() => {
+    if (compact || !game.text || !textContainerRef.current) return;
+    const container = textContainerRef.current;
+    const observer = new ResizeObserver(() => {
+      setTextFontSize(yearlyReviewSideLayoutInitialFontSize(compact));
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [game.text, compact, cardWidth]);
 
   useLayoutEffect(() => {
     if (!usesLargeImage || !imageUrl) return;
@@ -181,9 +278,6 @@ function SideLayoutCard({
     if (!usesLargeImage) return;
     applySideImageHeight(e.currentTarget);
   };
-
-  const imageBlockWidth = usesLargeImage ? maxImageWidth : fixedImageWidth;
-  const imageBlockHeight = usesLargeImage ? scaledImageHeight : fixedImageHeight;
 
   const imageBlock = (
     <Box
@@ -231,6 +325,7 @@ function SideLayoutCard({
 
   const textBlock = game.text ? (
     <Box
+      ref={textContainerRef}
       sx={{
         flex: compact ? '0 1 auto' : '1 1 0',
         minWidth: 0,
@@ -239,10 +334,12 @@ function SideLayoutCard({
         alignItems: compact ? 'flex-start' : 'center',
         px: compact ? 0.75 : 1.25,
         py: compact ? 0.5 : 0.75,
-        ...(compact ? { overflow: 'auto', maxHeight: 240 } : {}),
+        overflow: compact ? 'auto' : 'hidden',
+        ...(compact ? { maxHeight: 240 } : {}),
       }}
     >
       <Typography
+        ref={textRef}
         color="text.secondary"
         sx={{
           width: '100%',
@@ -250,7 +347,7 @@ function SideLayoutCard({
           fontSize: textFontSize,
           lineHeight: 1.4,
           overflow: compact ? 'visible' : 'hidden',
-          textAlign: compact ? 'left' : 'left',
+          textAlign: 'left',
           wordBreak: 'break-word',
         }}
         title={game.text}
@@ -328,8 +425,10 @@ function DefaultLayoutCard({
   const minImageHeight = compact ? MIN_IMAGE_HEIGHT_COMPACT : MIN_IMAGE_HEIGHT;
 
   const displayName = resolved?.displayName ?? '…';
-  const coverUid = game.preferredImageUid ?? resolved?.coverImageUid ?? null;
-  const imageUrl = getImageUrl(coverUid, true);
+  const imageKind = resolved?.imageKind ?? 'game';
+  const coverUid =
+    game.additionalImageUid ?? game.preferredImageUid ?? resolved?.coverImageUid ?? null;
+  const imageUrl = resolveCoverUrl(coverUid, game.additionalImageUid ? 'additional' : imageKind);
   const [imageLoadFailed, setImageLoadFailed] = useState(false);
   const [baseImageHeight, setBaseImageHeight] = useState<number>(defaultImageHeight);
   const [imageHeight, setImageHeight] = useState<number>(defaultImageHeight);

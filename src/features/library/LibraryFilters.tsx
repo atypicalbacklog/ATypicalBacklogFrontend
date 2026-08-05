@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import { isManagementMode } from '../../app/AppConfig';
 import { CompletionFilterIntent, LibraryFilterState } from './types';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import PlatformSelect from '../shared/PlatformSelect';
@@ -46,7 +47,9 @@ export default function LibraryFilters({ value, onChange }: Props) {
     valueRef.current = value;
   }, [value]);
 
+  // Sync draft from committed filter only when not mid-debounce typing.
   useEffect(() => {
+    if (searchDebounceRef.current) return;
     setSearchTextDraft(value.searchText);
   }, [value.searchText]);
 
@@ -58,12 +61,14 @@ export default function LibraryFilters({ value, onChange }: Props) {
     };
   }, []);
 
+  const showIncludeDlc = isManagementMode();
+
   const activeCount =
     (value.consoleUids.length > 0 ? 1 : 0) +
     (value.platformUids.length > 0 ? 1 : 0) +
     (value.completionStateUids.length > 0 ? 1 : 0) +
     (value.playthroughTypeUids.length > 0 ? 1 : 0) +
-    (value.includeDlc === false ? 1 : 0) +
+    (showIncludeDlc && value.includeDlc === false ? 1 : 0) +
     (value.onlyGamesWithDlc !== null ? 1 : 0);
 
   const intentOptions: Array<{ value: CompletionFilterIntent; label: string }> = [
@@ -305,18 +310,20 @@ export default function LibraryFilters({ value, onChange }: Props) {
 
         {filterDivider}
 
-        <FormControlLabel
-          sx={filterFieldSx}
-          control={
-            <Checkbox
-              checked={value.includeDlc !== false}
-              onChange={(e) =>
-                onChange({ ...value, includeDlc: e.target.checked })
-              }
-            />
-          }
-          label="Include DLC"
-        />
+        {showIncludeDlc ? (
+          <FormControlLabel
+            sx={filterFieldSx}
+            control={
+              <Checkbox
+                checked={value.includeDlc !== false}
+                onChange={(e) =>
+                  onChange({ ...value, includeDlc: e.target.checked })
+                }
+              />
+            }
+            label="Include DLC"
+          />
+        ) : null}
 
         <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
           <InputLabel>Limit DLC Games</InputLabel>

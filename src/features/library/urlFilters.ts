@@ -21,6 +21,26 @@ export function hasActiveFilters(
   );
 }
 
+export function libraryFiltersEqual(
+  a: LibraryFilterState,
+  b: LibraryFilterState
+): boolean {
+  return (
+    a.searchText === b.searchText &&
+    a.ignorePorts === b.ignorePorts &&
+    a.inBacklog === b.inBacklog &&
+    a.hasActivePlaythrough === b.hasActivePlaythrough &&
+    a.includeDlc === b.includeDlc &&
+    a.onlyGamesWithDlc === b.onlyGamesWithDlc &&
+    a.sortMode === b.sortMode &&
+    a.platformUids.join('\0') === b.platformUids.join('\0') &&
+    a.consoleUids.join('\0') === b.consoleUids.join('\0') &&
+    a.completionFilterIntents.join('\0') === b.completionFilterIntents.join('\0') &&
+    a.completionStateUids.join('\0') === b.completionStateUids.join('\0') &&
+    a.playthroughTypeUids.join('\0') === b.playthroughTypeUids.join('\0')
+  );
+}
+
 export function filtersToSearchParams(f: LibraryFilterState) {
   const p = new URLSearchParams();
 
@@ -51,8 +71,8 @@ export function searchParamsToFilters(
 ): LibraryFilterState {
   return {
     searchText: p.get('q') ?? fallback.searchText,
-    platformUids: p.get('platforms')?.split(',') ?? [],
-    consoleUids: p.get('consoles')?.split(',') ?? [],
+    platformUids: p.get('platforms')?.split(',').filter(Boolean) ?? [],
+    consoleUids: p.get('consoles')?.split(',').filter(Boolean) ?? [],
     ignorePorts: p.get('ignorePorts') === 'true',
     inBacklog: p.has('backlog')
       ? p.get('backlog') === 'true'
@@ -65,7 +85,7 @@ export function searchParamsToFilters(
         .get('completionIntents')
         ?.split(',')
         .filter(Boolean) ?? []) as CompletionFilterIntent[],
-    completionStateUids: p.get('completion')?.split(',') ?? [],
+    completionStateUids: p.get('completion')?.split(',').filter(Boolean) ?? [],
     playthroughTypeUids: p.get('playthroughTypes')?.split(',').filter(Boolean) ?? [],
     includeDlc: p.has('includeDlc')
       ? p.get('includeDlc') === 'true'

@@ -88,6 +88,7 @@ function unifiedRecommendationToViewDto(
     voteCount: result.voteCount,
     voteRank: 0,
     originalRecommendationBy: result.originalRecommendationBy,
+    comment: null,
     gameUid: result.gameUid,
     linkedGameImageUid: result.coverImageUid,
     gameRecommendation: result.gameRecommendation ?? {
@@ -96,6 +97,7 @@ function unifiedRecommendationToViewDto(
       nameBase: result.name,
       releaseDate: result.releaseDate,
       externalIgdbId: null,
+      externalIgdbIdImageURL: null,
     },
     backlogInfo: result.backlogInfo,
     completions: result.completions,

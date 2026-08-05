@@ -1,234 +1,226 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
-  IconButton,
   Stack,
-  ToggleButton,
   Typography,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import CallToActionIcon from '@mui/icons-material/CallToAction';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
 import { IgdbApi, type IgdbGameSearchResultDto } from '../../services/igdbApi';
 
+const SEARCH_DEBOUNCE_MS = 400;
+const MIN_QUERY_LENGTH = 2;
+const PANEL_MAX_HEIGHT = 160;
+
 interface Props {
-  gameName: string;
+  query: string;
   externalIgdbId: string | null;
+  /** When true, keep showing results but do not search on query changes. */
+  searchPaused?: boolean;
   disabled?: boolean;
-  onConfirm: (result: IgdbGameSearchResultDto) => void;
+  onSelect: (result: IgdbGameSearchResultDto) => void;
   onClear?: () => void;
 }
 
 export default function BacklogSubmissionIgdbPicker({
-  gameName,
+  query,
   externalIgdbId,
+  searchPaused = false,
   disabled = false,
-  onConfirm,
+  onSelect,
   onClear,
 }: Props) {
   const [searching, setSearching] = useState(false);
   const [results, setResults] = useState<IgdbGameSearchResultDto[]>([]);
-  const [selectedResult, setSelectedResult] = useState<IgdbGameSearchResultDto | null>(null);
-  const [selectedActions, setSelectedActions] = useState<string[]>([]);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [searchedQuery, setSearchedQuery] = useState('');
+  const requestIdRef = useRef(0);
 
-  const handleSearch = async () => {
-    if (disabled || !gameName.trim() || gameName.length < 2) return;
-    setPanelOpen(true);
-    setSearching(true);
-    setSelectedResult(null);
-    setSelectedActions([]);
-    try {
-      setResults(await IgdbApi.search(gameName));
-    } catch {
+  useEffect(() => {
+    if (disabled) {
       setResults([]);
-    } finally {
       setSearching(false);
-    }
-  };
-
-  const handleSelect = (result: IgdbGameSearchResultDto) => {
-    if (selectedResult?.externalId === result.externalId) {
-      setSelectedResult(null);
-      setSelectedActions([]);
+      setSearchedQuery('');
       return;
     }
-    const actions = ['name'];
-    if (result.releaseDate) actions.push('date');
-    setSelectedResult(result);
-    setSelectedActions(actions);
-  };
 
-  const toggleAction = (action: string) => {
-    setSelectedActions((prev) =>
-      prev.includes(action) ? prev.filter((a) => a !== action) : [...prev, action]
-    );
-  };
+    if (searchPaused) {
+      setSearching(false);
+      return;
+    }
 
-  const handleConfirm = () => {
-    if (!selectedResult || selectedActions.length === 0) return;
-    onConfirm(selectedResult);
-    setPanelOpen(false);
-    setSelectedResult(null);
-    setSelectedActions([]);
-    setResults([]);
-  };
+    const trimmed = query.trim();
+    if (trimmed.length < MIN_QUERY_LENGTH) {
+      setResults([]);
+      setSearching(false);
+      setSearchedQuery('');
+      return;
+    }
 
-  const handleClosePanel = () => {
-    setPanelOpen(false);
-    setSelectedResult(null);
-    setSelectedActions([]);
-    setResults([]);
-  };
+    // Same query as last search (e.g. after Clear) — keep existing results.
+    if (trimmed === searchedQuery) {
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    const timeoutId = window.setTimeout(() => {
+      const requestId = ++requestIdRef.current;
+      void IgdbApi.search(trimmed)
+        .then((next) => {
+          if (requestId !== requestIdRef.current) return;
+          setResults(next);
+          setSearchedQuery(trimmed);
+        })
+        .catch(() => {
+          if (requestId !== requestIdRef.current) return;
+          setResults([]);
+          setSearchedQuery(trimmed);
+        })
+        .finally(() => {
+          if (requestId !== requestIdRef.current) return;
+          setSearching(false);
+        });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [query, disabled, searchPaused, searchedQuery]);
 
   if (disabled) return null;
 
-  return (
-    <Box sx={{ position: 'relative', flexShrink: 0, alignSelf: 'flex-start', mt: 0.5 }}>
-      <Stack direction="row" spacing={0.5} alignItems="center">
-        <IconButton
-          onClick={() => void handleSearch()}
-          disabled={!gameName.trim() || gameName.length < 2 || searching}
-          size="small"
-          aria-label="Search IGDB"
-        >
-          {searching ? <CircularProgress size={20} /> : <SearchIcon />}
-        </IconButton>
-        {externalIgdbId ? (
-          <Stack direction="row" spacing={0.25} alignItems="center">
-            <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 72 }}>
-              ID {externalIgdbId}
-            </Typography>
-            {onClear ? (
-              <IconButton size="small" onClick={onClear} aria-label="Clear IGDB link" sx={{ p: 0.25 }}>
-                <CloseIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            ) : null}
-          </Stack>
-        ) : null}
-      </Stack>
+  const showEmpty =
+    !searching &&
+    searchedQuery.length >= MIN_QUERY_LENGTH &&
+    results.length === 0;
 
-      {panelOpen ? (
-        <Box
+  return (
+    <Box
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        flexShrink: 0,
+        height: PANEL_MAX_HEIGHT,
+        maxHeight: PANEL_MAX_HEIGHT,
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
+        overflow: 'hidden',
+        bgcolor: (theme) =>
+          theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.grey[100],
+        position: 'relative',
+        alignSelf: 'flex-start',
+      }}
+    >
+      {externalIgdbId && onClear ? (
+        <Chip
+          label="Clear"
+          size="small"
+          onClick={onClear}
           sx={{
             position: 'absolute',
-            top: '100%',
-            right: 0,
-            mt: 0.5,
-            zIndex: 10,
-            width: { xs: 'min(calc(100vw - 48px), 420px)', sm: 420 },
+            top: 4,
+            right: 4,
+            zIndex: 1,
+            height: 26,
+            fontSize: '0.8125rem',
+            fontWeight: 600,
+            bgcolor: 'rgba(0,0,0,0.65)',
+            color: 'info.light',
+            '& .MuiChip-label': { px: 1.25 },
+            '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
           }}
-        >
-          {searching ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
-              <CircularProgress size={20} />
-            </Box>
-          ) : selectedResult ? (
-            <Stack direction="row" spacing={1} alignItems="flex-start">
-              <Card
-                variant="outlined"
-                sx={{ flex: 1, minWidth: 0, cursor: 'pointer' }}
-                onClick={() => handleSelect(selectedResult)}
-              >
-                <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-                  <Stack direction="row" spacing={1}>
-                    {selectedResult.coverImageUrl ? (
-                      <Box
-                        component="img"
-                        src={selectedResult.coverImageUrl}
-                        alt=""
-                        sx={{ width: 36, height: 50, objectFit: 'cover', borderRadius: 0.5 }}
-                      />
-                    ) : null}
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography variant="body2" fontWeight={600} noWrap>
-                        {selectedResult.name}
-                      </Typography>
-                      {selectedResult.releaseDate ? (
-                        <Typography variant="caption" color="text.secondary">
-                          {selectedResult.releaseDate}
-                        </Typography>
-                      ) : null}
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-              <Stack direction="row" spacing={0.5} alignItems="center">
-                <ToggleButton
-                  value="name"
-                  selected={selectedActions.includes('name')}
-                  onClick={() => toggleAction('name')}
-                  size="small"
-                  sx={{ width: 40, height: 40 }}
-                >
-                  <CallToActionIcon fontSize="small" />
-                </ToggleButton>
-                <ToggleButton
-                  value="date"
-                  selected={selectedActions.includes('date')}
-                  onClick={() => toggleAction('date')}
-                  disabled={!selectedResult.releaseDate}
-                  size="small"
-                  sx={{ width: 40, height: 40 }}
-                >
-                  <CalendarMonthIcon fontSize="small" />
-                </ToggleButton>
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={handleConfirm}
-                  disabled={selectedActions.length === 0}
-                  aria-label="Confirm IGDB link"
-                >
-                  <CheckIcon />
-                </IconButton>
-                <IconButton size="small" onClick={handleClosePanel} aria-label="Close">
-                  <CloseIcon />
-                </IconButton>
-              </Stack>
-            </Stack>
-          ) : results.length > 0 ? (
-            <Stack spacing={0.5}>
-              {results.map((result) => (
+        />
+      ) : null}
+
+      <Box
+        sx={{
+          height: '100%',
+          overflowY: 'auto',
+          p: 0.5,
+          boxSizing: 'border-box',
+        }}
+      >
+        {searching ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <CircularProgress size={18} />
+          </Box>
+        ) : showEmpty ? null : (
+          <Stack spacing={0.5}>
+            {results.map((result) => {
+              const selected = externalIgdbId === String(result.externalId);
+              return (
                 <Card
                   key={result.externalId}
                   variant="outlined"
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => handleSelect(result)}
+                  sx={{
+                    cursor: searchPaused ? 'default' : 'pointer',
+                    borderColor: selected ? 'primary.main' : 'divider',
+                    bgcolor: selected ? 'action.selected' : 'background.paper',
+                  }}
+                  onClick={() => {
+                    if (!searchPaused) onSelect(result);
+                  }}
                 >
-                  <CardContent sx={{ py: 0.75, '&:last-child': { pb: 0.75 } }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                  <CardContent sx={{ py: 0.5, px: 0.75, '&:last-child': { pb: 0.5 } }}>
+                    <Stack direction="row" spacing={0.75} alignItems="center">
                       {result.coverImageUrl ? (
                         <Box
                           component="img"
                           src={result.coverImageUrl}
                           alt=""
-                          sx={{ width: 28, height: 40, objectFit: 'cover', borderRadius: 0.5 }}
+                          sx={{
+                            width: 22,
+                            height: 32,
+                            objectFit: 'cover',
+                            borderRadius: 0.5,
+                            flexShrink: 0,
+                          }}
                         />
-                      ) : null}
-                      <Typography variant="body2" noWrap>
-                        {result.name}
-                      </Typography>
+                      ) : (
+                        <Box
+                          sx={{
+                            width: 22,
+                            height: 32,
+                            borderRadius: 0.5,
+                            flexShrink: 0,
+                            bgcolor: 'action.hover',
+                          }}
+                        />
+                      )}
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="caption"
+                          noWrap
+                          display="block"
+                          fontWeight={selected ? 700 : 500}
+                          sx={{ lineHeight: 1.2 }}
+                        >
+                          {result.name}
+                        </Typography>
+                        {result.releaseDate ? (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            noWrap
+                            display="block"
+                            sx={{ fontSize: '0.65rem', lineHeight: 1.2 }}
+                          >
+                            {result.releaseDate}
+                          </Typography>
+                        ) : null}
+                      </Box>
                     </Stack>
                   </CardContent>
                 </Card>
-              ))}
-              <IconButton size="small" onClick={handleClosePanel} aria-label="Close">
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          ) : (
-            <Typography variant="caption" color="text.secondary">
-              No IGDB results.
-            </Typography>
-          )}
-        </Box>
-      ) : null}
+              );
+            })}
+          </Stack>
+        )}
+      </Box>
     </Box>
   );
 }

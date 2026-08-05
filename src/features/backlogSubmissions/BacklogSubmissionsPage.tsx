@@ -50,6 +50,7 @@ export default function BacklogSubmissionsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createFromSearch, setCreateFromSearch] =
     useState<UnifiedGameSearchResultDto | null>(null);
+  const [createInitialName, setCreateInitialName] = useState<string | null>(null);
 
   const loadList = useCallback(async () => {
     setLoading(true);
@@ -133,6 +134,7 @@ export default function BacklogSubmissionsPage() {
 
   const openCreate = (fromSearch?: UnifiedGameSearchResultDto | null) => {
     setCreateFromSearch(fromSearch ?? null);
+    setCreateInitialName(fromSearch ? null : searchDraft.trim() || null);
     setCreateOpen(true);
   };
 
@@ -253,9 +255,11 @@ export default function BacklogSubmissionsPage() {
       <BacklogSubmissionCreateModal
         open={createOpen}
         initialFromSearch={createFromSearch}
+        initialName={createInitialName}
         onClose={() => {
           setCreateOpen(false);
           setCreateFromSearch(null);
+          setCreateInitialName(null);
         }}
         onSaved={handleSaved}
       />

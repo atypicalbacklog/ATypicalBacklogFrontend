@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -23,7 +23,10 @@ import BacklogSubmissionIgdbPicker from './BacklogSubmissionIgdbPicker';
 import { unifiedSearchCoverUid } from './recommendationImageUtils';
 
 const COMMENT_MAX_LENGTH = 1000;
-const PREVIEW_WIDTH = 72;
+/** Match IGDB panel height so cover fills without letterboxing. */
+const PREVIEW_HEIGHT = 160;
+const PREVIEW_WIDTH = Math.round((PREVIEW_HEIGHT * 2) / 3) + 8;
+const NAME_DATE_WIDTH = 280;
 const today = () => new Date().toISOString().slice(0, 10);
 
 export interface BacklogSubmissionCreateFormState {
@@ -46,7 +49,7 @@ export function createFormFromUnified(
     name: result.name,
     gameUid: result.gameUid,
     linkedCoverImageUid: result.gameUid ? unifiedSearchCoverUid(result) : null,
-    igdbPreviewCoverUrl: null,
+    igdbPreviewCoverUrl: result.gameRecommendation?.externalIgdbIdImageURL ?? null,
     originalRecommendationBy: result.originalRecommendationBy ?? '',
     comment: '',
     gameRecommendationUid: result.gameRecommendation?.uid ?? null,
@@ -57,16 +60,16 @@ export function createFormFromUnified(
   };
 }
 
-export function emptyCreateForm(): BacklogSubmissionCreateFormState {
+export function emptyCreateForm(name = ''): BacklogSubmissionCreateFormState {
   return {
-    name: '',
+    name,
     gameUid: null,
     linkedCoverImageUid: null,
     igdbPreviewCoverUrl: null,
     originalRecommendationBy: '',
     comment: '',
     gameRecommendationUid: null,
-    nameBase: '',
+    nameBase: name,
     releaseDate: today(),
     externalIgdbId: null,
   };
@@ -75,6 +78,8 @@ export function emptyCreateForm(): BacklogSubmissionCreateFormState {
 interface Props {
   open: boolean;
   initialFromSearch?: UnifiedGameSearchResultDto | null;
+  /** Prefill name when opening without a unified search result (e.g. page search text). */
+  initialName?: string | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -82,6 +87,7 @@ interface Props {
 export default function BacklogSubmissionCreateModal({
   open,
   initialFromSearch,
+  initialName = null,
   onClose,
   onSaved,
 }: Props) {
@@ -89,40 +95,144 @@ export default function BacklogSubmissionCreateModal({
   const [form, setForm] = useState<BacklogSubmissionCreateFormState>(emptyCreateForm);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** Name typed before the current IGDB selection chain (survives re-picks until Clear). */
+  const nameBeforeIgdbSelectionRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setError(null);
+    nameBeforeIgdbSelectionRef.current = null;
     setForm(
       initialFromSearch
         ? createFormFromUnified(initialFromSearch)
-        : emptyCreateForm()
+        : emptyCreateForm(initialName?.trim() ?? '')
     );
-  }, [open, initialFromSearch]);
+  }, [open, initialFromSearch, initialName]);
 
   const hasLinkedGame = form.gameUid != null;
+  const hasIgdbSelection = form.externalIgdbId != null;
+  const nameLocked = hasLinkedGame || hasIgdbSelection;
   const showLinkedCover = hasLinkedGame;
-  const showIgdbPreview = !hasLinkedGame && form.externalIgdbId != null;
+  const showIgdbPreview = !hasLinkedGame && Boolean(form.igdbPreviewCoverUrl);
 
-  const handleIgdbConfirm = (result: IgdbGameSearchResultDto) => {
-    setForm((f) => ({
-      ...f,
-      externalIgdbId: String(result.externalId),
-      nameBase: result.name,
-      name: f.name.trim() ? f.name : result.name,
-      releaseDate: result.releaseDate ?? f.releaseDate,
-      igdbPreviewCoverUrl: result.coverImageUrl,
-      gameRecommendationUid: null,
-    }));
+  const handleIgdbSelect = (result: IgdbGameSearchResultDto) => {
+    setForm((f) => {
+      if (f.externalIgdbId == null) {
+        nameBeforeIgdbSelectionRef.current = f.name;
+      }
+      return {
+        ...f,
+        externalIgdbId: String(result.externalId),
+        nameBase: result.name,
+        name: result.name,
+        releaseDate: result.releaseDate ?? f.releaseDate,
+        igdbPreviewCoverUrl: result.coverImageUrl,
+        gameRecommendationUid: null,
+      };
+    });
   };
 
   const handleIgdbClear = () => {
+    const restoredName = nameBeforeIgdbSelectionRef.current;
+    nameBeforeIgdbSelectionRef.current = null;
     setForm((f) => ({
       ...f,
+      name: restoredName ?? f.name,
       externalIgdbId: null,
       igdbPreviewCoverUrl: null,
     }));
   };
+
+  const coverPreview = showLinkedCover ? (
+    <SmartImage
+      imageUid={form.linkedCoverImageUid}
+      thumbnail
+      alt=""
+      fit="cover"
+      placeholderLabel={form.name}
+      sx={{
+        width: PREVIEW_WIDTH,
+        height: PREVIEW_HEIGHT,
+        flexShrink: 0,
+        aspectRatio: 'unset',
+        borderRadius: 0.5,
+        display: { xs: 'none', sm: 'block' },
+      }}
+      imgSx={{ borderRadius: 0.5 }}
+    />
+  ) : showIgdbPreview ? (
+    <Box
+      component="img"
+      src={form.igdbPreviewCoverUrl!}
+      alt=""
+      sx={{
+        width: PREVIEW_WIDTH,
+        height: PREVIEW_HEIGHT,
+        objectFit: 'cover',
+        objectPosition: 'center',
+        flexShrink: 0,
+        borderRadius: 0.5,
+        display: { xs: 'none', sm: 'block' },
+      }}
+    />
+  ) : (
+    <Box
+      aria-hidden
+      sx={{
+        width: PREVIEW_WIDTH,
+        height: PREVIEW_HEIGHT,
+        flexShrink: 0,
+        display: { xs: 'none', sm: 'block' },
+      }}
+    />
+  );
+
+  const nameDateFields = (
+    <Stack
+      spacing={1.5}
+      sx={{
+        width: { xs: '100%', sm: NAME_DATE_WIDTH },
+        flex: { xs: '1 1 auto', sm: '0 0 auto' },
+        minWidth: 0,
+      }}
+    >
+      <TextField
+        label="Name"
+        value={form.name}
+        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+        required
+        fullWidth
+        size="small"
+        disabled={nameLocked}
+      />
+
+      <DateField
+        label="Release date"
+        value={form.releaseDate}
+        onChange={(releaseDate) => setForm((f) => ({ ...f, releaseDate }))}
+        required={!form.gameRecommendationUid}
+      />
+    </Stack>
+  );
+
+  const igdbPanel = !hasLinkedGame ? (
+    <Box
+      sx={{
+        width: { xs: '100%', sm: '35%' },
+        flexShrink: 0,
+        minWidth: { sm: 160 },
+      }}
+    >
+      <BacklogSubmissionIgdbPicker
+        query={form.name}
+        externalIgdbId={form.externalIgdbId}
+        searchPaused={hasIgdbSelection}
+        disabled={false}
+        onSelect={handleIgdbSelect}
+        onClear={handleIgdbClear}
+      />
+    </Box>
+  ) : null;
 
   const handleSave = async () => {
     if (!form.name.trim()) {
@@ -147,6 +257,7 @@ export default function BacklogSubmissionCreateModal({
           nameBase: form.gameRecommendationUid ? null : form.nameBase.trim() || form.name.trim(),
           releaseDate: form.releaseDate || null,
           externalIgdbId: form.externalIgdbId,
+          externalIgdbIdImageURL: form.igdbPreviewCoverUrl,
         },
         backlogRecommendation: {
           gameUid: form.gameUid,
@@ -184,68 +295,24 @@ export default function BacklogSubmissionCreateModal({
         )}
 
         <Stack spacing={2}>
-          <Stack direction="row" spacing={2} alignItems="flex-start">
-            {showLinkedCover ? (
-              <SmartImage
-                imageUid={form.linkedCoverImageUid}
-                thumbnail
-                alt=""
-                placeholderLabel={form.name}
-                sx={{ width: PREVIEW_WIDTH, flexShrink: 0 }}
-              />
-            ) : showIgdbPreview ? (
-              form.igdbPreviewCoverUrl ? (
-                <Box
-                  component="img"
-                  src={form.igdbPreviewCoverUrl}
-                  alt=""
-                  sx={{
-                    width: PREVIEW_WIDTH,
-                    aspectRatio: '2/3',
-                    objectFit: 'contain',
-                    flexShrink: 0,
-                    borderRadius: 0.5,
-                    bgcolor: 'action.hover',
-                  }}
-                />
-              ) : (
-                <SmartImage
-                  imageUid={null}
-                  thumbnail
-                  alt=""
-                  placeholderLabel={form.name}
-                  sx={{ width: PREVIEW_WIDTH, flexShrink: 0 }}
-                />
-              )
-            ) : null}
-
-            <Stack spacing={1.5} sx={{ flex: 1, minWidth: 0 }}>
-              <Stack direction="row" spacing={1} alignItems="flex-start">
-                <TextField
-                  label="Name"
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  required
-                  fullWidth
-                  size="small"
-                />
-                <BacklogSubmissionIgdbPicker
-                  gameName={form.name}
-                  externalIgdbId={form.externalIgdbId}
-                  disabled={hasLinkedGame}
-                  onConfirm={handleIgdbConfirm}
-                  onClear={handleIgdbClear}
-                />
-              </Stack>
-
-              <DateField
-                label="Release date"
-                value={form.releaseDate}
-                onChange={(releaseDate) => setForm((f) => ({ ...f, releaseDate }))}
-                required={!form.gameRecommendationUid}
-              />
+          {hasLinkedGame ? (
+            <Stack direction="row" spacing={2} alignItems="flex-start" sx={{ width: '100%' }}>
+              {coverPreview}
+              {nameDateFields}
             </Stack>
-          </Stack>
+          ) : (
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+              sx={{ width: '100%' }}
+            >
+              {nameDateFields}
+              <Box sx={{ flex: 1, minWidth: 8, display: { xs: 'none', sm: 'block' } }} />
+              {coverPreview}
+              {igdbPanel}
+            </Stack>
+          )}
 
           <TextField
             label="please enter a nickname, who submitted this"

@@ -1,14 +1,21 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import SmartImage from '../shared/SmartImage';
 import SubmissionStateBorderFrame from './backlogSubmissionBorderFrame';
 import { getSubmissionImageBorder } from './backlogSubmissionStateLabels';
 
+/** Match library card width so cover art keeps a similar 2:3-ish frame. */
 export const BACKLOG_SUBMISSION_CARD_WIDTH = 200;
-const CARD_HEIGHT = 280;
-const MOBILE_CARD_HEIGHT = 280;
-const COVER_HEIGHT = 240;
-const MOBILE_COVER_HEIGHT = 240;
+const MOBILE_CARD_WIDTH = 170;
+/** Title strip under the cover — keep the original compact height. */
+const TITLE_AREA_HEIGHT = 40;
+const COVER_HEIGHT = 260;
+const MOBILE_COVER_HEIGHT = 220;
+const CARD_HEIGHT = COVER_HEIGHT + TITLE_AREA_HEIGHT;
+const MOBILE_CARD_HEIGHT = MOBILE_COVER_HEIGHT + TITLE_AREA_HEIGHT;
+/** Pixels per second for the marquee scroll. */
+const MARQUEE_PX_PER_SEC = 28;
 
 const BADGE_SX = {
   borderRadius: 1,
@@ -22,28 +29,91 @@ const BADGE_SX = {
 interface Props {
   name: string;
   imageUid: string | null;
+  /** Fallback cover when no linked game image UID is available. */
+  externalCoverUrl?: string | null;
   voteCount: number;
   voteRank?: number;
   state?: string | null;
   onClick?: () => void;
 }
 
+function MarqueeTitle({ text }: { text: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [overflowPx, setOverflowPx] = useState(0);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const textEl = textRef.current;
+    if (!container || !textEl) return;
+
+    const measure = () => {
+      const next = textEl.scrollWidth - container.clientWidth;
+      setOverflowPx(next > 1 ? next : 0);
+    };
+
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    observer.observe(textEl);
+    return () => observer.disconnect();
+  }, [text]);
+
+  const durationSec =
+    overflowPx > 0 ? Math.max(4, (overflowPx * 2) / MARQUEE_PX_PER_SEC + 2.5) : 0;
+
+  return (
+    <Box ref={containerRef} sx={{ width: '100%', overflow: 'hidden', minWidth: 0 }}>
+      <Typography
+        ref={textRef}
+        component="span"
+        variant="body2"
+        fontWeight={600}
+        title={text}
+        sx={{
+          display: 'inline-block',
+          maxWidth: 'none',
+          lineHeight: 1.25,
+          whiteSpace: 'nowrap',
+          ...(overflowPx > 0
+            ? {
+                animation: `backlogSubmissionTitleMarquee ${durationSec}s ease-in-out infinite`,
+                '@keyframes backlogSubmissionTitleMarquee': {
+                  '0%, 12%': { transform: 'translateX(0)' },
+                  '45%, 55%': { transform: `translateX(-${overflowPx}px)` },
+                  '88%, 100%': { transform: 'translateX(0)' },
+                },
+                '@media (prefers-reduced-motion: reduce)': {
+                  animation: 'none',
+                },
+              }
+            : undefined),
+        }}
+      >
+        {text}
+      </Typography>
+    </Box>
+  );
+}
+
 export default function BacklogSubmissionCard({
   name,
   imageUid,
+  externalCoverUrl = null,
   voteCount,
   voteRank,
   state,
   onClick,
 }: Props) {
   const imageBorder = getSubmissionImageBorder(state);
+  const showExternalCover = !imageUid && Boolean(externalCoverUrl);
 
   return (
     <Box
       onClick={onClick}
       sx={{
-        width: { xs: '100%', sm: BACKLOG_SUBMISSION_CARD_WIDTH },
-        maxWidth: BACKLOG_SUBMISSION_CARD_WIDTH,
+        width: { xs: MOBILE_CARD_WIDTH, sm: BACKLOG_SUBMISSION_CARD_WIDTH },
         height: { xs: MOBILE_CARD_HEIGHT, sm: CARD_HEIGHT },
         flexShrink: 0,
         borderRadius: 1,
@@ -73,25 +143,48 @@ export default function BacklogSubmissionCard({
           flexShrink: 0,
           width: '100%',
           height: { xs: MOBILE_COVER_HEIGHT, sm: COVER_HEIGHT },
+          overflow: 'hidden',
         }}
       >
         <SubmissionStateBorderFrame
           border={imageBorder}
           borderRadius={0}
           innerBg="transparent"
-          sx={{ height: '100%' }}
+          sx={{ width: '100%', height: '100%' }}
         >
-          <SmartImage
-            imageUid={imageUid}
-            thumbnail
-            alt=""
-            placeholderLabel={name}
-            sx={{
-              width: '100%',
-              height: '100%',
-            }}
-            imgSx={{ objectFit: 'contain' }}
-          />
+          {showExternalCover ? (
+            <Box
+              component="img"
+              src={externalCoverUrl!}
+              alt=""
+              sx={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                display: 'block',
+                bgcolor: (theme) =>
+                  theme.palette.mode === 'dark'
+                    ? theme.palette.grey[900]
+                    : theme.palette.grey[200],
+              }}
+            />
+          ) : (
+            <SmartImage
+              imageUid={imageUid}
+              thumbnail
+              alt=""
+              aspectRatio={2 / 3}
+              fit="contain"
+              placeholderLabel={name}
+              sx={{
+                width: '100%',
+                height: '100%',
+                aspectRatio: 'unset',
+                borderRadius: 0,
+              }}
+              imgSx={{ borderRadius: 0 }}
+            />
+          )}
         </SubmissionStateBorderFrame>
         {/* Rank and vote count always visible, including when upvotes are disabled by state. */}
         <Box
@@ -142,22 +235,10 @@ export default function BacklogSubmissionCard({
           flex: 1,
           minHeight: 0,
           justifyContent: 'center',
+          minWidth: 0,
         }}
       >
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          title={name}
-          sx={{
-            lineHeight: 1.25,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-          }}
-        >
-          {name}
-        </Typography>
+        <MarqueeTitle text={name} />
       </Stack>
     </Box>
   );

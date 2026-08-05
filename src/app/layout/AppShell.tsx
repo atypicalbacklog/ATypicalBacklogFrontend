@@ -12,6 +12,10 @@ import { landingPageContainerSx, fullWidthPageContainerSx } from '../../features
 
 function usesFullWidthColumn(pathname: string): boolean {
   if (pathname.startsWith('/library')) return true;
+  if (pathname.startsWith('/statistics')) return true;
+  // Additional images uses the centered content column.
+  if (pathname.startsWith('/reviews/yearly/additional-images')) return false;
+  if (pathname.startsWith('/reviews')) return true;
   return (
     pathname.startsWith('/backlog') &&
     !pathname.startsWith('/backlog-submissions') &&
@@ -30,6 +34,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/backlog-submissions')) return 'Backlog submissions';
   if (pathname.startsWith('/backlog')) return 'Backlog';
   if (pathname.startsWith('/reviews/year-tierlist')) return 'Year tierlist';
+  if (pathname.startsWith('/reviews/yearly/additional-images')) return 'Additional images';
   if (pathname.startsWith('/reviews/yearly')) return 'Yearly review';
   if (pathname.startsWith('/reviews')) return 'Reviews';
   if (pathname.startsWith('/admin/import')) return 'Import staging';
@@ -41,7 +46,7 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/game-instances')) return 'Game instance';
   if (pathname.startsWith('/statistics')) return 'Statistics';
   if (pathname.startsWith('/imprint')) return 'Imprint';
-  if (pathname.startsWith('/faq-glossar')) return 'FAQ & Glossary';
+  if (pathname.startsWith('/faq-glossary')) return 'FAQ & Glossary';
   return 'Atypical Backlog';
 }
 

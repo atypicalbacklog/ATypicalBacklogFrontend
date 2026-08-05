@@ -95,7 +95,7 @@ function StatisticsDashboardContent() {
   const { data: weekdayData, isLoading: weekdayLoading, error: weekdayError } =
     useWeekdayPlaytime();
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       <Typography variant="h4" gutterBottom sx={{ textAlign: 'center' }}>
         Statistics
       </Typography>

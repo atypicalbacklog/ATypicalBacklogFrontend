@@ -26,9 +26,10 @@ import DateWithIcon from '../shared/DateWithIcon';
 import SmartImage from '../shared/SmartImage';
 import BacklogSubmissionStateBanner from './BacklogSubmissionStateBanner';
 import { getBacklogSubmissionStatePresentation } from './backlogSubmissionStateLabels';
-import { recommendationCoverUid } from './recommendationImageUtils';
+import { recommendationCoverUid, recommendationIgdbCoverUrl } from './recommendationImageUtils';
 
-const HEADER_IMAGE_WIDTH = 88;
+const HEADER_IMAGE_HEIGHT = 132;
+const HEADER_IMAGE_WIDTH = Math.round((HEADER_IMAGE_HEIGHT * 2) / 3) + 8;
 const COMMENT_BODY_MAX_HEIGHT = 120;
 
 interface Props {
@@ -91,11 +92,20 @@ export default function BacklogSubmissionDetailModal({
   }, [open, uid, load]);
 
   const imageUid = item ? recommendationCoverUid(item) : null;
+  const storedIgdbCoverUrl = item ? recommendationIgdbCoverUrl(item) : null;
   const igdbId = item?.gameRecommendation?.externalIgdbId ?? null;
   const releaseDate = item?.gameRecommendation?.releaseDate ?? null;
 
   useEffect(() => {
-    if (!item || imageUid || !igdbId) {
+    if (!item || imageUid) {
+      setIgdbCoverUrl(null);
+      return;
+    }
+    if (storedIgdbCoverUrl) {
+      setIgdbCoverUrl(storedIgdbCoverUrl);
+      return;
+    }
+    if (!igdbId) {
       setIgdbCoverUrl(null);
       return;
     }
@@ -115,7 +125,7 @@ export default function BacklogSubmissionDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [item, imageUid, igdbId]);
+  }, [item, imageUid, storedIgdbCoverUrl, igdbId]);
 
   const statePresentation = item
     ? getBacklogSubmissionStatePresentation(item.state, item.stateReason)
@@ -157,7 +167,14 @@ export default function BacklogSubmissionDetailModal({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth scroll="paper">
-      <DialogTitle sx={{ pr: 6 }}>
+      <DialogTitle
+        sx={{
+          pr: 6,
+          py: 1.25,
+          typography: 'subtitle1',
+          fontWeight: 600,
+        }}
+      >
         {displayVoteRank != null
           ? `Backlog submission #${displayVoteRank}`
           : 'Backlog submission'}
@@ -185,25 +202,46 @@ export default function BacklogSubmissionDetailModal({
             <Stack direction="row" spacing={2} alignItems="flex-start">
               {igdbCoverUrl && !imageUid ? (
                 <Box
-                  component="img"
-                  src={igdbCoverUrl}
-                  alt=""
                   sx={{
                     width: HEADER_IMAGE_WIDTH,
-                    aspectRatio: '2/3',
-                    objectFit: 'contain',
+                    height: HEADER_IMAGE_HEIGHT,
                     flexShrink: 0,
                     borderRadius: 0.5,
-                    bgcolor: 'action.hover',
+                    overflow: 'hidden',
+                    bgcolor: (theme) =>
+                      theme.palette.mode === 'dark'
+                        ? theme.palette.grey[900]
+                        : theme.palette.grey[200],
                   }}
-                />
+                >
+                  <Box
+                    component="img"
+                    src={igdbCoverUrl}
+                    alt=""
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: 'center',
+                      display: 'block',
+                    }}
+                  />
+                </Box>
               ) : (
                 <SmartImage
                   imageUid={imageUid}
                   thumbnail
                   alt=""
                   placeholderLabel={item.name}
-                  sx={{ width: HEADER_IMAGE_WIDTH, flexShrink: 0 }}
+                  fit="cover"
+                  sx={{
+                    width: HEADER_IMAGE_WIDTH,
+                    height: HEADER_IMAGE_HEIGHT,
+                    flexShrink: 0,
+                    aspectRatio: 'unset',
+                    borderRadius: 0.5,
+                  }}
+                  imgSx={{ borderRadius: 0.5 }}
                 />
               )}
 
@@ -284,20 +322,54 @@ export default function BacklogSubmissionDetailModal({
               </Typography>
             ) : null}
 
-            {item.originalRecommendationBy ? (
-              <Box sx={{ textAlign: 'right' }}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  sx={{ fontSize: '0.6875rem', lineHeight: 1.3 }}
-                >
-                  Recommended by
-                </Typography>
-                <Typography variant="body1" fontWeight={500} sx={{ lineHeight: 1.35 }}>
-                  {item.originalRecommendationBy}
-                </Typography>
-              </Box>
+            {item.comment || item.originalRecommendationBy ? (
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="flex-start"
+                justifyContent="space-between"
+              >
+                {item.comment ? (
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ fontSize: '0.6875rem', lineHeight: 1.3, mb: 0.25 }}
+                    >
+                      Original comment
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'anywhere',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {item.comment}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box sx={{ flex: 1, minWidth: 0 }} />
+                )}
+                {item.originalRecommendationBy ? (
+                  <Box sx={{ textAlign: 'right', flexShrink: 0, maxWidth: '45%' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      display="block"
+                      sx={{ fontSize: '0.6875rem', lineHeight: 1.3 }}
+                    >
+                      Recommended by
+                    </Typography>
+                    <Typography variant="body1" fontWeight={500} sx={{ lineHeight: 1.35 }}>
+                      {item.originalRecommendationBy}
+                    </Typography>
+                  </Box>
+                ) : null}
+              </Stack>
             ) : null}
 
             <Divider />
@@ -333,6 +405,15 @@ export default function BacklogSubmissionDetailModal({
                             whiteSpace: 'pre-wrap',
                             wordBreak: 'break-word',
                             overflowWrap: 'anywhere',
+                            ...(c.flagged
+                              ? {
+                                  fontStyle: 'italic',
+                                  color: (theme) =>
+                                    theme.palette.mode === 'dark'
+                                      ? 'rgba(200, 155, 155, 0.85)'
+                                      : 'rgba(130, 95, 95, 0.9)',
+                                }
+                              : undefined),
                           }}
                         >
                           {c.comment}

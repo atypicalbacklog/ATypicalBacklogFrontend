@@ -4,9 +4,9 @@ import SmartImage from '../shared/SmartImage';
 import { GameOverviewRowDto } from './types';
 import { createGameInstanceReturnState, gameInstanceTo } from '../gameInstances/gameInstanceNavigation';
 
-type Props = { item: GameOverviewRowDto };
+type Props = { item: GameOverviewRowDto; tooltipOverride?: string };
 
-export default function LibraryListItemMinimized({ item }: Props) {
+export default function LibraryListItemMinimized({ item, tooltipOverride }: Props) {
   const location = useLocation();
   const instanceReturn = createGameInstanceReturnState(location);
   const isDlc = item.isDlc === true;
@@ -14,7 +14,7 @@ export default function LibraryListItemMinimized({ item }: Props) {
     ? (item.dlcCoverImageUid ?? item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid)
     : (item.instanceCoverImageUid ?? item.gameCoverImageUid ?? item.coverImageUid);
 
-  const coverTooltip = item.dlcName ?? item.instanceName ?? item.gameName;
+  const coverTooltip = tooltipOverride ?? item.dlcName ?? item.instanceName ?? item.gameName;
 
   const to = item.gameInstanceUid
     ? gameInstanceTo(item.gameInstanceUid, instanceReturn)
@@ -53,11 +53,13 @@ export default function LibraryListItemMinimized({ item }: Props) {
           thumbnail
           alt=""
           aspectRatio={2 / 3}
-          fit="contain"
+          fit="cover"
           sx={{
             width: '100%',
             height: '100%',
+            aspectRatio: 'unset',
             display: 'block',
+            borderRadius: 0,
           }}
           imgSx={{ borderRadius: 0 }}
         />

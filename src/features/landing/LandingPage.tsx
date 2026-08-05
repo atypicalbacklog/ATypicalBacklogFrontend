@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Box, CircularProgress, Stack } from '@mui/material';
+import { Alert, CircularProgress, Stack } from '@mui/material';
 import {
   fetchRandomBacklogFeed,
   fetchRandomBacklogRecommendationFeed,
@@ -13,6 +13,7 @@ import type {
   RecentActivityFeedItemDto,
 } from '../../types/feedDto';
 import FeedGallery from './FeedGallery';
+import { FeedTooltipProvider } from './FeedTooltipContext';
 import BacklogFeedCard from './BacklogFeedCard';
 import BacklogSubmissionFeedCard from './BacklogSubmissionFeedCard';
 import FeedGameCard from './FeedGameCard';
@@ -88,7 +89,7 @@ export default function LandingPage() {
   }
 
   return (
-    <>
+    <FeedTooltipProvider>
       <LandingPageHero />
 
       {error && (
@@ -156,6 +157,6 @@ export default function LandingPage() {
         open={selectedReview != null}
         onClose={() => setSelectedReview(null)}
       />
-    </>
+    </FeedTooltipProvider>
   );
 }

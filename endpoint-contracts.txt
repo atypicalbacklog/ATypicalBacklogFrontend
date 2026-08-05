@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 33
+Version: 34
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -23,6 +23,19 @@ Response: 200 OK
 
 Notes:
 - Value is from application.yml (app.mode). Allowed values: MANAGEMENT, PUBLIC. Default (if unset or invalid): PUBLIC.
+- When mode is PUBLIC, all GET/HEAD/OPTIONS requests are allowed except Swagger UI, OpenAPI docs, and actuator endpoints other than /actuator/health (403 Forbidden).
+- When mode is PUBLIC, non-GET requests return 403 Forbidden except:
+  * POST /api/query/game-overview (5.1)
+  * POST /api/backlog-recommendations (9.4.1)
+  * POST /api/backlog-recommendations/{uid}/upvote (9.4.2)
+  * POST /api/backlog-recommendations/{uid}/comments (9.4.3)
+  * POST /api/query/backlog-overview (10.1)
+  * POST /api/query/playthroughs/history/search (13.2)
+  * POST /api/reviews/search-by-year (18.3)
+  * POST /api/feed/recent-activity (25.1)
+  * POST /api/feed/random-backlog (25.2)
+  * POST /api/feed/random-s-tier-reviews (25.3)
+  * POST /api/feed/random-backlog-recommendations (25.4)
 
 ================================================================================
 1. GAME ENDPOINTS
@@ -783,7 +796,8 @@ Request Body:
     "uid": "string" | null,              // existing game_recommendation UID
     "nameBase": "string" | null,          // required when uid is not provided
     "releaseDate": "YYYY-MM-DD" | null,
-    "externalIgdbId": "string" | null
+    "externalIgdbId": "string" | null,
+    "externalIgdbIdImageURL": "string" | null
   },
   "backlogRecommendation": {
     "gameUid": "string" | null,           // optional link to existing game
@@ -804,9 +818,11 @@ Behaviour:
 - Otherwise a new game_recommendation is created (nameBase required).
 - votecount starts at 1.
 - state is set to NEW, stateDate to today, stateReason to null (not accepted in request).
+- Optional backlogRecommendation.comment is stored on backlog_recommendation (owner comment).
+  It is NOT moderation-checked. While state is NEW, get/list return comment as null.
 
 BacklogRecommendationState values:
-NEW | CONFIRMED_FOR_BACKLOG | FINISHED | REJECTED | UP_FOR_REPLAY | RESUBMIT | DUPLICATE
+NEW | REVIEWED | CONFIRMED_FOR_BACKLOG | FINISHED | REJECTED | UP_FOR_REPLAY | RESUBMIT | DUPLICATE
 
 --------------------------------------------------------------------------------
 9.4.2 Upvote Backlog Recommendation
@@ -838,6 +854,15 @@ Request Body:
 Response: 200 OK
 (no body)
 
+Behaviour:
+- Comment is always stored (store + flag; never rejected for moderation).
+- Local pipeline (when enabled): profanity wordlists then optional ONNX toxicity.
+  Hits set moderation_flagged / reason / score for admin DB review.
+  Toxicity fail-open if model missing.
+- Create-time owner comment lives on backlog_recommendation.comment (not this table)
+  and is NOT moderation-checked.
+- See docs/moderation.md for wordlist/model setup.
+
 --------------------------------------------------------------------------------
 9.4.4 Get Backlog Recommendation by UID
 --------------------------------------------------------------------------------
@@ -859,6 +884,7 @@ BacklogRecommendationViewDto:
   "voteCount": 0,
   "voteRank": 1,
   "originalRecommendationBy": "string" | null,
+  "comment": "string" | null,            // owner/submitter comment; null while state is NEW
   "gameUid": "string" | null,
   "linkedGameImageUid": "string" | null,
   "gameRecommendation": {
@@ -866,7 +892,8 @@ BacklogRecommendationViewDto:
     "creationDate": "2024-01-01T12:00:00Z",
     "nameBase": "string",
     "releaseDate": "YYYY-MM-DD" | null,
-    "externalIgdbId": "string" | null
+    "externalIgdbId": "string" | null,
+    "externalIgdbIdImageURL": "string" | null
   },
   "backlogInfo": {
     "uid": "string",
@@ -889,7 +916,8 @@ BacklogRecommendationViewDto:
     {
       "uid": "string",
       "creationDate": "2024-01-01T12:00:00Z",
-      "comment": "string"
+      "comment": "string",
+      "flagged": false
     }
   ]
 }
@@ -898,6 +926,14 @@ Notes:
 - backlogInfo is populated when gameUid is set
 - linkedGameImageUid is populated when gameUid is set: primary game cover, else primary instance cover (first instance)
 - completions are populated only when gameUid is set and the linked game has at least one game instance
+- When state is NEW and gameUid is unset or the linked game does not exist, name and
+  gameRecommendation.nameBase are overwritten with app.backlog-recommendation.awaiting-review-name
+  (default: "Game awaiting Review"). Stored DB values are not changed.
+- When state is NEW, owner comment (backlog_recommendation.comment) is returned as null.
+  Follow-up comments from 9.4.3 are in comments[].
+- When moderation_flagged is true, comment text in the DTO is replaced with
+  "Comment has been flagged for: {category}" (e.g. PROFANITY, not PROFANITY:matchedWord).
+  DB moderation_reason is unchanged. flagged is true.
 
 --------------------------------------------------------------------------------
 9.4.5 List All Backlog Recommendations
@@ -918,6 +954,7 @@ Array of BacklogRecommendationViewDto (max 500 results, ordered by voteRank asce
     "voteCount": 0,
     "voteRank": 1,
     "originalRecommendationBy": "string" | null,
+    "comment": "string" | null,
     "gameUid": "string" | null,
     "linkedGameImageUid": "string" | null,
     "gameRecommendation": {
@@ -925,7 +962,8 @@ Array of BacklogRecommendationViewDto (max 500 results, ordered by voteRank asce
       "creationDate": "2024-01-01T12:00:00Z",
       "nameBase": "string",
       "releaseDate": "YYYY-MM-DD" | null,
-      "externalIgdbId": "string" | null
+      "externalIgdbId": "string" | null,
+      "externalIgdbIdImageURL": "string" | null
     },
     "backlogInfo": {
       "uid": "string",
@@ -948,7 +986,8 @@ Array of BacklogRecommendationViewDto (max 500 results, ordered by voteRank asce
       {
         "uid": "string",
         "creationDate": "2024-01-01T12:00:00Z",
-        "comment": "string"
+        "comment": "string",
+        "flagged": false
       }
     ]
   }
@@ -956,7 +995,7 @@ Array of BacklogRecommendationViewDto (max 500 results, ordered by voteRank asce
 
 Notes:
 - voteRank: position among all recommendations by voteCount desc, creationDate asc (rank 1 = highest votes)
-- Same backlogInfo/completion/comment enrichment as 9.4.4
+- Same backlogInfo/completion/comment enrichment and NEW sanitization as 9.4.4
 
 ================================================================================
 10. QUERY ENDPOINTS – BACKLOG OVERVIEW
@@ -1926,11 +1965,13 @@ Method: GET
 Path: /api/admin/images/orphans
 
 Response: 200 OK
-Array of OrphanImageReportDto (read-only preview of images that are orphaned: missing file, missing owner, or both):
+Array of OrphanImageReportDto (read-only preview of images that are orphaned:
+missing file, and/or missing owner for game_image; missing file for additional_image):
 [
   {
     "imageUid": "string",
-    "ownerType": "GAME" | "GAME_INSTANCE" | "DLC",
+    "imageKind": "GAME_IMAGE" | "ADDITIONAL_IMAGE",
+    "ownerType": "GAME" | "GAME_INSTANCE" | "DLC" | null,
     "gameUid": "string" | null,
     "gameInstanceUid": "string" | null,
     "metadataExists": true | false,
@@ -1939,6 +1980,10 @@ Array of OrphanImageReportDto (read-only preview of images that are orphaned: mi
     "reason": "string"
   }
 ]
+
+Notes:
+- Scans both game_image and additional_image.
+- For ADDITIONAL_IMAGE, ownerType / gameUid / gameInstanceUid are null.
 
 --------------------------------------------------------------------------------
 20.2 Cleanup (Delete) Images
@@ -1953,7 +1998,8 @@ Request Body:
 }
 
 Response: 200 OK
-(no body). Deletes the specified images (storage and DB records).
+(no body). Deletes the specified images (storage and DB records) from game_image
+or additional_image, whichever owns the uid.
 
 ================================================================================
 21. ADMIN SYNC ENDPOINTS
@@ -2003,7 +2049,8 @@ YearlyReviewDto:
           "uid": "string",
           "gameUid": "string",
           "gameInstanceUid": "string" | null,
-          "preferredImageUid": "string" | null,
+          "preferredImageUid": "string" | null,   // game_image uid
+          "additionalImageUid": "string" | null,  // additional_image uid (stand-in)
           "text": "string" | null,
           "order": 0,
           "presentationType": "string"   // e.g. DEFAULT, IMAGE_LEFT, IMAGE_RIGHT
@@ -2069,7 +2116,8 @@ Request Body:
   "categoryUid": "string",
   "gameUid": "string",
   "gameInstanceUid": "string" | null,
-  "preferredImageUid": "string" | null,
+  "preferredImageUid": "string" | null,   // game_image uid
+  "additionalImageUid": "string" | null,  // additional_image uid (stand-in)
   "text": "string" | null,
   "order": 0,
   "presentationType": "string" | null   // optional on create (defaults to DEFAULT); only applied when non-null on update
@@ -2519,7 +2567,8 @@ Array of PublicRandomBacklogRecommendationFeedItemDto:
       "creationDate": "2024-01-01T12:00:00Z",
       "nameBase": "string",
       "releaseDate": "YYYY-MM-DD" | null,
-      "externalIgdbId": "string" | null
+      "externalIgdbId": "string" | null,
+      "externalIgdbIdImageURL": "string" | null
     }
   }
 ]
@@ -2528,6 +2577,9 @@ Notes:
 - voteRank is position among all recommendations ordered by voteCount desc, creationDate asc (rank 1 = highest votes)
 - When gameUid is set, overview and imageUid reflect the newest game instance
 - Results are random
+- When state is NEW and gameUid is unset or the linked game does not exist, name and
+  gameRecommendation.nameBase are overwritten with app.backlog-recommendation.awaiting-review-name
+  (default: "Game awaiting Review"). Stored DB values are not changed.
 
 --------------------------------------------------------------------------------
 25.5 Unified Game Search
@@ -2570,7 +2622,7 @@ Array of UnifiedGameSearchResultDto (max 20 results, sorted by name):
     ],
     "backlogRecommendationUid": "string" | null,
     "voteCount": 0,
-    "state": "NEW" | "CONFIRMED_FOR_BACKLOG" | "FINISHED" | "REJECTED" | "UP_FOR_REPLAY" | "RESUBMIT" | "DUPLICATE" | null,
+    "state": "NEW" | "REVIEWED" | "CONFIRMED_FOR_BACKLOG" | "FINISHED" | "REJECTED" | "UP_FOR_REPLAY" | "RESUBMIT" | "DUPLICATE" | null,
     "stateReason": "string" | null,
     "stateDate": "YYYY-MM-DD" | null,
     "originalRecommendationBy": "string" | null,
@@ -2579,7 +2631,8 @@ Array of UnifiedGameSearchResultDto (max 20 results, sorted by name):
       "creationDate": "2024-01-01T12:00:00Z",
       "nameBase": "string",
       "releaseDate": "YYYY-MM-DD" | null,
-      "externalIgdbId": "string" | null
+      "externalIgdbId": "string" | null,
+      "externalIgdbIdImageURL": "string" | null
     } | null
   }
 ]
@@ -2590,6 +2643,9 @@ Notes:
 - resultType BACKLOG_RECOMMENDATION: recommendation with gameRecommendation;
   when gameUid is set, backlogInfo and completions reflect the linked game
 - completion coverImageUid: instance cover when present, otherwise game cover
+- When resultType is BACKLOG_RECOMMENDATION, state is NEW, and gameUid is unset or the linked
+  game does not exist, name and gameRecommendation.nameBase are overwritten with
+  app.backlog-recommendation.awaiting-review-name (default: "Game awaiting Review")
 
 --------------------------------------------------------------------------------
 25.6 List All Backlog Recommendations
@@ -2602,6 +2658,119 @@ Array of BacklogRecommendationViewDto (max 500, ordered by voteRank ascending).
 See section 9.4.5 for full response shape.
 
 ================================================================================
+26. ADDITIONAL IMAGE ENDPOINTS
+================================================================================
+Base Path: /api/additional-images
+
+Standalone images (no game / game-instance / DLC link). Stored on disk in the same
+uid-folder layout as game_image. Intended as stand-ins (e.g. yearly-review entries
+without a proper game). Table: additional_image.
+
+--------------------------------------------------------------------------------
+26.1 Get Additional Image by UID
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/additional-images/{imageUid}
+
+Path Parameters:
+- imageUid (string): Unique identifier of the additional image
+
+Query Parameters:
+- thumbnail (boolean, optional): Request thumbnail vs original
+- aspect (string, optional): VERTICAL | HORIZONTAL | SQUARE | FREE – used when returning placeholder
+
+Behaviour: same as 17.1
+- thumbnail absent → placeholder image
+- thumbnail=false and image exists → original image
+- thumbnail=true and thumbnail exists → thumbnail
+- thumbnail=true and thumbnail absent but original exists → original (fallback)
+- otherwise → placeholder
+
+Response: 200 OK
+Content-Type: image/jpeg
+Body: Binary image data
+
+--------------------------------------------------------------------------------
+26.2 List Additional Images (paginated)
+--------------------------------------------------------------------------------
+Method: GET
+Path: /api/additional-images
+
+Query Parameters:
+- page (int, optional, default 0)
+- size (int, optional, default 50, max 200)
+
+Response: 200 OK
+PageResponseDto of AdditionalImageMetadataDto (newest first by creationDate):
+{
+  "content": [
+    {
+      "uid": "string",
+      "creationDate": "ISO-8601",
+      "type": "COVER" | "SCREENSHOT" | "ARTWORK" | "OTHER",
+      "aspectHint": "VERTICAL" | "HORIZONTAL" | "SQUARE" | "FREE",
+      "source": "MANUAL" | "AI" | "IMPORT",
+      "filename": "string",
+      "mimetype": "string"
+    }
+  ],
+  "page": 0,
+  "size": 50,
+  "totalElements": 0,
+  "totalPages": 0
+}
+
+--------------------------------------------------------------------------------
+26.3 Update Additional Image Metadata
+--------------------------------------------------------------------------------
+Method: PUT
+Path: /api/additional-images/{uid}
+Content-Type: application/json
+
+Path Parameters:
+- uid (string): Unique identifier of the additional image
+
+Request Body (all fields optional; filename and mimetype are not updatable):
+{
+  "type": "COVER" | "SCREENSHOT" | "ARTWORK" | "OTHER",
+  "aspectHint": "VERTICAL" | "HORIZONTAL" | "SQUARE" | "FREE",
+  "source": "MANUAL" | "AI" | "IMPORT"
+}
+
+Response: 200 OK
+(no body)
+
+--------------------------------------------------------------------------------
+26.4 Upload Additional Image
+--------------------------------------------------------------------------------
+Method: POST
+Path: /api/additional-images
+Content-Type: multipart/form-data
+
+Request (form fields):
+- file (file, required): Image file
+- type (string, required): COVER | SCREENSHOT | ARTWORK | OTHER
+- aspectHint (string, required): VERTICAL | HORIZONTAL | SQUARE | FREE
+- source (string, required): MANUAL | AI | IMPORT
+
+Response: 200 OK
+{
+  "uid": "string"
+}
+
+--------------------------------------------------------------------------------
+26.5 Delete Additional Image
+--------------------------------------------------------------------------------
+Method: DELETE
+Path: /api/additional-images/{uid}
+
+Path Parameters:
+- uid (string): Unique identifier of the additional image
+
+Response: 200 OK
+(no body). Removes the additional_image record and associated files (original and thumbnail).
+
+================================================================================
 NOTES
 ================================================================================
 - Most endpoints return JSON; image delivery returns binary image/jpeg
@@ -2610,8 +2779,10 @@ NOTES
   * Instant: ISO-8601 format with timezone (e.g., "2024-01-15T12:00:00Z")
 - All UIDs are string values
 - Error responses are not explicitly defined in the current implementation
-- The API uses Spring Boot's default error handling
+- When app.mode is PUBLIC, write endpoints (POST/PUT/PATCH/DELETE) are blocked with 403 unless listed in section 0.1.
+- Public input limits: feed count / totalCount / maxPerCategory max 1000; recommendation name max 500 chars; comment max 1000 chars.
+- Security access events (403, in-app 429) log to logger at.atypicalbacklog.security.access.
 
 ================================================================================
-Generated: 2026-07-04  |  Document version: 33
+Generated: 2026-08-04  |  Document version: 34
 ================================================================================

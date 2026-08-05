@@ -24,6 +24,10 @@ function toQueryRequestBody(f: LibraryFilterState) {
   };
 }
 
+function queryKey(f: LibraryFilterState): string {
+  return JSON.stringify(toQueryRequestBody(f));
+}
+
 export function useLibraryQuery(filters: LibraryFilterState) {
   const [data, setData] = useState<GameOverviewRowDto[]>([]);
   const [counts, setCounts] = useState<Omit<GameOverviewQueryResponseDto, 'rows'> | null>(null);
@@ -32,6 +36,11 @@ export function useLibraryQuery(filters: LibraryFilterState) {
 
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestIdRef = useRef(0);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  const key = queryKey(filters);
 
   useEffect(() => {
     if (debounceRef.current) {
@@ -39,17 +48,17 @@ export function useLibraryQuery(filters: LibraryFilterState) {
       debounceRef.current = null;
     }
 
-    let cancelled = false;
-
     debounceRef.current = setTimeout(() => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-
-      const body = toQueryRequestBody(filters);
+      const requestId = ++requestIdRef.current;
+      const body = toQueryRequestBody(filtersRef.current);
 
       setError(null);
       setIsLoading(true);
+      // Keep previous rows/counts while fetching so filters stay responsive
+      // (unmounting the full card grid blocks typing).
 
       void (async () => {
         try {
@@ -61,7 +70,7 @@ export function useLibraryQuery(filters: LibraryFilterState) {
               signal: controller.signal,
             }
           );
-          if (cancelled) return;
+          if (requestId !== requestIdRef.current) return;
           setData(result.rows ?? []);
           setCounts({
             gameCount: result.gameCount ?? 0,
@@ -72,12 +81,14 @@ export function useLibraryQuery(filters: LibraryFilterState) {
             returnedDlcCount: result.returnedDlcCount ?? 0,
           });
         } catch (e) {
-          if (cancelled) return;
+          if (requestId !== requestIdRef.current) return;
           if ((e as Error).name !== 'AbortError') {
             setError((e as Error).message || 'Failed to load library.');
+            setData([]);
+            setCounts(null);
           }
         } finally {
-          if (!cancelled) {
+          if (requestId === requestIdRef.current) {
             setIsLoading(false);
           }
         }
@@ -85,14 +96,13 @@ export function useLibraryQuery(filters: LibraryFilterState) {
     }, 300);
 
     return () => {
-      cancelled = true;
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
         debounceRef.current = null;
       }
       abortRef.current?.abort();
     };
-  }, [filters]);
+  }, [key]);
 
   return { data, counts, isLoading, error };
 }

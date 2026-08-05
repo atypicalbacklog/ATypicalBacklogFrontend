@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Accordion,
@@ -15,17 +15,20 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { initialFetchBegin, initialFetchEnd } from '../../app/initialFetchGuard';
+import { fetchBacklogOverview } from '../../services/backlogOverviewApi';
 import { fetchBacklogCompletionGameOverview, fetchGamePlayedPerYear } from '../../services/statisticsApi';
 import type {
   BacklogCompletionGameOverviewDto,
   GamePlayedPerYearDto,
 } from '../../services/statisticsApi';
+import type { BacklogFilterState } from '../backlog/types';
 import SmartImage from '../shared/SmartImage';
-import { uniqueGamesByUid } from '../statistics/backlogChangesUtils';
+import { countUniqueGames, uniqueGamesByUid } from '../statistics/backlogChangesUtils';
 import YearlyReviewYearSelector from '../yearlyReview/YearlyReviewYearSelector';
 import { gameInstanceTo, createGameInstanceReturnState } from '../gameInstances/gameInstanceNavigation';
 
@@ -35,6 +38,21 @@ const YEARS = Array.from(
   { length: CURRENT_YEAR - MIN_YEAR + 1 },
   (_, i) => CURRENT_YEAR - i
 );
+
+const EMPTY_BACKLOG_FILTERS: BacklogFilterState = {
+  searchText: '',
+  consoleUids: [],
+  platformUids: [],
+  hasActivePlaythrough: null,
+  completionStateUids: [],
+};
+
+/** Solid panels so patterned page background does not show through. */
+const solidSegmentSx = {
+  bgcolor: 'rgba(50, 50, 50, 1)',
+  backdropFilter: 'none',
+  backgroundImage: 'none',
+} as const;
 
 function yearFromDate(dateStr: string | null): number | null {
   if (!dateStr) return null;
@@ -52,12 +70,63 @@ function formatPlaytimeHours(seconds: number): string {
   return h > 0 ? `${h}h` : '<1h';
 }
 
+function MetricStat({
+  label,
+  value,
+  color,
+  tooltip,
+}: {
+  label: string;
+  value: ReactNode;
+  color?: string;
+  tooltip?: string;
+}) {
+  const labelEl = (
+    <Typography
+      variant="body2"
+      color="text.secondary"
+      sx={{
+        cursor: tooltip ? 'help' : 'default',
+        width: 'fit-content',
+      }}
+    >
+      {label}
+    </Typography>
+  );
+
+  return (
+    <Box>
+      {tooltip ? (
+        <Tooltip
+          title={tooltip}
+          arrow
+          enterDelay={200}
+          slotProps={{
+            tooltip: { sx: { whiteSpace: 'pre-line', maxWidth: 280 } },
+          }}
+        >
+          {labelEl}
+        </Tooltip>
+      ) : (
+        labelEl
+      )}
+      <Typography
+        component="span"
+        sx={{ color: color ?? 'text.primary', fontWeight: 'bold' }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
 export default function BacklogCompletionOverviewPage() {
   const location = useLocation();
   const instanceReturn = createGameInstanceReturnState(location);
   const [year, setYear] = useState(CURRENT_YEAR);
   const [rows, setRows] = useState<BacklogCompletionGameOverviewDto[]>([]);
   const [gamesPlayedPerYear, setGamesPlayedPerYear] = useState<GamePlayedPerYearDto[]>([]);
+  const [gamesInBacklogCount, setGamesInBacklogCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +153,15 @@ export default function BacklogCompletionOverviewPage() {
     load().finally(() => initialFetchEnd(key));
   }, [load, year]);
 
+  useEffect(() => {
+    const key = 'backlog-completion-games-in-backlog';
+    if (!initialFetchBegin(key)) return;
+    fetchBacklogOverview(EMPTY_BACKLOG_FILTERS)
+      .then((data) => setGamesInBacklogCount(data.length))
+      .catch(() => setGamesInBacklogCount(null))
+      .finally(() => initialFetchEnd(key));
+  }, []);
+
   const addedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.addedToBacklog, year));
   const removedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.removedFromBacklog, year));
   const removedFromSameYear = removedThisYear.filter((r) =>
@@ -93,7 +171,10 @@ export default function BacklogCompletionOverviewPage() {
     (r) => !isInYear(r.addedToBacklog, year)
   );
   const newCount = addedThisYear.length;
-  const forFreeNewCount = addedThisYear.filter((r) => r.forFree).length;
+  const forFreeNewCount = countUniqueGames(
+    rows,
+    (r) => isInYear(r.addedToBacklog, year) && r.forFree
+  );
   const paidNewCount = newCount - forFreeNewCount;
   const removedFrom2026Count = removedFromSameYear.length;
   const removedFromPastCount = removedFromPast.length;
@@ -102,6 +183,9 @@ export default function BacklogCompletionOverviewPage() {
   const completedThisYear = uniqueGamesByUid(rows, (r) => isInYear(r.completedDate, year));
   const finishedCount = finishedThisYear.length;
   const completedCount = completedThisYear.length;
+  const removedWithoutFinishOrCompleteCount = removedThisYear.filter(
+    (r) => !isInYear(r.finishedDate, year) && !isInYear(r.completedDate, year)
+  ).length;
   const finishedConclusion =
     (conclusion > 0 ? -conclusion : conclusion) + finishedCount;
   const completionTotal =
@@ -158,9 +242,14 @@ export default function BacklogCompletionOverviewPage() {
 
   forEachUniqueGame(
     rows.filter((r) => isInYear(r.addedToBacklog, year)),
-    (rec, r) => {
+    (rec) => {
       rec.added += 1;
-      if (r.forFree) rec.forFree += 1;
+    }
+  );
+  forEachUniqueGame(
+    rows.filter((r) => isInYear(r.receivedDate, year) && r.forFree),
+    (rec) => {
+      rec.forFree += 1;
     }
   );
   forEachUniqueGame(
@@ -216,7 +305,7 @@ export default function BacklogCompletionOverviewPage() {
         onYearChange={setYear}
       />
 
-      <Accordion defaultExpanded={false} sx={{ '&:before': { display: 'none' } }}>
+      <Accordion defaultExpanded={false} sx={{ ...solidSegmentSx, '&:before': { display: 'none' } }}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="body2">
             Games played in {year} ({gamesPlayedPerYear.length})
@@ -286,148 +375,92 @@ export default function BacklogCompletionOverviewPage() {
       ) : (
         <>
           {/* Group 1: Backlog breakdown + bonus */}
-          <Card variant="outlined">
+          <Card variant="outlined" sx={solidSegmentSx}>
             <CardContent>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
-                Backlog
+                Backlog changes this year
               </Typography>
               <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    New
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: newCount === 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {newCount}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Paid
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: paidNewCount === 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {paidNewCount}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Removed from {String(year)}
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: removedFrom2026Count > 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {removedFrom2026Count}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Removed from Past
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: removedFromPastCount > 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {removedFromPastCount}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Finished games
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: finishedCount > 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {finishedCount}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Complete games
-                  </Typography>
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: completedCount > 0 ? 'success.main' : 'error.main',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    {completedCount}
-                  </Typography>
-                </Box>
+                <MetricStat
+                  label="Games in Backlog"
+                  value={gamesInBacklogCount ?? '–'}
+                  color={
+                    gamesInBacklogCount != null && gamesInBacklogCount > 30
+                      ? 'error.main'
+                      : 'success.main'
+                  }
+                  tooltip={'Good: below ~30\nBad: more than that'}
+                />
+                <MetricStat
+                  label="New"
+                  value={newCount}
+                  color={newCount === 0 ? 'success.main' : 'error.main'}
+                  tooltip={'Should only get smaller so...\nGood: 0\nBad: more than that'}
+                />
+                <MetricStat
+                  label="Paid"
+                  value={paidNewCount}
+                />
+                <MetricStat
+                  label={`Removed from ${String(year)}`}
+                  value={removedFrom2026Count}
+                  color={removedFrom2026Count > 0 ? 'success.main' : 'error.main'}
+                  tooltip={'Good: more than 0\nBad: 0'}
+                />
+                <MetricStat
+                  label="Removed from Past"
+                  value={removedFromPastCount}
+                  color={removedFromPastCount > 0 ? 'success.main' : 'error.main'}
+                  tooltip={'Good: more than 0\nBad: 0'}
+                />
+                <MetricStat
+                  label={`Finished games ${String(year)}`}
+                  value={finishedCount}
+                  color={finishedCount > 0 ? 'success.main' : 'error.main'}
+                />
+                <MetricStat
+                  label={`Completed games ${String(year)}`}
+                  value={completedCount}
+                  color={completedCount > 0 ? 'success.main' : 'error.main'}
+                />
+                <MetricStat
+                  label="Removed without finishing/completing"
+                  value={removedWithoutFinishOrCompleteCount}
+                />
               </Stack>
               <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
                 <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Remaining new backlog additions
-                    </Typography>
-                    <Typography
-                      component="span"
-                      sx={{
-                        color: conclusion > 0 ? 'error.main' : 'success.main',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {conclusion}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Score for finished games
-                    </Typography>
-                    <Typography
-                      component="span"
-                      sx={{
-                        color: finishedConclusion < 0 ? 'error.main' : 'success.main',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {finishedConclusion}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Score for completed games
-                    </Typography>
-                    <Typography
-                      component="span"
-                      sx={{
-                        color: completionTotal < 0 ? 'error.main' : 'success.main',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {completionTotal}
-                    </Typography>
-                  </Box>
+                  <MetricStat
+                    label="Remaining new backlog additions"
+                    value={conclusion}
+                    color={conclusion > 0 ? 'error.main' : 'success.main'}
+                    tooltip={
+                      'Good: 0 or less (cleared at least as many as were added)\nBad: more than 0 (backlog still grew)'
+                    }
+                  />
+                  <MetricStat
+                    label="Score for finished games"
+                    value={finishedConclusion}
+                    color={finishedConclusion < 0 ? 'error.main' : 'success.main'}
+                    tooltip={
+                      'Finished Games +/- Backlog Add/Remove Breakdown (+ if more gomes removed, - if more added).\nGood: 0 or higher\nBad: below 0'
+                    }
+                  />
+                  <MetricStat
+                    label="Score for completed games"
+                    value={completionTotal}
+                    color={completionTotal < 0 ? 'error.main' : 'success.main'}
+                    tooltip={
+                      'Completed Games +/- Backlog Add/Remove Breakdown (+ if more gomes removed, - if more added).\nGood: 0 or higher\nBad: below 0'
+                    }
+                  />
                 </Stack>
               </Box>
             </CardContent>
           </Card>
 
           {/* Group 2: By console/platform */}
-          <Card variant="outlined">
+          <Card variant="outlined" sx={solidSegmentSx}>
             <CardContent>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                 Sum of games by platform
@@ -446,7 +479,7 @@ export default function BacklogCompletionOverviewPage() {
                   <TableRow>
                     <TableCell>Platform</TableCell>
                     <TableCell align="right">Added this year</TableCell>
-                    <TableCell align="right">For free</TableCell>
+                    <TableCell align="right">Received for free</TableCell>
                     <TableCell align="right">Removed this year</TableCell>
                     <TableCell align="right">Received this year</TableCell>
                     <TableCell align="right">Finished this year</TableCell>
@@ -471,7 +504,7 @@ export default function BacklogCompletionOverviewPage() {
           </Card>
 
           {/* Group 3: Removed / finished / completed this year + added to backlog (not received) this year */}
-          <Card variant="outlined">
+          <Card variant="outlined" sx={solidSegmentSx}>
             <CardContent>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                 Removed / finished / completed this year (and games added to backlog but not received this year)
@@ -531,7 +564,7 @@ export default function BacklogCompletionOverviewPage() {
           </Card>
 
           {/* Group 4: Received this year, not in group 3 */}
-          <Card variant="outlined">
+          <Card variant="outlined" sx={solidSegmentSx}>
             <CardContent>
               <Typography variant="subtitle1" gutterBottom fontWeight="bold">
                 Received this year (not in list above)
