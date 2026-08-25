@@ -5,7 +5,9 @@ export function normalizeYearlyReviewGamePresentationType(
   value: YearlyReviewGamePresentationType | string | null | undefined
 ): YearlyReviewGamePresentationType {
   const upper = (value ?? 'DEFAULT').toString().toUpperCase();
-  if (upper === 'IMAGE_LEFT' || upper === 'IMAGE_RIGHT') return upper;
+  if (upper === 'IMAGE_LEFT' || upper === 'IMAGE_RIGHT' || upper === 'COLUMN_WIDE') {
+    return upper;
+  }
   return 'DEFAULT';
 }
 
@@ -14,6 +16,22 @@ export function isSideImagePresentation(
 ): boolean {
   const type = normalizeYearlyReviewGamePresentationType(value);
   return type === 'IMAGE_LEFT' || type === 'IMAGE_RIGHT';
+}
+
+export function isColumnWidePresentation(
+  value: YearlyReviewGamePresentationType | string | null | undefined
+): boolean {
+  return normalizeYearlyReviewGamePresentationType(value) === 'COLUMN_WIDE';
+}
+
+/** Explicit text-only stand-in (no game / additional / preferred image). */
+export function isTextOnlyYearlyReviewGame(game: YearlyReviewGameDto): boolean {
+  return (
+    !game.gameUid &&
+    !game.gameInstanceUid &&
+    !game.additionalImageUid &&
+    !game.preferredImageUid
+  );
 }
 
 /** Matches default category game card dimensions (MUI `spacing={2}` gap = 16px). */
@@ -94,6 +112,7 @@ export function yearlyReviewSideCardSlotWeight(
   game: YearlyReviewGameDto,
   compact = false
 ): number {
+  if (isColumnWidePresentation(game.presentationType)) return Number.POSITIVE_INFINITY;
   if (!isSideImagePresentation(game.presentationType)) return 1;
   if (compact) return 2;
   return yearlyReviewSideSegmentCount(game.text);
@@ -130,9 +149,43 @@ export const YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS: {
   { value: 'DEFAULT', label: 'Default' },
   { value: 'IMAGE_LEFT', label: 'Image left' },
   { value: 'IMAGE_RIGHT', label: 'Image right' },
+  { value: 'COLUMN_WIDE', label: 'Column-Wide' },
 ];
 
-/** Lay out category games into rows; side-image cards consume one slot per segment. */
+/** Presentation choices allowed for text-only (no image) entries. */
+export const YEARLY_REVIEW_TEXT_ONLY_PRESENTATION_OPTIONS =
+  YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS.filter(
+    (o) => o.value === 'DEFAULT' || o.value === 'COLUMN_WIDE'
+  );
+
+/** Presentation choices when a game or additional image is linked. */
+export const YEARLY_REVIEW_IMAGE_PRESENTATION_OPTIONS =
+  YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS.filter((o) => o.value !== 'COLUMN_WIDE');
+
+/**
+ * How many default-card slots fit in a category row for the given pixel width.
+ * Caps at 6 (desktop) / 2 (compact); never below 1.
+ */
+export function yearlyReviewMaxSlotsForWidth(
+  widthPx: number,
+  compact = false
+): number {
+  const segmentWidth = compact
+    ? YEARLY_REVIEW_DEFAULT_CARD_WIDTH_COMPACT
+    : YEARLY_REVIEW_DEFAULT_CARD_WIDTH;
+  const gap = compact ? YEARLY_REVIEW_CATEGORY_GAME_GAP_COMPACT : YEARLY_REVIEW_CATEGORY_GAME_GAP;
+  const maxCap = compact ? 2 : 6;
+  // Unknown width: stay conservative so nowrap rows do not overflow before measure.
+  if (!(widthPx > 0)) return 1;
+  const slots = Math.floor((widthPx + gap) / (segmentWidth + gap));
+  return Math.max(1, Math.min(maxCap, slots));
+}
+
+/**
+ * Lay out category games into rows.
+ * Side-image cards consume one slot per segment; COLUMN_WIDE always gets its own full row.
+ * Items wider than the row (slots > maxSlots) occupy a solitary row.
+ */
 export function chunkYearlyReviewGames(
   items: YearlyReviewGameDto[],
   maxSlotsPerRow = 6,
@@ -142,10 +195,31 @@ export function chunkYearlyReviewGames(
   const rows: YearlyReviewGameDto[][] = [];
   let currentRow: YearlyReviewGameDto[] = [];
   let currentSlots = 0;
+  const maxSlots = Math.max(1, maxSlotsPerRow);
 
   for (const item of items) {
+    if (isColumnWidePresentation(item.presentationType)) {
+      if (currentRow.length > 0) {
+        rows.push(currentRow);
+        currentRow = [];
+        currentSlots = 0;
+      }
+      rows.push([item]);
+      continue;
+    }
+
     const slots = yearlyReviewSideCardSlotWeight(item, compact);
-    if (currentRow.length > 0 && currentSlots + slots > maxSlotsPerRow) {
+    if (slots > maxSlots) {
+      if (currentRow.length > 0) {
+        rows.push(currentRow);
+        currentRow = [];
+        currentSlots = 0;
+      }
+      rows.push([item]);
+      continue;
+    }
+
+    if (currentRow.length > 0 && currentSlots + slots > maxSlots) {
       rows.push(currentRow);
       currentRow = [];
       currentSlots = 0;

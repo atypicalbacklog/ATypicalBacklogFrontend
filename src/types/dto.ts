@@ -229,7 +229,11 @@ export interface ReduceTimeBookingDurationRequestDto {
 
 export type ReviewPresentationType = 'DEFAULT' | 'UPDATED' | 'REPEAT' | 'REPLACED';
 
-export type YearlyReviewGamePresentationType = 'DEFAULT' | 'IMAGE_LEFT' | 'IMAGE_RIGHT';
+export type YearlyReviewGamePresentationType =
+  | 'DEFAULT'
+  | 'IMAGE_LEFT'
+  | 'IMAGE_RIGHT'
+  | 'COLUMN_WIDE';
 
 export interface ReviewSearchLinkedDlcDto {
   uid: string;

@@ -47,10 +47,14 @@ import YearlyReviewGameCard from './YearlyReviewGameCard';
 import SmartImage from '../shared/SmartImage';
 import AdditionalImagePickerModal from './AdditionalImagePickerModal';
 import {
-  YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS,
+  YEARLY_REVIEW_IMAGE_PRESENTATION_OPTIONS,
+  YEARLY_REVIEW_TEXT_ONLY_PRESENTATION_OPTIONS,
   chunkYearlyReviewGames,
+  isColumnWidePresentation,
+  isSideImagePresentation,
   normalizeYearlyReviewGamePresentationType,
 } from './yearlyReviewGamePresentationUtils';
+import { useYearlyReviewCategoryMaxSlots } from './useYearlyReviewCategoryMaxSlots';
 import {
   yearlyReviewBlurredPanelSx,
   yearlyReviewIntroOutroTextFieldSx,
@@ -104,6 +108,7 @@ export default function YearlyReviewEditPage() {
   const [preferredImageUid, setPreferredImageUid] = useState<string | null>(null);
   const [additionalImageUid, setAdditionalImageUid] = useState<string | null>(null);
   const [additionalImagePickerOpen, setAdditionalImagePickerOpen] = useState(false);
+  const [textOnlyMode, setTextOnlyMode] = useState(false);
   const [gamePresentationType, setGamePresentationType] =
     useState<YearlyReviewGamePresentationType>('DEFAULT');
   const [gameImages, setGameImages] = useState<{ uid: string }[]>([]);
@@ -115,6 +120,11 @@ export default function YearlyReviewEditPage() {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  // Reserve add-button + gap so the last nowrap row does not overflow.
+  const { containerRef: categoryGamesRef, maxSlots: categoryMaxSlots } =
+    useYearlyReviewCategoryMaxSlots(isMobile, {
+      reservedWidthPx: isMobile ? 40 + 8 : 40 + 16,
+    });
 
   useEffect(() => {
     const fromUrl = parseYearParam();
@@ -296,6 +306,7 @@ export default function YearlyReviewEditPage() {
     setGameText('');
     setPreferredImageUid(null);
     setAdditionalImageUid(null);
+    setTextOnlyMode(false);
     setGamePresentationType('DEFAULT');
     setGameSearchQuery('');
     setGameSearchResults([]);
@@ -307,7 +318,16 @@ export default function YearlyReviewEditPage() {
     setGameText(game.text ?? '');
     setPreferredImageUid(game.preferredImageUid);
     setAdditionalImageUid(game.additionalImageUid ?? null);
-    setGamePresentationType(normalizeYearlyReviewGamePresentationType(game.presentationType));
+    const textOnly = !game.gameUid && !game.additionalImageUid;
+    setTextOnlyMode(textOnly);
+    let presentation = normalizeYearlyReviewGamePresentationType(game.presentationType);
+    if (textOnly && (presentation === 'IMAGE_LEFT' || presentation === 'IMAGE_RIGHT')) {
+      presentation = 'DEFAULT';
+    }
+    if (!textOnly && presentation === 'COLUMN_WIDE') {
+      presentation = 'DEFAULT';
+    }
+    setGamePresentationType(presentation);
     setGameSearchQuery('');
     setGameSearchResults([]);
     if (game.gameUid && !game.additionalImageUid) {
@@ -332,24 +352,32 @@ export default function YearlyReviewEditPage() {
     if (!data || !gameEditTarget) return;
     const category = data.categories.find((c) => c.uid === gameEditTarget.categoryUid);
     if (!category) return;
-    if (!additionalImageUid && !selectedRow) {
-      setError('Select a game/instance or an additional image');
+    const textOnly = !additionalImageUid && !selectedRow;
+    if (textOnly && !gameText.trim()) {
+      setError('Select a game/instance, an additional image, or enter text');
       return;
     }
     setGameSaving(true);
     try {
       const order = gameEditTarget.game != null ? gameEditTarget.game.order : category.games.length;
       const usingAdditional = Boolean(additionalImageUid);
+      let presentation = gamePresentationType;
+      if (textOnly && (presentation === 'IMAGE_LEFT' || presentation === 'IMAGE_RIGHT')) {
+        presentation = 'DEFAULT';
+      }
+      if (!textOnly && presentation === 'COLUMN_WIDE') {
+        presentation = 'DEFAULT';
+      }
       const payload: UpsertYearlyReviewGameRequest = {
         uid: gameEditTarget.game?.uid ?? null,
         categoryUid: gameEditTarget.categoryUid,
-        gameUid: usingAdditional ? null : (selectedRow?.gameUid ?? null),
-        gameInstanceUid: usingAdditional ? null : (selectedRow?.gameInstanceUid ?? null),
-        preferredImageUid: usingAdditional ? null : preferredImageUid,
+        gameUid: usingAdditional || textOnly ? null : (selectedRow?.gameUid ?? null),
+        gameInstanceUid: usingAdditional || textOnly ? null : (selectedRow?.gameInstanceUid ?? null),
+        preferredImageUid: usingAdditional || textOnly ? null : preferredImageUid,
         additionalImageUid: usingAdditional ? additionalImageUid : null,
         text: gameText.trim() || null,
         order,
-        presentationType: gamePresentationType,
+        presentationType: presentation,
       };
       await YearlyReviewApi.upsertGame(payload);
       setGameDialogOpen(false);
@@ -492,7 +520,7 @@ export default function YearlyReviewEditPage() {
       {loading && <CircularProgress />}
 
       {!loading && data && (
-        <Stack spacing={4}>
+        <Stack ref={categoryGamesRef} spacing={4}>
           {sortedCategories.map((category, catIdx) => (
             <Box key={category.uid} sx={yearlyReviewBlurredPanelSx}>
               {catIdx === 0 && (
@@ -540,7 +568,7 @@ export default function YearlyReviewEditPage() {
               <Stack spacing={2}>
                 {(() => {
                   const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
-                  const rows = chunkYearlyReviewGames(gamesSorted, isMobile ? 2 : 6, isMobile);
+                  const rows = chunkYearlyReviewGames(gamesSorted, categoryMaxSlots, isMobile);
                   let globalIdx = 0;
 
                   const isActiveCategory = dragState?.categoryUid === category.uid;
@@ -608,8 +636,9 @@ export default function YearlyReviewEditPage() {
                           key={rowIdx}
                           direction="row"
                           spacing={isMobile ? 1 : 2}
-                          flexWrap="wrap"
+                          flexWrap="nowrap"
                           alignItems="flex-start"
+                          sx={{ width: '100%' }}
                         >
                           {row.map((game) => {
                             const idx = globalIdx++;
@@ -618,6 +647,7 @@ export default function YearlyReviewEditPage() {
                               isActiveCategory &&
                               activeInsertIndex === gamesSorted.length &&
                               idx === gamesSorted.length - 1;
+                            const columnWide = isColumnWidePresentation(game.presentationType);
 
                             return (
                               <Box
@@ -643,6 +673,11 @@ export default function YearlyReviewEditPage() {
                                 }}
                                 sx={{
                                   position: 'relative',
+                                  ...(columnWide
+                                    ? { flex: '1 1 100%', maxWidth: '100%', width: '100%', minWidth: 0 }
+                                    : isMobile && isSideImagePresentation(game.presentationType)
+                                      ? { flex: '1 1 100%', maxWidth: '100%', minWidth: 0 }
+                                      : { flexShrink: 0 }),
                                   '&::before': showBefore
                                     ? {
                                         content: '""',
@@ -804,9 +839,30 @@ export default function YearlyReviewEditPage() {
                       size="small"
                       onClick={() => {
                         setAdditionalImageUid(null);
+                        setTextOnlyMode(false);
+                        if (gamePresentationType === 'COLUMN_WIDE') {
+                          setGamePresentationType('DEFAULT');
+                        }
                       }}
                     >
                       Use game instead
+                    </Button>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setAdditionalImageUid(null);
+                        setSelectedRow(null);
+                        setPreferredImageUid(null);
+                        setTextOnlyMode(true);
+                        if (
+                          gamePresentationType === 'IMAGE_LEFT' ||
+                          gamePresentationType === 'IMAGE_RIGHT'
+                        ) {
+                          setGamePresentationType('DEFAULT');
+                        }
+                      }}
+                    >
+                      No image (text only)
                     </Button>
                   </Stack>
                 </Stack>
@@ -831,7 +887,33 @@ export default function YearlyReviewEditPage() {
                   >
                     Use additional image
                   </Button>
+                  <Button
+                    size="small"
+                    variant={textOnlyMode ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setSelectedRow(null);
+                      setPreferredImageUid(null);
+                      setAdditionalImageUid(null);
+                      setTextOnlyMode(true);
+                      if (
+                        gamePresentationType === 'IMAGE_LEFT' ||
+                        gamePresentationType === 'IMAGE_RIGHT'
+                      ) {
+                        setGamePresentationType('DEFAULT');
+                      }
+                      setGameSearchQuery('');
+                      setGameSearchResults([]);
+                    }}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    No image (text only)
+                  </Button>
                 </Stack>
+                {textOnlyMode && (
+                  <Typography variant="body2" color="text.secondary">
+                    Text-only entry: no game link and no image. Enter text below to save.
+                  </Typography>
+                )}
                 {gameSearching && <CircularProgress size={24} />}
                 {gameSearchResults.length > 0 && (
                   <Box sx={{ maxHeight: 200, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
@@ -841,6 +923,10 @@ export default function YearlyReviewEditPage() {
                         onClick={() => {
                           setSelectedRow(r);
                           setAdditionalImageUid(null);
+                          setTextOnlyMode(false);
+                          if (gamePresentationType === 'COLUMN_WIDE') {
+                            setGamePresentationType('DEFAULT');
+                          }
                         }}
                         sx={{
                           p: 1,
@@ -928,7 +1014,10 @@ export default function YearlyReviewEditPage() {
                   )
                 }
               >
-                {YEARLY_REVIEW_GAME_PRESENTATION_OPTIONS.map((opt) => (
+                {(textOnlyMode
+                  ? YEARLY_REVIEW_TEXT_ONLY_PRESENTATION_OPTIONS
+                  : YEARLY_REVIEW_IMAGE_PRESENTATION_OPTIONS
+                ).map((opt) => (
                   <FormControlLabel
                     key={opt.value}
                     value={opt.value}
@@ -945,7 +1034,10 @@ export default function YearlyReviewEditPage() {
           <Button
             variant="contained"
             onClick={saveGame}
-            disabled={gameSaving || (!selectedRow && !additionalImageUid)}
+            disabled={
+              gameSaving ||
+              (!selectedRow && !additionalImageUid && !gameText.trim())
+            }
           >
             {gameSaving ? 'Saving…' : 'Save'}
           </Button>
@@ -960,6 +1052,10 @@ export default function YearlyReviewEditPage() {
           setAdditionalImageUid(uid);
           setSelectedRow(null);
           setPreferredImageUid(null);
+          setTextOnlyMode(false);
+          if (gamePresentationType === 'COLUMN_WIDE') {
+            setGamePresentationType('DEFAULT');
+          }
           setGameSearchQuery('');
           setGameSearchResults([]);
         }}

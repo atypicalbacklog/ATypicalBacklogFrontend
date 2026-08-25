@@ -26,7 +26,7 @@ import SmartImage from '../shared/SmartImage';
 import AddAdditionalImageDialog from './AddAdditionalImageDialog';
 import EditAdditionalImageModal from './EditAdditionalImageModal';
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 56;
 
 function formatMetaValue(v: string | null | undefined): string {
   return v != null && v !== '' ? String(v) : '—';

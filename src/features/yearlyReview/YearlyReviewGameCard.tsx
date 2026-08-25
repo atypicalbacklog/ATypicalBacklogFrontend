@@ -11,6 +11,7 @@ import type { YearlyReviewGameDto } from '../../services/yearlyReviewApi';
 import type { GameDTO, GameInstanceDetailDTO, YearlyReviewGamePresentationType } from '../../types/dto';
 import {
   isSideImagePresentation,
+  isTextOnlyYearlyReviewGame,
   normalizeYearlyReviewGamePresentationType,
   yearlyReviewSideCardWidth,
   yearlyReviewSideImageHeight,
@@ -22,6 +23,7 @@ import {
   YEARLY_REVIEW_SIDE_TEXT_FONT_STEPS_COMPACT,
   YEARLY_REVIEW_SIDE_TEXT_OVERFLOW_TOLERANCE_PX,
 } from './yearlyReviewGamePresentationUtils';
+import TextOnlyYearlyReviewCard from './TextOnlyYearlyReviewCard';
 
 const CARD_WIDTH = 200;
 const CARD_HEIGHT = 330;
@@ -30,12 +32,41 @@ const CARD_HEIGHT_COMPACT = 180;
 const TEXT_FONT_SIZE_DEFAULT = '1.0rem';
 const TEXT_FONT_SIZE_SMALL = '0.85rem';
 const TEXT_FONT_SIZE_MIN = '0.75rem';
+/** Extra step on compact cards so long text can shrink before the image is crushed. */
+const TEXT_FONT_SIZE_COMPACT_MIN = '0.65rem';
+const TEXT_FONT_SIZE_STEPS = [
+  TEXT_FONT_SIZE_DEFAULT,
+  TEXT_FONT_SIZE_SMALL,
+  TEXT_FONT_SIZE_MIN,
+] as const;
+const TEXT_FONT_SIZE_STEPS_COMPACT = [
+  TEXT_FONT_SIZE_DEFAULT,
+  TEXT_FONT_SIZE_SMALL,
+  TEXT_FONT_SIZE_MIN,
+  TEXT_FONT_SIZE_COMPACT_MIN,
+] as const;
 
 const DEFAULT_IMAGE_HEIGHT = CARD_HEIGHT - 40;
 const MIN_IMAGE_HEIGHT = 80;
 const DEFAULT_IMAGE_HEIGHT_COMPACT = CARD_HEIGHT_COMPACT - 32;
-const MIN_IMAGE_HEIGHT_COMPACT = 48;
+/** Keep covers readable on mobile; leftover text scrolls. */
+const MIN_IMAGE_HEIGHT_COMPACT = 72;
 const IMAGE_SHRINK_STEP_PX = 20;
+
+function nextDefaultTextFontSize(
+  current: string,
+  compact: boolean
+): string {
+  const steps = compact ? TEXT_FONT_SIZE_STEPS_COMPACT : TEXT_FONT_SIZE_STEPS;
+  const idx = (steps as readonly string[]).indexOf(current);
+  if (idx < 0) return steps[1] ?? steps[0];
+  return steps[Math.min(idx + 1, steps.length - 1)];
+}
+
+function isDefaultTextFontAtMin(current: string, compact: boolean): boolean {
+  const steps = compact ? TEXT_FONT_SIZE_STEPS_COMPACT : TEXT_FONT_SIZE_STEPS;
+  return current === steps[steps.length - 1];
+}
 
 interface Props {
   game: YearlyReviewGameDto;
@@ -434,6 +465,7 @@ function DefaultLayoutCard({
   const [imageHeight, setImageHeight] = useState<number>(defaultImageHeight);
   const [textFontSize, setTextFontSize] = useState(TEXT_FONT_SIZE_DEFAULT);
   const textRef = useRef<HTMLParagraphElement>(null);
+  const textContainerRef = useRef<HTMLDivElement>(null);
   const defaultImageRef = useRef<HTMLImageElement | null>(null);
 
   const applyDefaultImageHeight = (img: HTMLImageElement) => {
@@ -458,20 +490,22 @@ function DefaultLayoutCard({
     setImageHeight(baseImageHeight);
   }, [game.text, baseImageHeight]);
 
+  const textOverflows = () => {
+    const container = textContainerRef.current;
+    if (!container || container.clientHeight <= 0) return false;
+    return container.scrollHeight > container.clientHeight + 1;
+  };
+
   // Measure after layout + image area updates; double rAF avoids stale clientHeight on first paint.
   useEffect(() => {
-    if (!game.text || !textRef.current) return;
+    if (!game.text) return;
     let cancelled = false;
     let frame = 0;
 
     const measure = () => {
-      if (cancelled || !textRef.current) return;
-      const el = textRef.current;
-      if (el.clientHeight <= 0) return;
-      if (el.scrollHeight <= el.clientHeight) return;
-      setTextFontSize((prev) =>
-        prev === TEXT_FONT_SIZE_DEFAULT ? TEXT_FONT_SIZE_SMALL : TEXT_FONT_SIZE_MIN
-      );
+      if (cancelled || !textOverflows()) return;
+      if (isDefaultTextFontAtMin(textFontSize, compact)) return;
+      setTextFontSize((prev) => nextDefaultTextFontSize(prev, compact));
     };
 
     frame = requestAnimationFrame(() => {
@@ -482,7 +516,7 @@ function DefaultLayoutCard({
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [game.text, game.uid, imageHeight, textFontSize]);
+  }, [game.text, game.uid, imageHeight, textFontSize, compact]);
 
   useLayoutEffect(() => {
     if (!imageUrl) return;
@@ -497,16 +531,13 @@ function DefaultLayoutCard({
   };
 
   useEffect(() => {
-    if (!game.text || !textRef.current) return;
+    if (!game.text) return;
     let cancelled = false;
     let frame = 0;
 
     const measure = () => {
-      if (cancelled || !textRef.current) return;
-      const el = textRef.current;
-      if (el.clientHeight <= 0) return;
-      if (el.scrollHeight <= el.clientHeight) return;
-      if (textFontSize !== TEXT_FONT_SIZE_MIN) return;
+      if (cancelled || !textOverflows()) return;
+      if (!isDefaultTextFontAtMin(textFontSize, compact)) return;
       if (imageHeight <= minImageHeight) return;
       setImageHeight((prev) => Math.max(minImageHeight, prev - IMAGE_SHRINK_STEP_PX));
     };
@@ -519,7 +550,7 @@ function DefaultLayoutCard({
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [game.text, game.uid, textFontSize, imageHeight, minImageHeight]);
+  }, [game.text, game.uid, textFontSize, imageHeight, minImageHeight, compact]);
 
   return (
     <Box
@@ -574,15 +605,25 @@ function DefaultLayoutCard({
       </Box>
       {game.text ? (
         <Box
+          ref={textContainerRef}
           sx={{
             flex: '1 1 0',
             minHeight: 0,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: compact ? 'flex-start' : 'center',
             justifyContent: 'center',
-            overflow: 'hidden',
+            overflow: compact ? 'auto' : 'hidden',
             px: compact ? 0 : 0.25,
             py: compact ? 0 : 0.25,
+            WebkitOverflowScrolling: 'touch',
+          }}
+          onClick={(e) => {
+            if (
+              compact &&
+              e.currentTarget.scrollHeight > e.currentTarget.clientHeight
+            ) {
+              e.stopPropagation();
+            }
           }}
         >
           <Typography
@@ -590,10 +631,8 @@ function DefaultLayoutCard({
             color="text.secondary"
             sx={{
               width: '100%',
-              maxHeight: '100%',
               fontSize: textFontSize,
               lineHeight: 1.35,
-              overflow: 'hidden',
               textAlign: 'center',
               wordBreak: 'break-word',
             }}
@@ -608,8 +647,13 @@ function DefaultLayoutCard({
 }
 
 export default function YearlyReviewGameCard({ game, onEdit, compact = false }: Props) {
+  const textOnly = isTextOnlyYearlyReviewGame(game);
   const resolved = useResolvedGame(game);
   const presentationType = normalizeYearlyReviewGamePresentationType(game.presentationType);
+
+  if (textOnly) {
+    return <TextOnlyYearlyReviewCard game={game} onEdit={onEdit} compact={compact} />;
+  }
 
   if (isSideImagePresentation(presentationType)) {
     return (

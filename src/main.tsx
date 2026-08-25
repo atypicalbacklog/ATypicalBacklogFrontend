@@ -6,11 +6,12 @@ import CssBaseline from '@mui/material/CssBaseline';
 import App from './app/App';
 import { ReferenceDataProvider } from './referenceData/ReferenceDataContext';
 import { theme } from './app/theme';
-import { loadAppConfig } from './app/AppConfig';
+import { loadAppConfig, startAppConfigDeployWatch } from './app/AppConfig';
 
 async function bootstrap() {
   try {
-    await loadAppConfig();
+    const ready = await loadAppConfig();
+    if (!ready) return;
   } catch (error) {
     // If app config cannot be loaded from the backend, fail fast.
     const container = document.getElementById('root');
@@ -20,6 +21,8 @@ async function bootstrap() {
     console.error(error);
     return;
   }
+
+  startAppConfigDeployWatch();
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

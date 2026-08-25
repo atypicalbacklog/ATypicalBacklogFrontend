@@ -43,13 +43,15 @@ import ConsoleVariantPlaytimeStackedBarChart from '../statistics/charts/ConsoleV
 import ConsoleVariantGameCountStackedBarChart from '../statistics/charts/ConsoleVariantGameCountStackedBarChart';
 import type { ConsoleVariantPlaytimeRow } from '../statistics/charts/ConsoleVariantPlaytimeStackedBarChart';
 import TierEntryCardView from '../reviews/TierEntryCardView';
+import { sortTierlistCardsByName } from '../reviews/reviewPresentationUtils';
 import YearlyReviewGameCard from './YearlyReviewGameCard';
 import YearlyReviewYearSelector from './YearlyReviewYearSelector';
 import {
   getSelectableReviewYears,
   LAST_CALENDAR_YEAR,
 } from './yearlyReviewYearUtils';
-import { chunkYearlyReviewGames, isSideImagePresentation } from './yearlyReviewGamePresentationUtils';
+import { chunkYearlyReviewGames, isColumnWidePresentation, isSideImagePresentation } from './yearlyReviewGamePresentationUtils';
+import { useYearlyReviewCategoryMaxSlots } from './useYearlyReviewCategoryMaxSlots';
 import {
   yearlyReviewSolidTextPanelSx,
 } from './yearlyReviewPanelStyles';
@@ -72,6 +74,8 @@ function cardTierUid(card: ReviewSearchResultDto): string | null {
 export default function YearlyReviewPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { containerRef: categoryGamesRef, maxSlots: categoryMaxSlots } =
+    useYearlyReviewCategoryMaxSlots(isMobile);
   const { referenceData, isLoaded } = useReferenceData();
   const [searchParams, setSearchParams] = useSearchParams();
   const years = getSelectableReviewYears();
@@ -212,7 +216,7 @@ export default function YearlyReviewPage() {
     (a, b) => (a.order ?? 0) - (b.order ?? 0)
   );
   const cardsByTier = (tierUid: string) =>
-    tierlistResults.filter((c) => cardTierUid(c) === tierUid);
+    sortTierlistCardsByName(tierlistResults.filter((c) => cardTierUid(c) === tierUid));
   const tierListCardsOnly = tierlistResults.filter((c) => cardTierUid(c) != null);
 
   const categories = yearlyReview?.categories ?? [];
@@ -419,10 +423,18 @@ export default function YearlyReviewPage() {
 
           {sortedCategories.length > 0 && (
             <Box sx={landingPageCenteredColumnSx}>
+              {/* Match panel horizontal padding so slot math uses the games row width. */}
+              <Box sx={{ px: 2, width: '100%' }}>
+                <Box
+                  ref={categoryGamesRef}
+                  aria-hidden
+                  sx={{ width: '100%', height: 0, overflow: 'hidden' }}
+                />
+              </Box>
               <Stack spacing={4}>
                 {sortedCategories.map((category) => {
                   const gamesSorted = [...category.games].sort((a, b) => a.order - b.order);
-                  const rows = chunkYearlyReviewGames(gamesSorted, isMobile ? 2 : 6, isMobile);
+                  const rows = chunkYearlyReviewGames(gamesSorted, categoryMaxSlots, isMobile);
                   return (
                     <Box key={category.uid} sx={yearlyReviewSolidTextPanelSx}>
                       <Typography variant="h6" sx={{ mb: 1, textAlign: 'center' }}>
@@ -434,7 +446,7 @@ export default function YearlyReviewPage() {
                             key={rowIdx}
                             direction="row"
                             spacing={isMobile ? 1 : 2}
-                            flexWrap="wrap"
+                            flexWrap="nowrap"
                             justifyContent="center"
                             sx={{ width: '100%' }}
                           >
@@ -442,9 +454,11 @@ export default function YearlyReviewPage() {
                               <Box
                                 key={game.uid}
                                 sx={
-                                  isMobile && isSideImagePresentation(game.presentationType)
-                                    ? { flex: '1 1 100%', maxWidth: '100%', minWidth: 0 }
-                                    : undefined
+                                  isColumnWidePresentation(game.presentationType)
+                                    ? { flex: '1 1 100%', maxWidth: '100%', width: '100%', minWidth: 0 }
+                                    : isMobile && isSideImagePresentation(game.presentationType)
+                                      ? { flex: '1 1 100%', maxWidth: '100%', minWidth: 0 }
+                                      : { flexShrink: 0 }
                                 }
                               >
                                 <YearlyReviewGameCard game={game} compact={isMobile} />

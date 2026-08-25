@@ -1,7 +1,7 @@
 ================================================================================
 ATYPICAL BACKLOG MANAGEMENT API - ENDPOINT CONTRACTS
 ================================================================================
-Version: 34
+Version: 35
 Base URL: http://localhost:8080
 API Prefix: /api
 
@@ -18,11 +18,15 @@ Path: /api/app-config
 
 Response: 200 OK
 {
-  "mode": "MANAGEMENT" | "PUBLIC"
+  "mode": "MANAGEMENT" | "PUBLIC",
+  "serverStartedAt": "ISO-8601"   // UTC Instant; changes on every JVM restart / redeploy
 }
 
 Notes:
 - Value is from application.yml (app.mode). Allowed values: MANAGEMENT, PUBLIC. Default (if unset or invalid): PUBLIC.
+- serverStartedAt: process start time. Frontend can store the first value (e.g. sessionStorage) and
+  force a full page reload when a later /api/app-config response returns a different value
+  (covers open tabs after deploy; index.html is already Cache-Control: no-cache).
 - When mode is PUBLIC, all GET/HEAD/OPTIONS requests are allowed except Swagger UI, OpenAPI docs, and actuator endpoints other than /actuator/health (403 Forbidden).
 - When mode is PUBLIC, non-GET requests return 403 Forbidden except:
   * POST /api/query/game-overview (5.1)
@@ -2784,5 +2788,5 @@ NOTES
 - Security access events (403, in-app 429) log to logger at.atypicalbacklog.security.access.
 
 ================================================================================
-Generated: 2026-08-04  |  Document version: 34
+Generated: 2026-08-07  |  Document version: 35
 ================================================================================

@@ -66,3 +66,33 @@ export function reviewYearFromCard(
   if (years.length === 0) return null;
   return Math.max(...years);
 }
+
+/** Presentation used for tier-card visuals (primary review playthrough when present). */
+export function reviewCardPresentationType(
+  card: ReviewSearchResultDto
+): ReviewPresentationType {
+  const fromReview =
+    card.playthroughs.find((p) => p.reviewUid)?.presentationType ??
+    card.playthroughs.find((p) => p.presentationType)?.presentationType;
+  return normalizeReviewPresentationType(fromReview);
+}
+
+/**
+ * Within a tier: A–Z by display name, with REPEAT presentation cards after all others
+ * (non-repeat A–Z, then repeat A–Z).
+ */
+export function compareTierlistCardsByName(
+  a: ReviewSearchResultDto,
+  b: ReviewSearchResultDto
+): number {
+  const aRepeat = reviewCardPresentationType(a) === 'REPEAT' ? 1 : 0;
+  const bRepeat = reviewCardPresentationType(b) === 'REPEAT' ? 1 : 0;
+  if (aRepeat !== bRepeat) return aRepeat - bRepeat;
+  return a.displayName.localeCompare(b.displayName, undefined, { sensitivity: 'base' });
+}
+
+export function sortTierlistCardsByName(
+  cards: ReviewSearchResultDto[]
+): ReviewSearchResultDto[] {
+  return [...cards].sort(compareTierlistCardsByName);
+}

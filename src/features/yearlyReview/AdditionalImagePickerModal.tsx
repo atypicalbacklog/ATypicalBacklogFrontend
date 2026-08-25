@@ -21,7 +21,7 @@ import {
 import SmartImage from '../shared/SmartImage';
 import AddAdditionalImageDialog from './AddAdditionalImageDialog';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 21;
 
 interface Props {
   open: boolean;

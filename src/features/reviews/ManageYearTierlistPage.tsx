@@ -28,6 +28,7 @@ import {
 } from '../../constants/tierListLayout';
 import TierEntryCard from './TierEntryCard';
 import type { EditReviewLocationState } from './EditReviewPage';
+import { sortTierlistCardsByName } from './reviewPresentationUtils';
 
 /** Single card tier (if all playthroughs share same tier). */
 function cardTierUid(card: ReviewSearchResultDto): string | null {
@@ -190,7 +191,7 @@ export default function ManageYearTierlistPage() {
 
   const unassignedCards = results.filter((c) => !cardTierUid(c));
   const cardsByTier = (tierUid: string) =>
-    results.filter((c) => cardTierUid(c) === tierUid);
+    sortTierlistCardsByName(results.filter((c) => cardTierUid(c) === tierUid));
 
   const cardKey = (c: ReviewSearchResultDto) =>
     `${c.displayName}:${c.playthroughs.map((p) => p.playthroughUid).join(',')}`;
