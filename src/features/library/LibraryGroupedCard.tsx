@@ -20,7 +20,6 @@ import {
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import CompletionBar from '../shared/CompletionBar';
@@ -220,16 +219,14 @@ function InstanceBackSection({
             size="small"
           />
         ) : null}
-        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35 }}>
-          {row.inBacklog ? (
+        {row.inBacklog ? (
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35 }}>
             <CheckBoxIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-          ) : (
-            <CheckBoxOutlineBlankIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
-          )}
-          <Typography variant="caption" color="text.secondary">
-            Backlog
-          </Typography>
-        </Box>
+            <Typography variant="caption" color="text.secondary">
+              Backlog
+            </Typography>
+          </Box>
+        ) : null}
         {row.totalPlaytimeSeconds > 0 ? (
           <Typography variant="caption" color="text.secondary">
             Playtime: {formatPlaytime(row.totalPlaytimeSeconds)}

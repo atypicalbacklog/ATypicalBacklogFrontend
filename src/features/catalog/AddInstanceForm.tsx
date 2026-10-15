@@ -47,7 +47,7 @@ export default function AddInstanceForm() {
   const [variantUid, setVariantUid] = useState('');
   const [platformUid, setPlatformUid] = useState('');
   const [originalConsoleUid, setOriginalConsoleUid] = useState('');
-  const [receivedDate, setReceivedDate] = useState(today());
+  const [receivedDate, setReceivedDate] = useState('');
   const [forFree, setForFree] = useState(false);
   const [inPossession, setInPossession] = useState(true);
   const [completionStateUid, setCompletionStateUid] = useState('');
@@ -80,7 +80,7 @@ export default function AddInstanceForm() {
 
   const gameResolved = selectedGame != null || (addNewGame && newGameName.trim() && newGameReleaseDate);
   const step2Valid = gameResolved && platformUid && variantUid;
-  const step3Valid = step2Valid && receivedDate;
+  const step3Valid = step2Valid;
 
   // Sync gameSearchQuery and newGameName
   useEffect(() => {
@@ -199,7 +199,7 @@ export default function AddInstanceForm() {
         name: instanceName.trim() || null,
         releaseDate: releaseDate || null,
         originalConsoleUid: originalConsoleUid || null,
-        receivedDate,
+        receivedDate: receivedDate || null,
         forFree,
         inPossession,
         externalIgdbId: instanceExternalId || undefined,
@@ -243,7 +243,7 @@ export default function AddInstanceForm() {
       setVariantUid('');
       setPlatformUid('');
       setOriginalConsoleUid('');
-      setReceivedDate(today());
+      setReceivedDate('');
       setForFree(false);
       setInPossession(true);
       setCompletionStateUid('');
@@ -517,7 +517,6 @@ export default function AddInstanceForm() {
               label="Received date"
               value={receivedDate}
               onChange={setReceivedDate}
-              required
             />
             <Box sx={{ flex: 1 }} />
             <FormControlLabel

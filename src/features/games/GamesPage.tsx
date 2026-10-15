@@ -76,7 +76,7 @@ export default function GamesPage() {
           gameUid: game.uid,
           platformUid: vm.platformUid!,
           variantUid: vm.variantUid!,
-          receivedDate: vm.receivedDate!,
+          receivedDate: vm.receivedDate ?? null,
         });
       }
 
@@ -211,7 +211,6 @@ export default function GamesPage() {
                 setVm({ ...vm, receivedDate: e.target.value })
               }
               InputLabelProps={{ shrink: true }}
-              required
               fullWidth
             />
           </Stack>
@@ -226,8 +225,7 @@ export default function GamesPage() {
             !vm.firstReleaseDate ||
             (vm.createInstance &&
               (!vm.platformUid ||
-                !vm.variantUid ||
-                !vm.receivedDate))
+                !vm.variantUid))
           }
         >
           {isSubmitting ? 'Saving...' : 'Save'}

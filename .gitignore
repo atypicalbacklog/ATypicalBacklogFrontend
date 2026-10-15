@@ -1,5 +1,13 @@
-/endpoint-contractsv2.txt
-node_modules
-node_modules/
-
 dist/
+node_modules
+node_modules\
+node_modules\*
+
+InstagramLogos
+.vibe
+*.md
+*.zip
+public/avatar-ab-512.png
+public/avatar-ab-1024.png
+public/avatar-ab.svg
+\endpoint-contractsv2.txt
