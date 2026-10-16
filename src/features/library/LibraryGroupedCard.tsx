@@ -347,19 +347,11 @@ function LibraryGroupedCard({
         perspective: '1000px',
         cursor: isCoarsePointer ? 'pointer' : undefined,
         position: 'relative',
-        // Skip off-screen paint on desktop only; on mobile it breaks flip stacking.
-        ...(!isCoarsePointer
-          ? {
-              contentVisibility: showBack ? 'visible' : 'auto',
-              containIntrinsicSize: showBack ? undefined : `auto ${CARD_HEIGHT}px`,
-            }
-          : {}),
         zIndex: showBack ? 100 : 1,
         overflow: 'visible',
         '@media (hover: hover) and (pointer: fine)': {
           '&:hover': {
             zIndex: 100,
-            contentVisibility: 'visible',
           },
         },
       }}
@@ -372,6 +364,7 @@ function LibraryGroupedCard({
           transformStyle: 'preserve-3d',
           transition: 'transform 0.45s ease',
           transform: showBack ? 'rotateY(180deg)' : 'none',
+          willChange: 'transform',
           '@media (hover: hover) and (pointer: fine)': {
             '.library-grouped-card-root:hover &': {
               transform: 'rotateY(180deg)',

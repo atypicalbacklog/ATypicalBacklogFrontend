@@ -94,6 +94,7 @@ export default function LibraryList({
           gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 80px))',
           gap: 1.5,
           justifyContent: 'start',
+          alignItems: 'flex-start',
         }}
       >
         {groupedPrimaryRows.map(({ gameUid, row, tooltipName }) => (
@@ -122,6 +123,7 @@ export default function LibraryList({
           justifyContent: 'start',
           isolation: 'isolate',
           overflow: 'visible',
+          alignItems: 'flex-start',
         }}
       >
         {groupedItems.map((group) => (
@@ -147,6 +149,7 @@ export default function LibraryList({
           gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 80px))',
           gap: 1.5,
           justifyContent: 'start',
+          alignItems: 'flex-start',
         }}
       >
         {items.map((item) => (
@@ -171,6 +174,7 @@ export default function LibraryList({
         },
         gap: 1,
         justifyContent: 'start',
+        alignItems: 'flex-start',
       }}
     >
       {items.map((item) => (
