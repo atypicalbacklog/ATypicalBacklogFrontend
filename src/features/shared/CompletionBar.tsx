@@ -29,6 +29,7 @@ const FILL_CONFIG: Record<
   cancelled: { fillPercent: 0, fillColor: 'transparent', innerText: 'Removed' },
   started: { fillPercent: 10, fillColor: '#22c55e' },
   'in progress': { fillPercent: 50, fillColor: '#22c55e' },
+  played: { fillPercent: 50, fillColor: '#22c55e' },
   abandoned: { fillPercent: 50, fillColor: '#ef4444' },
   postponed: { fillPercent: 100 / 3, fillColor: '#4b5563', innerText: 'Todo' },
   finished: { fillPercent: 80, fillColor: '#22c55e', endLine: true, icon: 'check' },
@@ -76,6 +77,7 @@ export default function CompletionBar({
         height: '100%',
         borderRadius: 0.75,
         bgcolor: '#b1bac4',
+        backgroundImage: key === 'played' ? 'linear-gradient(to right, #22c55e 50%, #b1bac4 100%)' : undefined,
         overflow: 'hidden',
         position: 'relative',
       }}

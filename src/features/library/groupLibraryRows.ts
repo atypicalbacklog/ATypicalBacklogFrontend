@@ -14,10 +14,11 @@ const COMPLETION_RANK: Record<string, number> = {
   'in progress': 4,
   postponed: 5,
   abandoned: 6,
-  finished: 7,
-  finishedplus: 8,
-  'finished plus': 8,
-  completed: 9,
+  played: 7,
+  finished: 8,
+  finishedplus: 9,
+  'finished plus': 9,
+  completed: 10,
 };
 
 function normalizeState(name: string | null | undefined): string {

@@ -10,9 +10,9 @@ export type CompletionFilterIntent =
   | 'COMPLETED'
   | 'FINISHED'
   | 'PLAYING'
-  | 'PLAYED'
-  | 'BACKLOG'
-  | 'UNPLAYED';
+  | 'BACKLOG';
+
+export type LibraryFilterMode = 'PLAYED' | 'UNPLAYED' | 'FILTER_STATES';
 
 export interface LibraryFilterState {
   searchText: string;
@@ -21,6 +21,7 @@ export interface LibraryFilterState {
   ignorePorts: boolean;
   inBacklog: boolean | null;
   hasActivePlaythrough: boolean | null;
+  filterMode: LibraryFilterMode;
   completionFilterIntents: CompletionFilterIntent[];
   completionStateUids: string[];
   playthroughTypeUids: string[];

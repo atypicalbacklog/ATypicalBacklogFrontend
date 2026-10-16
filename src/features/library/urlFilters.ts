@@ -1,4 +1,4 @@
-import { CompletionFilterIntent, LibraryFilterState } from './types';
+import { CompletionFilterIntent, LibraryFilterState, LibraryFilterMode } from './types';
 
 /** True if any filter differs from initial. */
 export function hasActiveFilters(
@@ -12,6 +12,7 @@ export function hasActiveFilters(
     filters.ignorePorts ||
     filters.inBacklog !== null ||
     filters.hasActivePlaythrough !== null ||
+    filters.filterMode !== initial.filterMode ||
     filters.completionFilterIntents.length > 0 ||
     filters.completionStateUids.length > 0 ||
     filters.playthroughTypeUids.length > 0 ||
@@ -30,14 +31,15 @@ export function libraryFiltersEqual(
     a.ignorePorts === b.ignorePorts &&
     a.inBacklog === b.inBacklog &&
     a.hasActivePlaythrough === b.hasActivePlaythrough &&
+    a.filterMode === b.filterMode &&
     a.includeDlc === b.includeDlc &&
     a.onlyGamesWithDlc === b.onlyGamesWithDlc &&
     a.sortMode === b.sortMode &&
-    a.platformUids.join('\0') === b.platformUids.join('\0') &&
-    a.consoleUids.join('\0') === b.consoleUids.join('\0') &&
-    a.completionFilterIntents.join('\0') === b.completionFilterIntents.join('\0') &&
-    a.completionStateUids.join('\0') === b.completionStateUids.join('\0') &&
-    a.playthroughTypeUids.join('\0') === b.playthroughTypeUids.join('\0')
+    a.platformUids.join('\x00') === b.platformUids.join('\x00') &&
+    a.consoleUids.join('\x00') === b.consoleUids.join('\x00') &&
+    a.completionFilterIntents.join('\x00') === b.completionFilterIntents.join('\x00') &&
+    a.completionStateUids.join('\x00') === b.completionStateUids.join('\x00') &&
+    a.playthroughTypeUids.join('\x00') === b.playthroughTypeUids.join('\x00')
   );
 }
 
@@ -51,6 +53,7 @@ export function filtersToSearchParams(f: LibraryFilterState) {
   if (f.inBacklog !== null) p.set('backlog', String(f.inBacklog));
   if (f.hasActivePlaythrough !== null)
     p.set('active', String(f.hasActivePlaythrough));
+  if (f.filterMode !== 'PLAYED') p.set('filterMode', f.filterMode);
   if (f.completionFilterIntents.length)
     p.set('completionIntents', f.completionFilterIntents.join(','));
   if (f.completionStateUids.length)
@@ -80,6 +83,7 @@ export function searchParamsToFilters(
     hasActivePlaythrough: p.has('active')
       ? p.get('active') === 'true'
       : null,
+    filterMode: (p.get('filterMode') as LibraryFilterMode) ?? fallback.filterMode,
     completionFilterIntents:
       (p
         .get('completionIntents')

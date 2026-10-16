@@ -567,7 +567,7 @@ export default function FaqGlossarPage() {
             <Stack spacing={2}>
             <Box id={GLOSSARY_COMPLETION_STATES_ID} sx={glossaryAnchorScrollSx}>
               <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                Completion States (Played)
+                Completion States
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
                 Completion state of an instance or DLC (independent from backlog)
@@ -576,6 +576,7 @@ export default function FaqGlossarPage() {
                 <Typography variant="body2"><strong>None</strong> = No history with this game, no plan on playing it</Typography>
                 <Typography variant="body2"><strong>Started</strong> = Started playing this or playthrough in progress</Typography>
                 <Typography variant="body2"><strong>In Progress</strong> = savegame/progression exists and will be continued (now or soon)</Typography>
+                <Typography variant="body2"><strong>Played</strong> = played in the past, did not finish or can't tell anymore, no intention to finish it, mainly used for demos, mobile games, older games, one-offs etc.</Typography>
                 <Typography variant="body2"><strong>Finished</strong> = finished main game, engaged with most of main content (at time of playthrough)</Typography>
                 <Typography variant="body2"><strong>FinishedPlus</strong> = finished, but included plenty of side quests and additional content, but not everything</Typography>
                 <Typography variant="body2"><strong>Completed</strong> = Seen every meaningful content of the game, and / or got all achievements</Typography>
@@ -585,18 +586,19 @@ export default function FaqGlossarPage() {
                 <Typography variant="body2"><strong>Backlog</strong> = intend to play this game, but not yet started</Typography>
               </Stack>
               <Typography variant="subtitle2" sx={{ mt: 1.25, mb: 0.5 }}>
-                Filter intentions (Library: &quot;Filter Played&quot;)
+                Library Filters
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
                 Groups various states to make current state easier to understand
               </Typography>
               <Stack spacing={0.4}>
+                <Typography variant="body2"><strong>Played</strong> = Completed, FinishedPlus, Finished, Played, Postponed, Abandoned</Typography>
+                <Typography variant="body2"><strong>Unplayed</strong> = None, Cancelled</Typography>
+                <Box sx={{ height: 0.5 }} />
                 <Typography variant="body2"><strong>Completed</strong> = Completed</Typography>
                 <Typography variant="body2"><strong>Finished</strong> = Completed, FinishedPlus, Finished</Typography>
                 <Typography variant="body2"><strong>Playing</strong> = In Progress, Started</Typography>
-                <Typography variant="body2"><strong>Played</strong> = Completed, FinishedPlus, Finished, Postponed, Abandoned</Typography>
                 <Typography variant="body2"><strong>Backlog</strong> = Postponed, Backlog</Typography>
-                <Typography variant="body2"><strong>Unplayed</strong> = None, Cancelled</Typography>
               </Stack>
             </Box>
 

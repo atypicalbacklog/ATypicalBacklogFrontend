@@ -9,6 +9,8 @@ import {
   InputLabel,
   MenuItem,
   OutlinedInput,
+  Radio,
+  RadioGroup,
   Select,
   SelectChangeEvent,
   Stack,
@@ -19,7 +21,7 @@ import {
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { isManagementMode } from '../../app/AppConfig';
-import { CompletionFilterIntent, LibraryFilterState } from './types';
+import { CompletionFilterIntent, LibraryFilterState, LibraryFilterMode } from './types';
 import { useReferenceData } from '../../referenceData/ReferenceDataContext';
 import PlatformSelect from '../shared/PlatformSelect';
 import { compactBlurredFilterPanelSx } from '../yearlyReview/yearlyReviewPanelStyles';
@@ -33,8 +35,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
   const { referenceData, isLoaded } = useReferenceData();
   if (!isLoaded || !referenceData) return null;
 
-  const { consoles, completionStates, playthroughTypes } =
-    referenceData.data;
+  const { consoles, completionStates, playthroughTypes } = referenceData.data;
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -47,7 +48,6 @@ export default function LibraryFilters({ value, onChange }: Props) {
     valueRef.current = value;
   }, [value]);
 
-  // Sync draft from committed filter only when not mid-debounce typing.
   useEffect(() => {
     if (searchDebounceRef.current) return;
     setSearchTextDraft(value.searchText);
@@ -69,24 +69,60 @@ export default function LibraryFilters({ value, onChange }: Props) {
     (value.completionStateUids.length > 0 ? 1 : 0) +
     (value.playthroughTypeUids.length > 0 ? 1 : 0) +
     (showIncludeDlc && value.includeDlc === false ? 1 : 0) +
-    (value.onlyGamesWithDlc !== null ? 1 : 0);
+    (value.onlyGamesWithDlc !== null ? 1 : 0) +
+    (value.filterMode !== 'PLAYED' ? 1 : 0);
 
   const intentOptions: Array<{ value: CompletionFilterIntent; label: string }> = [
     { value: 'COMPLETED', label: 'Completed' },
     { value: 'FINISHED', label: 'Finished' },
     { value: 'PLAYING', label: 'Playing' },
-    { value: 'PLAYED', label: 'Played' },
     { value: 'BACKLOG', label: 'Backlog' },
-    { value: 'UNPLAYED', label: 'Unplayed' },
   ];
 
   const completionStatesByIntent: Record<CompletionFilterIntent, string[]> = {
     COMPLETED: ['Completed'],
     FINISHED: ['Completed', 'FinishedPlus', 'Finished'],
     PLAYING: ['InProgress', 'Started'],
-    PLAYED: ['Completed', 'FinishedPlus', 'Finished', 'Postponed', 'Abandoned'],
     BACKLOG: ['Postponed', 'Backlog'],
-    UNPLAYED: ['None', 'Cancelled'],
+  };
+
+  const filterModeOptions: Array<{ value: LibraryFilterMode; label: string }> = [
+    { value: 'PLAYED', label: 'Played' },
+    { value: 'UNPLAYED', label: 'Unplayed' },
+    { value: 'FILTER_STATES', label: 'Filter States' },
+  ];
+
+  const handleFilterModeChange = (newMode: LibraryFilterMode) => {
+    if (newMode === 'PLAYED') {
+      const playedStates = ['Completed', 'FinishedPlus', 'Finished', 'Postponed', 'Abandoned'];
+      const playedStateUids = completionStates
+        .filter((c) => playedStates.includes(c.name))
+        .map((c) => c.uid);
+      onChange({
+        ...value,
+        filterMode: newMode,
+        completionFilterIntents: [],
+        completionStateUids: playedStateUids,
+      });
+    } else if (newMode === 'UNPLAYED') {
+      const unplayedStates = ['None', 'Cancelled'];
+      const unplayedStateUids = completionStates
+        .filter((c) => unplayedStates.includes(c.name))
+        .map((c) => c.uid);
+      onChange({
+        ...value,
+        filterMode: newMode,
+        completionFilterIntents: [],
+        completionStateUids: unplayedStateUids,
+      });
+    } else {
+      onChange({
+        ...value,
+        filterMode: newMode,
+        completionFilterIntents: [],
+        completionStateUids: [],
+      });
+    }
   };
 
   const normalizeStateName = (name: string) =>
@@ -101,6 +137,17 @@ export default function LibraryFilters({ value, onChange }: Props) {
     return completionStates
       .filter((c) => targetNames.has(normalizeStateName(c.name)))
       .map((c) => c.uid);
+  };
+
+  const handleCompletionIntentsChange = (e: SelectChangeEvent<CompletionFilterIntent[]>) => {
+    const v = e.target.value;
+    const intents = (Array.isArray(v) ? v : v ? [v] : []) as CompletionFilterIntent[];
+    const completionStateUids = resolveCompletionStateUidsFromIntents(intents);
+    onChange({
+      ...value,
+      completionFilterIntents: intents,
+      completionStateUids,
+    });
   };
 
   const headerRow = (
@@ -146,108 +193,195 @@ export default function LibraryFilters({ value, onChange }: Props) {
   );
 
   const filterFieldSx = isMobile ? { minWidth: 0, flex: '1 1 160px' } : undefined;
-
-  const filterRowSx = {
-    width: 'fit-content',
-    maxWidth: '100%',
-  };
+  const filterRowSx = { width: 'fit-content', maxWidth: '100%' };
 
   const filterFields = (
     <Stack spacing={2} sx={{ mt: 1, width: 'fit-content', maxWidth: '100%' }}>
-      <Stack
-        direction="row"
-        spacing={2}
-        flexWrap="wrap"
-        useFlexGap
-        alignItems="center"
-        sx={filterRowSx}
-      >
-        <TextField
-          label="Search"
-          placeholder="Search by Name"
-          value={searchTextDraft}
-          onChange={(e) => {
-            const next = e.target.value;
-            setSearchTextDraft(next);
-            if (searchDebounceRef.current) {
-              clearTimeout(searchDebounceRef.current);
-            }
-            searchDebounceRef.current = setTimeout(() => {
-              onChange({ ...valueRef.current, searchText: next });
-            }, 250);
-          }}
-          size="small"
-          sx={{
-            minWidth: 160,
-            ...(isMobile ? filterFieldSx : { maxWidth: 280 }),
-          }}
-        />
-        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
-          <InputLabel>Filter Played</InputLabel>
-          <Select
-            multiple
-            value={value.completionFilterIntents}
-            onChange={(e: SelectChangeEvent<CompletionFilterIntent[]>) => {
-              const v = e.target.value;
-              const intents = (Array.isArray(v) ? v : v ? [v] : []) as CompletionFilterIntent[];
-              const completionStateUids = resolveCompletionStateUidsFromIntents(intents);
-              onChange({
-                ...value,
-                completionFilterIntents: intents,
-                completionStateUids,
-              });
+      {isMobile ? (
+        <>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+            <TextField
+              label="Search"
+              placeholder="Search by Name"
+              value={searchTextDraft}
+              onChange={(e) => {
+                const next = e.target.value;
+                setSearchTextDraft(next);
+                if (searchDebounceRef.current) {
+                  clearTimeout(searchDebounceRef.current);
+                }
+                searchDebounceRef.current = setTimeout(() => {
+                  onChange({ ...valueRef.current, searchText: next });
+                }, 250);
+              }}
+              size="small"
+              sx={{ minWidth: 160, flex: '0 1 200px', maxWidth: '50%' }}
+            />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+              <RadioGroup
+                row
+                value={value.filterMode}
+                onChange={(e) => handleFilterModeChange(e.target.value as LibraryFilterMode)}
+                sx={{ gap: 0.5 }}
+              >
+                {filterModeOptions.map((option) => (
+                  <FormControlLabel
+                    key={option.value}
+                    value={option.value}
+                    control={<Radio size="small" />}
+                    label={option.label}
+                    slotProps={{ typography: { variant: 'body2' } }}
+                  />
+                ))}
+              </RadioGroup>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+            {value.filterMode === 'FILTER_STATES' && (
+              <FormControl size="small" sx={{ minWidth: 160, flex: '1 1 160px' }}>
+                <InputLabel>Filter Played</InputLabel>
+                <Select
+                  multiple
+                  value={value.completionFilterIntents}
+                  onChange={handleCompletionIntentsChange}
+                  input={<OutlinedInput label="Filter Played" />}
+                  renderValue={(selected) =>
+                    selected
+                      .map((intent) => intentOptions.find((o) => o.value === intent)?.label ?? intent)
+                      .join(', ')
+                  }
+                >
+                  {intentOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            <FormControl size="small" sx={{ minWidth: 160, flex: '1 1 160px' }}>
+              <InputLabel>Filter Playtype</InputLabel>
+              <Select
+                label="Filter Playtype"
+                multiple
+                value={value.playthroughTypeUids}
+                onChange={(e: SelectChangeEvent<string[]>) => {
+                  const selected = (e.target.value as string[]) ?? [];
+                  const NONE_VALUE = '__none__';
+                  const playthroughTypeUids = selected.includes(NONE_VALUE)
+                    ? []
+                    : selected.filter((uid) => uid !== NONE_VALUE);
+                  onChange({ ...value, playthroughTypeUids });
+                }}
+                renderValue={(selected) =>
+                  selected.length === 0
+                    ? 'None'
+                    : selected
+                        .map((uid) => playthroughTypes.find((t) => t.uid === uid)?.name ?? uid)
+                        .join(', ')
+                }
+              >
+                <MenuItem value="__none__">None</MenuItem>
+                {playthroughTypes.map((t) => (
+                  <MenuItem key={t.uid} value={t.uid}>
+                    {t.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </>
+      ) : (
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+          <TextField
+            label="Search"
+            placeholder="Search by Name"
+            value={searchTextDraft}
+            onChange={(e) => {
+              const next = e.target.value;
+              setSearchTextDraft(next);
+              if (searchDebounceRef.current) {
+                clearTimeout(searchDebounceRef.current);
+              }
+              searchDebounceRef.current = setTimeout(() => {
+                onChange({ ...valueRef.current, searchText: next });
+              }, 250);
             }}
-            input={<OutlinedInput label="Filter Played" />}
-            renderValue={(selected) =>
-              selected
-                .map((intent) => intentOptions.find((o) => o.value === intent)?.label ?? intent)
-                .join(', ')
-            }
-          >
-            {intentOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
-          <InputLabel>Filter Playtype</InputLabel>
-          <Select
-            label="Filter Playtype"
-            multiple
-            value={value.playthroughTypeUids}
-            onChange={(e: SelectChangeEvent<string[]>) => {
-              const selected = (e.target.value as string[]) ?? [];
-              const NONE_VALUE = '__none__';
-              const playthroughTypeUids = selected.includes(NONE_VALUE)
-                ? []
-                : selected.filter((uid) => uid !== NONE_VALUE);
-              onChange({
-                ...value,
-                playthroughTypeUids,
-              });
-            }}
-            renderValue={(selected) =>
-              selected.length === 0
-                ? 'None'
-                : selected
-                    .map(
-                      (uid) =>
-                        playthroughTypes.find((t) => t.uid === uid)?.name ?? uid
-                    )
+            size="small"
+            sx={{ minWidth: 160, flex: '0 0 auto', maxWidth: 280 }}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+            <RadioGroup
+              row
+              value={value.filterMode}
+              onChange={(e) => handleFilterModeChange(e.target.value as LibraryFilterMode)}
+              sx={{ gap: 1 }}
+            >
+              {filterModeOptions.map((option) => (
+                <FormControlLabel
+                  key={option.value}
+                  value={option.value}
+                  control={<Radio size="small" />}
+                  label={option.label}
+                  slotProps={{ typography: { variant: 'body2' } }}
+                />
+              ))}
+            </RadioGroup>
+          </Box>
+          {value.filterMode === 'FILTER_STATES' && (
+            <FormControl size="small" sx={{ minWidth: 200, flex: '0 0 auto' }}>
+              <InputLabel>Filter Played</InputLabel>
+              <Select
+                multiple
+                value={value.completionFilterIntents}
+                onChange={handleCompletionIntentsChange}
+                input={<OutlinedInput label="Filter Played" />}
+                renderValue={(selected) =>
+                  selected
+                    .map((intent) => intentOptions.find((o) => o.value === intent)?.label ?? intent)
                     .join(', ')
-            }
-          >
-            <MenuItem value="__none__">None</MenuItem>
-            {playthroughTypes.map((t) => (
-              <MenuItem key={t.uid} value={t.uid}>
-                {t.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Stack>
+                }
+              >
+                {intentOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          <FormControl size="small" sx={{ minWidth: 200, flex: '0 0 auto' }}>
+            <InputLabel>Filter Playtype</InputLabel>
+            <Select
+              label="Filter Playtype"
+              multiple
+              value={value.playthroughTypeUids}
+              onChange={(e: SelectChangeEvent<string[]>) => {
+                const selected = (e.target.value as string[]) ?? [];
+                const NONE_VALUE = '__none__';
+                const playthroughTypeUids = selected.includes(NONE_VALUE)
+                  ? []
+                  : selected.filter((uid) => uid !== NONE_VALUE);
+                onChange({ ...value, playthroughTypeUids });
+              }}
+              renderValue={(selected) =>
+                selected.length === 0
+                  ? 'None'
+                  : selected
+                      .map((uid) => playthroughTypes.find((t) => t.uid === uid)?.name ?? uid)
+                      .join(', ')
+              }
+            >
+              <MenuItem value="__none__">None</MenuItem>
+              {playthroughTypes.map((t) => (
+                <MenuItem key={t.uid} value={t.uid}>
+                  {t.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+      )}
 
       <Stack
         direction="row"
@@ -264,10 +398,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
             value={value.consoleUids[0] ?? ''}
             onChange={(e) => {
               const v = e.target.value as string;
-              onChange({
-                ...value,
-                consoleUids: v ? [v] : [],
-              });
+              onChange({ ...value, consoleUids: v ? [v] : [] });
             }}
           >
             <MenuItem value="">All</MenuItem>
@@ -283,9 +414,7 @@ export default function LibraryFilters({ value, onChange }: Props) {
           control={
             <Checkbox
               checked={value.ignorePorts}
-              onChange={(e) =>
-                onChange({ ...value, ignorePorts: e.target.checked })
-              }
+              onChange={(e) => onChange({ ...value, ignorePorts: e.target.checked })}
             />
           }
           label="Ignore Ports"
@@ -310,39 +439,28 @@ export default function LibraryFilters({ value, onChange }: Props) {
 
         {filterDivider}
 
-        {showIncludeDlc ? (
+        {showIncludeDlc && (
           <FormControlLabel
             sx={filterFieldSx}
             control={
               <Checkbox
                 checked={value.includeDlc !== false}
-                onChange={(e) =>
-                  onChange({ ...value, includeDlc: e.target.checked })
-                }
+                onChange={(e) => onChange({ ...value, includeDlc: e.target.checked })}
               />
             }
             label="Include DLC"
           />
-        ) : null}
+        )}
 
         <FormControl size="small" sx={{ minWidth: isMobile ? 0 : 200, ...filterFieldSx }}>
           <InputLabel>Limit DLC Games</InputLabel>
           <Select
             label="Limit DLC Games"
-            value={
-              value.onlyGamesWithDlc === null
-                ? ''
-                : value.onlyGamesWithDlc
-                  ? 'true'
-                  : 'false'
-            }
+            value={value.onlyGamesWithDlc === null ? '' : value.onlyGamesWithDlc ? 'true' : 'false'}
             onChange={(e) =>
               onChange({
                 ...value,
-                onlyGamesWithDlc:
-                  e.target.value === ''
-                    ? null
-                    : e.target.value === 'true',
+                onlyGamesWithDlc: e.target.value === '' ? null : e.target.value === 'true',
               })
             }
           >
@@ -359,13 +477,8 @@ export default function LibraryFilters({ value, onChange }: Props) {
     <Box sx={{ ...compactBlurredFilterPanelSx, mb: 3 }}>
       <Stack spacing={0}>
         {headerRow}
-        {isMobile ? (
-          <Collapse in={filtersOpen}>{filterFields}</Collapse>
-        ) : (
-          filterFields
-        )}
+        {isMobile ? <Collapse in={filtersOpen}>{filterFields}</Collapse> : filterFields}
       </Stack>
     </Box>
   );
 }
-  

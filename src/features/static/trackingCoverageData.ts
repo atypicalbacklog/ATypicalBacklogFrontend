@@ -17,11 +17,11 @@ export const TRACKING_COVERAGE_ENTRIES: TrackingCoverageEntry[] = [
   {
     label: 'All games I played released after 12.02.2002',
     hint: 'because of previous personal project, I have this data',
-    percent: 75,
+    percent: 100,
   },
   {
     label: 'All missing games I played since 6th console generation',
-    percent: 0,
+    percent: 50,
   },
   {
     label: 'All missing games I played since 5th console generation',
@@ -33,7 +33,7 @@ export const TRACKING_COVERAGE_ENTRIES: TrackingCoverageEntry[] = [
   },
   {
     label: 'All other remaining missing games',
-    hint: 'mobile, freeware, flash games, etc.',
+    hint: 'freeware, flash games, very old, arcade, etc.',
     percent: 0,
   },
 ];

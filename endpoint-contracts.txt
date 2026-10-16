@@ -458,6 +458,8 @@ Request Body:
   "playthroughTypeUids": [ "string" ] | null,   // optional; filter by playthrough type UIDs
   "includeDlc": true | false | null,       // optional; when true, include DLC as own records
   "onlyGamesWithDlc": true | false | null, // optional; when true, only games that have DLC
+  "isPlayed": true | false | null,    // optional; when true, only games with instances having completion states: Completed, FinishedPlus, Finished, Postponed, Abandoned
+  "isUnplayed": true | false | null,  // optional; when true, only games with NO instances having completion states: Completed, FinishedPlus, Finished, Postponed, Abandoned
   "sortMode": "NAME_ASC" | "NAME_DESC" | "PLAYTIME_DESC" | "LAST_PLAYED_DESC" | "NEWEST_CREATED" | "RELEASE_DATE",
 
   "pageSize": 1..500 | null,               // optional; limits returned rows (keyset page size)
@@ -533,6 +535,10 @@ Notes:
 - Covers are separate: gameCoverImageUid (game), instanceCoverImageUid (instance), dlcCoverImageUid (DLC when isDlc). Client may choose which to display (e.g. prefer dlcCoverImageUid when isDlc, else instanceCoverImageUid, else gameCoverImageUid).
 - searchText filters on game name, instance name, and (for DLC rows) DLC name
 - Keyset pagination is optional and currently supported for sortMode=NAME_ASC.
+- isPlayed and isUnplayed filters use completion states: Completed, FinishedPlus, Finished, Postponed, Abandoned
+- If completionStateUids is provided, isPlayed and isUnplayed are ignored
+- If both isPlayed and isUnplayed are true, only isPlayed is applied (isUnplayed is ignored)
+- null and false values for isPlayed/isUnplayed are treated the same (no filter applied)
 
 ================================================================================
 6. PLAYTHROUGH ENDPOINTS

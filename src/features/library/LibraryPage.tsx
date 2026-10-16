@@ -42,6 +42,7 @@ const initialFilters: LibraryFilterState = {
   ignorePorts: false,
   inBacklog: null,
   hasActivePlaythrough: null,
+  filterMode: 'PLAYED',
   completionFilterIntents: [],
   completionStateUids: [],
   playthroughTypeUids: [],
