@@ -93,36 +93,12 @@ export default function LibraryFilters({ value, onChange }: Props) {
   ];
 
   const handleFilterModeChange = (newMode: LibraryFilterMode) => {
-    if (newMode === 'PLAYED') {
-      const playedStates = ['Completed', 'FinishedPlus', 'Finished', 'Postponed', 'Abandoned'];
-      const playedStateUids = completionStates
-        .filter((c) => playedStates.includes(c.name))
-        .map((c) => c.uid);
-      onChange({
-        ...value,
-        filterMode: newMode,
-        completionFilterIntents: [],
-        completionStateUids: playedStateUids,
-      });
-    } else if (newMode === 'UNPLAYED') {
-      const unplayedStates = ['None', 'Cancelled'];
-      const unplayedStateUids = completionStates
-        .filter((c) => unplayedStates.includes(c.name))
-        .map((c) => c.uid);
-      onChange({
-        ...value,
-        filterMode: newMode,
-        completionFilterIntents: [],
-        completionStateUids: unplayedStateUids,
-      });
-    } else {
-      onChange({
-        ...value,
-        filterMode: newMode,
-        completionFilterIntents: [],
-        completionStateUids: [],
-      });
-    }
+    onChange({
+      ...value,
+      filterMode: newMode,
+      completionFilterIntents: [],
+      completionStateUids: [],
+    });
   };
 
   const normalizeStateName = (name: string) =>

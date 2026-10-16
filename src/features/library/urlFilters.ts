@@ -56,7 +56,7 @@ export function filtersToSearchParams(f: LibraryFilterState) {
   if (f.filterMode !== 'PLAYED') p.set('filterMode', f.filterMode);
   if (f.completionFilterIntents.length)
     p.set('completionIntents', f.completionFilterIntents.join(','));
-  if (f.completionStateUids.length)
+  if (f.completionStateUids.length && f.filterMode === 'FILTER_STATES')
     p.set('completion', f.completionStateUids.join(','));
   if (f.playthroughTypeUids.length)
     p.set('playthroughTypes', f.playthroughTypeUids.join(','));
@@ -72,6 +72,13 @@ export function searchParamsToFilters(
   p: URLSearchParams,
   fallback: LibraryFilterState
 ): LibraryFilterState {
+  const filterMode = (p.get('filterMode') as LibraryFilterMode) ?? fallback.filterMode;
+  
+  // Only use completionStateUids from URL when in FILTER_STATES mode
+  const completionStateUids = filterMode === 'FILTER_STATES' 
+    ? p.get('completion')?.split(',').filter(Boolean) ?? []
+    : [];
+
   return {
     searchText: p.get('q') ?? fallback.searchText,
     platformUids: p.get('platforms')?.split(',').filter(Boolean) ?? [],
@@ -83,13 +90,13 @@ export function searchParamsToFilters(
     hasActivePlaythrough: p.has('active')
       ? p.get('active') === 'true'
       : null,
-    filterMode: (p.get('filterMode') as LibraryFilterMode) ?? fallback.filterMode,
+    filterMode,
     completionFilterIntents:
       (p
         .get('completionIntents')
         ?.split(',')
         .filter(Boolean) ?? []) as CompletionFilterIntent[],
-    completionStateUids: p.get('completion')?.split(',').filter(Boolean) ?? [],
+    completionStateUids,
     playthroughTypeUids: p.get('playthroughTypes')?.split(',').filter(Boolean) ?? [],
     includeDlc: p.has('includeDlc')
       ? p.get('includeDlc') === 'true'

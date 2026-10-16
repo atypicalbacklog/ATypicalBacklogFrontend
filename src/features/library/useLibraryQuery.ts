@@ -5,6 +5,12 @@ import { GameOverviewQueryResponseDto, GameOverviewRowDto, LibraryFilterState } 
 /** Map UI filter state to API request body (empty arrays → null for "no filter"). If platform is set, console filter is ignored. */
 function toQueryRequestBody(f: LibraryFilterState) {
   const platformSet = f.platformUids.length > 0;
+  const hasPlayedFilter = f.filterMode === 'PLAYED' || f.filterMode === 'UNPLAYED';
+  
+  // Derive isPlayed and isUnplayed from filterMode
+  const isPlayed = f.filterMode === 'PLAYED' ? true : null;
+  const isUnplayed = f.filterMode === 'UNPLAYED' ? true : null;
+  
   return {
     searchText: f.searchText || null,
     platformUids: platformSet ? f.platformUids : null,
@@ -12,7 +18,7 @@ function toQueryRequestBody(f: LibraryFilterState) {
     ignorePorts: f.ignorePorts,
     inBacklog: f.inBacklog,
     hasActivePlaythrough: f.hasActivePlaythrough,
-    completionStateUids: f.completionStateUids.length
+    completionStateUids: !hasPlayedFilter && f.completionStateUids.length
       ? f.completionStateUids
       : null,
     playthroughTypeUids: f.playthroughTypeUids.length
@@ -20,6 +26,8 @@ function toQueryRequestBody(f: LibraryFilterState) {
       : null,
     includeDlc: f.includeDlc,
     onlyGamesWithDlc: f.onlyGamesWithDlc,
+    isPlayed,
+    isUnplayed,
     sortMode: f.sortMode,
   };
 }
