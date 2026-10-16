@@ -22,6 +22,7 @@ import SmartImage from '../shared/SmartImage';
 import TimeTrackingOverlay from './TimeTrackingOverlay';
 import PlaythroughTimeDisplay from './PlaythroughTimeDisplay';
 import PlaythroughTimeBookingsModal from './PlaythroughTimeBookingsModal';
+import { formatSecondsAsHhMmSs } from './formatSecondsAsHhMmSs';
 import type { ActivePlaythroughOverviewRow } from '../../types/dto';
 
 interface Props {
@@ -56,9 +57,25 @@ export default function PlaythroughCard({
   const [retroactiveHours, setRetroactiveHours] = useState(0);
   const [retroactiveMinutes, setRetroactiveMinutes] = useState(0);
   const [retroactiveSubmitting, setRetroactiveSubmitting] = useState(false);
+  const [currentSessionSeconds, setCurrentSessionSeconds] = useState(0);
   const theme = useTheme();
   const isTouch = useMediaQuery(theme.breakpoints.down('sm')) || useMediaQuery('(pointer: coarse)');
   const [headerTooltipOpen, setHeaderTooltipOpen] = useState(false);
+
+  useEffect(() => {
+    if (!row.isTimeTrackingActive || !row.activeSessionStartedAt) {
+      setCurrentSessionSeconds(0);
+      return;
+    }
+    const startMs = new Date(row.activeSessionStartedAt).getTime();
+    const tick = () => {
+      const diffSeconds = Math.floor((Date.now() - startMs) / 1000);
+      setCurrentSessionSeconds(diffSeconds > 0 ? diffSeconds : 0);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [row.isTimeTrackingActive, row.activeSessionStartedAt]);
 
   useEffect(() => {
     if (!headerTooltipOpen) return;
@@ -146,6 +163,38 @@ export default function PlaythroughCard({
           onClick={handleOverlayClick}
           disabled={isActionDisabled}
         />
+        {row.isTimeTrackingActive && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '20%',
+              left: 0,
+              right: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              zIndex: 2,
+            }}
+          >
+            <Typography
+              variant="h4"
+              component="span"
+              sx={{
+                fontFamily: 'monospace',
+                fontWeight: 700,
+                color: 'white',
+                textShadow: '0 0 12px rgba(0,0,0,0.9)',
+                bgcolor: 'rgba(64, 64, 64, 0.7)',
+                padding: '0.25rem 0.75rem',
+                borderRadius: 0.5,
+              }}
+            >
+              {formatSecondsAsHhMmSs(currentSessionSeconds)}
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       {/* Bottom: Gear, Clock → Edit / Add overlooked, Time (hh:mm:ss) */}
