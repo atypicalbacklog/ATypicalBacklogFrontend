@@ -1,7 +1,7 @@
 import { Accordion, AccordionDetails, AccordionSummary, Box, Divider, Link as MuiLink, Paper, Stack, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useEffect } from 'react';
-import { BLUESKY_PROFILE_URL, GITHUB_PROFILE_URL } from '../shared/socialLinks';
+import { BLUESKY_PROFILE_URL, GITHUB_PROFILE_URL, INSTAGRAM_PROFILE_URL } from '../shared/socialLinks';
 import { glossaryAnchorScrollSx, scheduleGlossaryAnchorScroll, scrollToGlossaryAnchor } from './glossaryAnchor';
 import { useLocation } from 'react-router-dom';
 import TrackingCoverageBar from '../shared/TrackingCoverageBar';
@@ -337,7 +337,7 @@ export default function FaqGlossarPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
-                Infrequently, currently unknown.
+                Infrequently, currently every few weeks. Depending on demand these could be more frequent in the future.
               </Typography>
             </AccordionDetails>
           </Accordion>
@@ -430,14 +430,23 @@ export default function FaqGlossarPage() {
                 <MuiLink href="mailto:atypicalbacklog@gmail.com" underline="hover">
                   atypicalbacklog@gmail.com
                 </MuiLink>{' '}
-                or use{' '}
+                , use{' '}
                 <MuiLink
                   href={BLUESKY_PROFILE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   underline="hover"
                 >
-                  Bluesky
+                  Bluesky 
+                </MuiLink>
+                , or {' '}
+                <MuiLink
+                  href={INSTAGRAM_PROFILE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="hover"
+                >
+                  Instagram
                 </MuiLink>
                 . (Maybe in the future even Discord? Depends on demand.)
               </Typography>
@@ -451,8 +460,8 @@ export default function FaqGlossarPage() {
             </AccordionSummary>
             <AccordionDetails>
               <Typography variant="body2" color="text.secondary">
-                Sorry to disappoint. Opinions are subjective — if you want to talk about it, contact me via email or
-                use{' '}
+                Sorry to disappoint. Opinions are subjective — if you want to talk about it, contact me via email
+                ,{' '}
                 <MuiLink
                   href={BLUESKY_PROFILE_URL}
                   target="_blank"
@@ -460,6 +469,15 @@ export default function FaqGlossarPage() {
                   underline="hover"
                 >
                   Bluesky
+                </MuiLink>
+                , or {' '}
+                <MuiLink
+                  href={INSTAGRAM_PROFILE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  underline="hover"
+                >
+                  Instagram
                 </MuiLink>
                 . (Maybe in the future even Discord? Depends on demand.)
               </Typography>

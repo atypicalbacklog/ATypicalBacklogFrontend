@@ -62,6 +62,7 @@ export default function LibraryPage() {
   const [groupedCards, setGroupedCards] = useGroupedLibraryCards();
   const [showBackToTop, setShowBackToTop] = useState(false);
   const filtersContainerRef = useRef<HTMLDivElement | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const next = searchParamsToFilters(searchParams, initialFilters);
@@ -88,7 +89,8 @@ export default function LibraryPage() {
     [filters, groupedCards]
   );
 
-  const { data, counts, isLoading, error } = useLibraryQuery(queryFilters);
+  const { data, counts, isLoading, isLoadingMore, hasMore, error, fetchMore } =
+    useLibraryQuery(queryFilters);
   const filtersApplied = hasActiveFilters(filters, initialFilters);
   const duplicatedCount = duplicatedInstanceCount(data);
   const instanceCountLabel = isLoading
@@ -119,6 +121,22 @@ DLC: ${counts.dlcCount}`
   const handleBackToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Infinite scroll: when the sentinel below the list becomes visible,
+  // fetch the next keyset page and append it to the same list.
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore || isLoadingMore || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) fetchMore();
+      },
+      { rootMargin: '600px 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, isLoading, fetchMore, data.length]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -393,6 +411,18 @@ DLC: ${counts.dlcCount}`
               onClearFilters={() => setFilters(initialFilters)}
             />
           </Box>
+          {hasMore || isLoadingMore ? (
+            <Stack
+              ref={loadMoreRef}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ py: 3 }}
+            >
+              {isLoadingMore ? (
+                <CircularProgress size={32} thickness={4} aria-label="Loading more" />
+              ) : null}
+            </Stack>
+          ) : null}
         </Box>
       ) : null}
 
